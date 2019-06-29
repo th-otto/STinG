@@ -187,7 +187,7 @@ int  init_data()
    OBJECT  *tree;
    long    value;
 
-   if (! get_cookie ('STiK', (long *) & sting_drivers)) {
+   if (! get_cookie (STIK_COOKIE_MAGIC, (long *) & sting_drivers)) {
         form_alert (1, "[1][ |  STinG is not loaded or enabled !   ][ Hmmm ]");
         return (0);
       }

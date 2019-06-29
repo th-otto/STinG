@@ -187,7 +187,7 @@ static int16 init_cfg(char fname[])
 		return -1;
 	}
 
-	for (count = 0; count < CFG_NUM; count++)
+	for (count = 0; count <= STIK_CFG_NUM; count++)
 		conf.cv[count] = NULL;
 
 	work = cfg_ptr;
@@ -353,7 +353,7 @@ int16 cdecl setvstr(const char *name, const char *value)
 			return FALSE;
 		}
 
-	for (count = 0; count < CFG_NUM; count++)
+	for (count = 0; count < STIK_CFG_NUM; count++)
 		if (conf.cv[count])
 		{
 			if (compare(name, conf.cv[count], length))
@@ -361,7 +361,7 @@ int16 cdecl setvstr(const char *name, const char *value)
 		} else
 			break;
 
-	if (count >= CFG_NUM || (length = length + strlen(value) + 3) > 253)
+	if (count >= STIK_CFG_NUM || (length = length + strlen(value) + 3) > 253)
 	{
 		lock_exec(status);
 		return FALSE;
@@ -413,7 +413,7 @@ const char *cdecl getvstr(const char *name)
 
 	status = lock_exec(0);
 
-	for (count = 0; count < CFG_NUM; count++)
+	for (count = 0; count < STIK_CFG_NUM; count++)
 		if (conf.cv[count])
 		{
 			if (compare(name, conf.cv[count], length))
@@ -423,7 +423,7 @@ const char *cdecl getvstr(const char *name)
 
 	result = conf.cv[count] + length + 1;
 
-	if (count == CFG_NUM || conf.cv[count] == NULL)
+	if (count == STIK_CFG_NUM || conf.cv[count] == NULL)
 		result = "0";
 
 	lock_exec(status);

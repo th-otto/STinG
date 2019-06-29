@@ -19,23 +19,6 @@
 #include "layer.h"
 
 
-#define  CFG_NUM     100
-
-
-typedef  struct config {
-    uint32  client_ip;           /* IP address of local machine           */
-    uint16  ttl;                 /* Default TTL for normal packets        */
-    char    *cv[CFG_NUM+1];      /* Space for config variables            */
-    int16   max_num_ports;       /* Maximum number of ports supported     */
-    uint32  data_count[2];       /* Counter for received and sent data    */
-    int16   vars[3];             /* Various internal variables            */
-    void    *lists_chains[5];    /* Various lists and chains              */
-    int32   statistics[5];       /* Statistics counters                   */
-    void    *memory;             /* Pointer to main memory for KRcalls    */
-    int16   new_cookie;          /* Flag indicating new jar               */
- } CONFIG;
-
-
 long  unlink_vectors (void);
 void  disable_interrupts (void);
 void  enable_interrupts (void);
@@ -92,11 +75,14 @@ long  get_sting_cookie()
 {
    long  *work;
 
-   for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == 'STiK')
-             return (*++work);
+   work = * (long **) 0x5a0L;
+   if (work == 0)
+   	return 0;
+   for (; *work != 0L; work += 2)
+        if (*work == STIK_COOKIE_MAGIC)
+             return *++work;
 
-   return (0L);
+   return 0;
  }
 
 
@@ -129,7 +115,7 @@ long  remove_mem()
    DRIVER    *driver, *next_driver;
    LAYER     *layer, *next_layer;
    BASPAG    *sting, **process, *old_proc;
-   CONFIG    *conf;
+   STIK_CONFIG    *conf;
    OSHEADER  *oshdr = * (OSHEADER **) 0x4f2L;
 
    disable_interrupts();
@@ -144,7 +130,7 @@ long  remove_mem()
    query_chains (NULL, & driver, & layer);
 
    sting = (BASPAG *) sting_drivers->sting_basepage;
-   conf  = (CONFIG *) sting_drivers->cfg;
+   conf  = sting_drivers->cfg;
 
    *process = sting;
 
@@ -185,7 +171,7 @@ long  destroy_sting_cookie()
    long  *work;
 
    for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == 'STiK') {
+        if (*work == STIK_COOKIE_MAGIC) {
              do {
                   work[0] = work[2];   work[1] = work[3];
                   work += 2;

@@ -26,33 +26,9 @@
 #include "layer.h"
 
 
-#define  CFG_NUM        100
 #define  S_NONE         0
 
 
-typedef  struct config {
-    uint32     client_ip;       /* IP address of local machine (obsolete)   */
-    uint16     ttl;             /* Default TTL for normal packets           */
-    char       *cv[CFG_NUM+1];  /* Space for config variables               */
-    int16      max_num_ports;   /* Maximum number of ports supported        */
-    uint32     received_data;   /* Counter for data being received          */
-    uint32     sent_data;       /* Counter for data being sent              */
-    int16      active;          /* Flag for polling being active            */
-    int16      thread_rate;     /* Time between subsequent thread calls     */
-    int16      frag_ttl;        /* Time To Live for reassembly resources    */
-    PORT       *ports;          /* Pointer to first entry in PORT chain     */
-    DRIVER     *drivers;        /* Pointer to first entry in DRIVER chain   */
-    LAYER      *layers;         /* Pointer to first entry in LAYER chain    */
-    void       *interupt;       /* List of application interupt handlers    */    
-    void       *icmp;           /* List of application ICMP handlers        */    
-    int32      stat_all;        /* All datagrams that pass are counted here */
-    int32      stat_lo_mem;     /* Dropped due to low memory                */
-    int32      stat_ttl_excd;   /* Dropped due to Time-To-Live exceeded     */
-    int32      stat_chksum;     /* Dropped due to failed checksum test      */
-    int32      stat_unreach;    /* Dropped due to no way to deliver it      */
-    void       *memory;         /* Pointer to main memory for KRcalls       */
-    int16      new_cookie;      /* Flag indicating if new jar was created   */
- } CONFIG;
 
 
 typedef  struct port_list {
@@ -104,7 +80,7 @@ extern void           (* dial_timer) (void);
 DRV_LIST  *sting_drivers;
 TPL       *tpl;
 STX       *stx;
-CONFIG    *conf_block;
+STIK_CONFIG    *conf_block;
 LAYER     *all_layers[20];
 DEV_LIST  *devices, *curr_port;
 ASSOC     asso[20];
@@ -134,7 +110,7 @@ char  sting_version[];
    if (strcmp (sting_drivers->magic, MAGIC) != 0)
         return (2);
 
-   conf_block = (CONFIG *) sting_drivers->cfg;
+   conf_block = sting_drivers->cfg;
 
    tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
    stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
@@ -155,11 +131,14 @@ long  get_sting_cookie()
 {
    long  *work;
 
-   for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == 'STiK')
-             return (*++work);
+	work = * (long **) 0x5a0L;
+	if (work == 0)
+		return 0;
+	for (; *work != 0L; work += 2)
+        if (*work == STIK_COOKIE_MAGIC)
+             return *++work;
 
-   return (0L);
+   return 0;
  }
 
 

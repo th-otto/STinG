@@ -61,16 +61,53 @@ typedef struct drv_header {                 /* Header part of TPL structure */
     const char *module;           /* Specific string that can be searched for     */
     const char *author;           /* Any string                                   */
     const char *version;          /* Format `00.00' Version:Revision              */
- } DRV_HDR;
+} DRV_HDR;
 
+/*--------------------------------------------------------------------------*/
 
+/*
+ *   STinG global configuration structure.
+ */
+
+#define  STIK_CFG_NUM    100
+
+typedef struct _sting_config
+{
+	uint32 client_ip;					/* IP address of local machine (obsolete)   */
+	uint16 ttl;							/* Default TTL for normal packets           */
+	char *cv[STIK_CFG_NUM + 1];			/* Space for config variables               */
+	int16 max_num_ports;				/* Maximum number of ports supported        */
+	uint32 received_data;				/* Counter for data being received          */
+	uint32 sent_data;					/* Counter for data being sent              */
+	int16 active;						/* Flag for polling being active            */
+	int16 thread_rate;					/* Time between subsequent thread calls     */
+	int16 frag_ttl;						/* Time To Live for reassembly resources    */
+	void *ports;						/* Pointer to first entry in PORT chain     */
+	void *drivers;						/* Pointer to first entry in DRIVER chain   */
+	void *layers;						/* Pointer to first entry in LAYER chain    */
+	void *interupt;						/* List of application interupt handlers    */
+	void *icmp;							/* List of application ICMP handlers        */
+	int32 stat_all;						/* All datagrams that pass are counted here */
+	int32 stat_lo_mem;					/* Dropped due to low memory                */
+	int32 stat_ttl_excd;				/* Dropped due to Time-To-Live exceeded     */
+	int32 stat_chksum;					/* Dropped due to failed checksum test      */
+	int32 stat_unreach;					/* Dropped due to no way to deliver it      */
+    void *memory;						/* Pointer to main memory for KRcalls       */
+    int16 new_cookie;					/* Flag indicating if new jar was created   */
+} STIK_CONFIG;
+
+/*--------------------------------------------------------------------------*/
+
+#define STIK_COOKIE_MAGIC 0x5354694bUL  /* 'STiK' */
+
+/* cookie points to: */
 typedef struct drv_list {
-    char      magic[10];                    /* Magic string, def'd as MAGIC */
-    DRV_HDR * cdecl (*get_dftab) (const char *);  /* Get Driver Function Table    */
-    int16     cdecl (*ETM_exec) (const char *);   /* Execute a STinG module       */
-    void      *cfg;                         /* Config structure             */
-    BASPAG    *sting_basepage;              /* STinG basepage address       */
- } DRV_LIST;
+	char      magic[10];                    /* Magic string, def'd as MAGIC */
+	DRV_HDR * cdecl (*get_dftab) (const char *);  /* Get Driver Function Table    */
+	int16     cdecl (*ETM_exec) (const char *);   /* Execute a STinG module       */
+	STIK_CONFIG *cfg;                         /* Config structure             */
+	BASPAG    *sting_basepage;              /* STinG basepage address       */
+} DRV_LIST;
 
 extern DRV_LIST *drivers;
 

@@ -85,7 +85,7 @@ char  *argv[];
         Cconws (fault);   return;
       }
 
-   if (! get_cookie ('STiK', (long *) & sting_drivers))
+   if (! get_cookie (STIK_COOKIE_MAGIC, (long *) & sting_drivers))
         return;
 
    if (sting_drivers == 0L)   return;

@@ -111,7 +111,7 @@ CPX_PARAMS  *para;
 
    params = para;
 
-   if ((*params->find_cookie) ('STiK', (long *) &sting_drivers) == 0)
+   if ((*params->find_cookie) (STIK_COOKIE_MAGIC, (long *) &sting_drivers) == 0)
         return (NULL);
 
    if (sting_drivers == 0L)   return (NULL);

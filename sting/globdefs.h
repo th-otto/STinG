@@ -16,7 +16,6 @@
 
 #define  TCP_DRIVER_VERSION    "01.20"
 #define  STX_LAYER_VERSION     "01.05"
-#define  CFG_NUM               100
 #define  LOOPBACK              0x7f000001L
 
 #define  MAX_HANDLE    64    /* Number of handles assigned by PRTCL_request */
@@ -58,39 +57,6 @@ typedef  struct func_list {
     int16    cdecl    (* handler) (IP_DGRAM *);
     struct func_list  *next;
  } FUNC_LIST;
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   STinG global configuration structure.
- */
-
-typedef  struct config {
-    uint32     client_ip;       /* IP address of local machine (obsolete)   */
-    uint16     ttl;             /* Default TTL for normal packets           */
-    char       *cv[CFG_NUM+1];  /* Space for config variables               */
-    int16      max_num_ports;   /* Maximum number of ports supported        */
-    uint32     received_data;   /* Counter for data being received          */
-    uint32     sent_data;       /* Counter for data being sent              */
-    int16      active;          /* Flag for polling being active            */
-    int16      thread_rate;     /* Time between subsequent thread calls     */
-    int16      frag_ttl;        /* Time To Live for reassembly resources    */
-    PORT       *ports;          /* Pointer to first entry in PORT chain     */
-    DRIVER     *drivers;        /* Pointer to first entry in DRIVER chain   */
-    LAYER      *layers;         /* Pointer to first entry in LAYER chain    */
-    FUNC_LIST  *interupt;       /* List of application interupt handlers    */    
-    FUNC_LIST  *icmp;           /* List of application ICMP handlers        */    
-    int32      stat_all;        /* All datagrams that pass are counted here */
-    int32      stat_lo_mem;     /* Dropped due to low memory                */
-    int32      stat_ttl_excd;   /* Dropped due to Time-To-Live exceeded     */
-    int32      stat_chksum;     /* Dropped due to failed checksum test      */
-    int32      stat_unreach;    /* Dropped due to no way to deliver it      */
-    void       *memory;         /* Pointer to main memory for KRcalls       */
-    int16      new_cookie;      /* Flag indicating if new jar was created   */
- } CONFIG;
 
 
 
@@ -221,7 +187,7 @@ typedef  struct route_entry {
 #undef set_route_entry
 
 
-extern CONFIG conf;
+extern STIK_CONFIG conf;
 extern PORT my_port;
 extern IP_PRTCL ip[];
 extern uint32 sting_clock;

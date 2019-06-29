@@ -28,14 +28,14 @@ typedef struct driver
 	char magic[10];
 	DRV_HDR *cdecl (*get_drvfunc) (const char *);
 	int16 cdecl (*ETM_exec) (const char *);
-	CONFIG *cfg;
+	STIK_CONFIG *cfg;
 	BASPAG *basepage;
 	DRV_HDR *layer[NUM_LAYER];
 } GENERIC;
 
 extern GENERIC cookie;
 
-CONFIG conf;
+STIK_CONFIG conf;
 
 
 
@@ -343,7 +343,7 @@ long init_cookie(void)
 	}
 
 	for (work = *(long **) 0x5a0L, cnt_cookie = 0; *work != 0L; work += 2, cnt_cookie++)
-		if (*work == 0x5354694bUL) /* 'STiK' */
+		if (*work == STIK_COOKIE_MAGIC)
 			return -1;
 
 	if (work[1] - 1 <= cnt_cookie)
@@ -360,7 +360,7 @@ long init_cookie(void)
 	}
 
 	work[2] = work[0];
-	work[0] = 0x5354694bUL; /* 'STiK' */
+	work[0] = STIK_COOKIE_MAGIC;
 	work[3] = work[1];
 	work[1] = (long) &cookie;
 

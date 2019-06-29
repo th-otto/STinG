@@ -93,11 +93,14 @@ long  get_sting_cookie()
 {
    long  *work;
 
-   for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == 'STiK')
-             return (*++work);
+	work = * (long **) 0x5a0L;
+	if (work == 0)
+		return 0;
+	for (; *work != 0L; work += 2)
+        if (*work == STIK_COOKIE_MAGIC)
+             return *++work;
 
-   return (0L);
+   return 0;
  }
 
 
