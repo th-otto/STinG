@@ -96,7 +96,7 @@ int32      cdecl  my_TIMER_elapsed (int32 moment);
 void       cdecl  my_set_dgram_ttl (IP_DGRAM *dgram);
 int16      cdecl  my_check_dgram_ttl (IP_DGRAM *dgram);
 int32      cdecl  my_set_sysvars (int16 active, int16 fraction);
-void       cdecl  my_query_chains (void **port, void **driver, void **layer);
+void       cdecl  my_query_chains (PORT ** port, DRIVER ** drv, LAYER ** layer);
 int32      cdecl  my_protect_exec (void *parameter, int32 cdecl (* code) (void *));
 int16      cdecl  my_load_routing_table (void);
 int16      cdecl  my_get_route_entry (int16 no, uint32 *tmplt, uint32 *mask, PORT **port, uint32 *gway);

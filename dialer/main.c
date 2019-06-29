@@ -189,8 +189,7 @@ void  main()
  }
 
 
-void  terminate()
-
+void  terminate(void)
 {
    int   message[8];
    char  problem[] = "[1][ |  Problem occured during   | |    initialisation !][ Hmm ]";
@@ -207,8 +206,7 @@ void  terminate()
  }
 
 
-void  get_path()
-
+void  get_path(void)
 {
    int   handle;
    long  len;

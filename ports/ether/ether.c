@@ -144,7 +144,7 @@ void  install()
         _cpu = 0;
    _cpu = (_cpu >= 20) ? 1 : 0;
 
-   query_chains ((void **) & ports, (void **) & driver, NULL);
+   query_chains (& ports, & driver, NULL);
 
    (my_port.driver = & my_driver)->basepage = _BasPag;
 

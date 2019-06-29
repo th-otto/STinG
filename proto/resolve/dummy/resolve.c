@@ -114,7 +114,7 @@ int16  install()
 
    load_cache();
 
-   query_chains (NULL, NULL, (void **) & layers);
+   query_chains (NULL, NULL, & layers);
 
    while (layers->next)
         layers = layers->next;

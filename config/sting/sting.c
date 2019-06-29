@@ -387,7 +387,7 @@ int  collect_protocols()
    int     number = 0, max_len = 0, count;
    char    **cptr, *string;
 
-   query_chains (NULL, NULL, (void **) & my_layers);
+   query_chains (NULL, NULL, & my_layers);
 
    for (walk = my_layers; walk != NULL; walk = walk->next) {
         number++;
@@ -430,7 +430,7 @@ int  collect_drivers()
    int     number = 0, max_len = 0, count;
    char    **cptr, *string;
 
-   query_chains (NULL, (void **) & my_drivers, NULL);
+   query_chains (NULL, & my_drivers, NULL);
 
    for (walk = my_drivers; walk != NULL; walk = walk->next) {
         number++;

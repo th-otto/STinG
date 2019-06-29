@@ -115,7 +115,7 @@ void  do_some_work()
         return;
       }
 
-   query_chains ((void **) & chain, & dummy, & dummy);
+   query_chains (& chain, NULL, NULL);
 
    while (chain != NULL) {
         if (strcmp (chain->name, port_name) == 0) {

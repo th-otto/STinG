@@ -12,13 +12,7 @@
 #define MODULE_DRIVER    "MODULE_LAYER"
 #endif
 
-
-
-/*--------------------------------------------------------------------------*/
-
-
-#define  MAX_HANDLE    64    /* Number of handles assigned by PRTCL_request */
-
+#include "port.h"
 
 
 /*--------------------------------------------------------------------------*/
@@ -29,8 +23,8 @@
  */
 
 typedef  struct lay_desc {
-    char             *name;          /* Name of layer                       */
-    char             *version;       /* Version of layer in xx.yy format    */
+    const char       *name;          /* Name of layer                       */
+    const char       *version;       /* Version of layer in xx.yy format    */
     uint32           flags;          /* Private data                        */
     uint16           date;           /* Compile date in GEMDOS format       */
     char             *author;        /* Name of programmer                  */
@@ -70,31 +64,52 @@ typedef  struct cn_funcs {
 #ifndef MOD_DRIVER
 #define MOD_DRIVER
 
+#undef set_dgram_ttl
+#undef check_dgram_ttl
+#undef load_routing_table
+#undef set_sysvars
+#undef query_chains
+#undef IP_send
+#undef IP_fetch
+#undef IP_handler
+#undef IP_discard
+#undef PRTCL_announce
+#undef PRTCL_get_parameters
+#undef PRTCL_request
+#undef PRTCL_release
+#undef PRTCL_lookup
+#undef TIMER_call
+#undef TIMER_now
+#undef TIMER_elapsed
+#undef protect_exec
+#undef get_route_entry
+#undef set_route_entry
+
 typedef  struct stx {
-    char *     module;      /* Specific string that can be searched for     */
-    char *     author;      /* Any string                                   */
-    char *     version;     /* Format `00.00' Version:Revision              */
-    void       cdecl  (* set_dgram_ttl) (IP_DGRAM *);
-    int16      cdecl  (* check_dgram_ttl) (IP_DGRAM *);
+    const char * module;      /* Specific string that can be searched for     */
+    const char * author;      /* Any string                                   */
+    const char * version;     /* Format `00.00' Version:Revision              */
+    void       cdecl  (* set_dgram_ttl) (IP_DGRAM *datagram);
+    int16      cdecl  (* check_dgram_ttl) (IP_DGRAM *datagram);
     int16      cdecl  (* load_routing_table) (void);
-    int32      cdecl  (* set_sysvars) (int16, int16);
-    void       cdecl  (* query_chains) (void **, void **, void **);
+    int32      cdecl  (* set_sysvars) (int16 new_act, int16 new_frac);
+    void       cdecl  (* query_chains) (PORT ** port, DRIVER ** drv, LAYER ** layer);
     int16      cdecl  (* IP_send) (uint32, uint32, uint8, uint16, uint8, uint8, uint16,
                                    void *, uint16, void *, uint16);
-    IP_DGRAM * cdecl  (* IP_fetch) (int16);
-    int16      cdecl  (* IP_handler) (int16, int16 cdecl (*) (IP_DGRAM *), int16);
-    void       cdecl  (* IP_discard) (IP_DGRAM *, int16);
-    int16      cdecl  (* PRTCL_announce) (int16);
-    int16      cdecl  (* PRTCL_get_parameters) (uint32, uint32 *, int16 *, uint16 *);
-    int16      cdecl  (* PRTCL_request) (void *, CN_FUNCS *);
-    void       cdecl  (* PRTCL_release) (int16);
+    IP_DGRAM * cdecl  (* IP_fetch) (int16 prtcl);
+    int16      cdecl  (* IP_handler) (int16 prtctl, int16 cdecl (*handleler) (IP_DGRAM *), int16 flag);
+    void       cdecl  (* IP_discard) (IP_DGRAM *datagram, int16 all_flag);
+    int16      cdecl  (* PRTCL_announce) (int16 protocol);
+    int16      cdecl  (* PRTCL_get_parameters) (uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu);
+    int16      cdecl  (* PRTCL_request) (void *anonymous, CN_FUNCS *cn_functions);
+    void       cdecl  (* PRTCL_release) (int16 handle);
     void *     cdecl  (* PRTCL_lookup) (int16, CN_FUNCS *);
-    int16      cdecl  (* TIMER_call) (void cdecl (*) (void), int16);
+    int16      cdecl  (* TIMER_call) (int16 cdecl (*handler) (IP_DGRAM *), int16);
     int32      cdecl  (* TIMER_now) (void);
-    int32      cdecl  (* TIMER_elapsed) (int32);
-    int32      cdecl  (* protect_exec) (void *, int32 cdecl (*) (void *));
-    int16      cdecl  (* get_route_entry) (int16, uint32 *, uint32 *, void **, uint32 *);
-    int16      cdecl  (* set_route_entry) (int16, uint32, uint32, void *, uint32);
+    int32      cdecl  (* TIMER_elapsed) (int32 then);
+    int32      cdecl  (* protect_exec) (void *parameter, int32 cdecl (*handler) (void *));
+    int16      cdecl  (* get_route_entry) (int16 no, uint32 *tmplt, uint32 *mask, PORT **port, uint32 *gateway);
+    int16      cdecl  (* set_route_entry) (int16 no, uint32 tmplt, uint32 mask, PORT *port, uint32 gateway);
  } STX;
 
 extern STX *stx;

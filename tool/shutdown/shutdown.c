@@ -106,7 +106,7 @@ void  ports_off()
    PORT  *port;
    int   flag = FALSE;
 
-   query_chains ((void **) & port, NULL, NULL);
+   query_chains (& port, NULL, NULL);
 
    while (port) {
         if (query_port (port->name) == TRUE) {
@@ -141,7 +141,7 @@ long  remove_mem()
 
    old_proc = *process;
 
-   query_chains (NULL, (void **) & driver, (void **) & layer);
+   query_chains (NULL, & driver, & layer);
 
    sting = (BASPAG *) sting_drivers->sting_basepage;
    conf  = (CONFIG *) sting_drivers->cfg;

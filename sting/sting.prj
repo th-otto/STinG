@@ -1,0 +1,32 @@
+sting.prg
+
+.C[-I..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=4096]
+
+=
+cauto.o
+
+api.c
+fragm.c
+icmp.c
+install.c
+ip.c
+kernel.c
+port.c
+protocol.c
+setup.c
+
+thread.s [-S]
+
+pctoslib.lib
+pcstdlib.lib

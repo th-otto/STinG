@@ -5,127 +5,21 @@
  *      Included into all STinG source code files
  */
 
+#include "transprt.h"
+#include "port.h"
+#include "layer.h"
 
+#ifndef UNUSED
+#define UNUSED(x) ((void)(x))
+#endif
 
-#define  FALSE       0
-#define  TRUE        1
 
 #define  TCP_DRIVER_VERSION    "01.20"
 #define  STX_LAYER_VERSION     "01.05"
 #define  CFG_NUM               100
-#define  MAX_HANDLE            32
 #define  LOOPBACK              0x7f000001L
 
-
-#pragma warn -par
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   Protocols.
- */
-
-#define  ICMP        1        /* IP assigned number for ICMP                */
-#define  TCP         6        /* IP assigned number for TCP                 */
-#define  UDP        17        /* IP assigned number for UDP                 */
-
-
-/*
- *   A concession to portability ...
- */
-
-typedef           char   int8;        /*   Signed  8 bit (char)             */
-typedef  unsigned char  uint8;        /* Unsigned  8 bit (byte, octet)      */
-typedef           int    int16;       /*   Signed 16 bit (int)              */
-typedef  unsigned int   uint16;       /* Unsigned 16 bit (word)             */
-typedef           long   int32;       /*   Signed 32 bit                    */
-typedef  unsigned long  uint32;       /* Unsigned 32 bit (longword)         */
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   Network Data Block.  For data delivery.
- */
-
-typedef  struct ndb {
-    char        *ptr;       /* Pointer to base of block. (For free() ;-)    */
-    char        *ndata;     /* Pointer to next data to deliver              */
-    uint16      len;        /* Length of remaining data.                    */
-    struct ndb  *next;      /* Next NDB in chain or NULL                    */
- } NDB;
-
-
-/*
- *   Addressing information block.
- */
-
-typedef  struct cab {
-    uint16      lport;      /* Local  port        (ie: local machine)       */
-    uint16      rport;      /* Remote port        (ie: remote machine)      */
-    uint32      rhost;      /* Remote IP address  (ie: remote machine)      */
-    uint32      lhost;      /* Local  IP address  (ie: local machine)       */
- } CAB;
-
-
-/*
- *   Connection information block.
- */
-
-typedef  struct cib {
-    uint16      protocol;   /* TCP or UDP or ... 0 means CIB is not in use  */
-    CAB         address;    /* Adress information                           */
-    uint16      status;     /* Net status. 0 means normal                   */
- } CIB;
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   IP packet header.
- */
-
-typedef  struct ip_header {
-    unsigned  version   : 4;    /* IP Version                               */
-    unsigned  hd_len    : 4;    /* Internet Header Length                   */
-    unsigned  tos       : 8;    /* Type of Service                          */
-    uint16    length;           /* Total of all header, options and data    */
-    uint16    ident;            /* Identification for fragmentation         */
-    unsigned  reserved  : 1;    /* Reserved : Must be zero                  */
-    unsigned  dont_frg  : 1;    /* Don't fragment flag                      */
-    unsigned  more_frg  : 1;    /* More fragments flag                      */
-    unsigned  frag_ofst : 13;   /* Fragment offset                          */
-    uint8     ttl;              /* Time to live                             */
-    uint8     protocol;         /* Protocol                                 */
-    uint16    hdr_chksum;       /* Header checksum                          */
-    uint32    ip_src;           /* Source IP address                        */
-    uint32    ip_dest;          /* Destination IP address                   */
- } IP_HDR;
-
-
-/*
- *   Internal IP packet representation.
- */
-
-typedef  struct ip_packet {
-    IP_HDR    hdr;              /* Header of IP packet                      */
-    void      *options;         /* Options data block                       */
-    int16     opt_length;       /* Length of options data block             */
-    void      *pkt_data;        /* IP packet data block                     */
-    int16     pkt_length;       /* Length of IP packet data block           */
-    uint32    timeout;          /* Timeout of packet life                   */
-    uint32    ip_gateway;       /* Gateway for forwarding this packet       */
-    struct port_desc  *recvd;   /* Receiving port                           */
-    struct ip_packet  *next;    /* Next IP packet in IP packet queue        */
- } IP_DGRAM;
-
+#define  MAX_HANDLE    64    /* Number of handles assigned by PRTCL_request */
 
 /*
  *   Defragmentation queue entries.
@@ -157,85 +51,6 @@ typedef  struct protocol_entry {
 
 
 /*
- *   Internal port descriptor.
- */
-
-typedef  struct port_desc {
-    char      *name;            /* Name of port                             */
-    int16     type;             /* Type of port                             */
-    int16     active;           /* Flag for port active or not              */
-    uint32    flags;            /* Type dependent operational flags         */
-    uint32    ip_addr;          /* IP address of this network adapter       */
-    uint32    sub_mask;         /* Subnet mask of attached network          */
-    int16     mtu;              /* Maximum packet size to go through        */
-    int16     max_mtu;          /* Maximum allowed value for mtu            */
-    int32     stat_sd_data;     /* Statistics of sent data                  */
-    IP_DGRAM  *send;            /* Link to first entry in send queue        */
-    int32     stat_rcv_data;    /* Statistics of received data              */
-    IP_DGRAM  *receive;         /* Link to first entry in receive queue     */
-    int16     stat_dropped;     /* Statistics of dropped datagrams          */
-    struct drv_desc   *driver;  /* Driver program to handle this port       */
-    struct port_desc  *next;    /* Next port in port chain                  */
- } PORT;
-
-
-/*
- *   Link Type Definitions.
- */
-
-#define  L_INTERNAL   0           /* Internal pseudo port                   */
-#define  L_SER_PTP    1           /*   Serial point to point type link      */
-#define  L_PAR_PTP    2           /* Parallel point to point type link      */
-#define  L_SER_BUS    3           /*   Serial            bus type link      */
-#define  L_PAR_BUS    4           /* Parallel            bus type link      */
-#define  L_SER_RING   5           /*   Serial           ring type link      */
-#define  L_PAR_RING   6           /* Parallel           ring type link      */
-#define  L_MASQUE     7           /*   Masquerading pseudo port             */
-
-
-/*
- *   Port driver descriptor.
- */
-
-typedef  struct drv_desc {
-    int16 cdecl  (* set_state) (PORT *, int16);       /* Setup and shutdown */
-    int16 cdecl  (* cntrl) (PORT *, uint32, int16);   /* Control functions  */
-    void  cdecl  (* send) (PORT *);                   /* Send packets       */
-    void  cdecl  (* receive) (PORT *);                /* Receive packets    */
-    char             *name;     /* Name of driver                           */
-    char             *version;  /* Version of driver in "xx.yy" format      */
-    uint16           date;      /* Compile date in GEMDOS format            */
-    char             *author;   /* Name of programmer                       */
-    struct drv_desc  *next;     /* Next driver in driver chain              */
-    BASPAG           *basepage; /* Basepage of this module                  */
- } DRIVER;
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   High level protocol module descriptor.
- */
-
-typedef  struct lay_desc {
-    char             *name;          /* Name of layer                       */
-    char             *version;       /* Version of layer in xx.yy format    */
-    uint32           flags;          /* Private data                        */
-    uint16           date;           /* Compile date in GEMDOS format       */
-    char             *author;        /* Name of programmer                  */
-    int16            stat_dropped;   /* Statistics of dropped data units    */
-    struct lay_desc  *next;          /* Next layer in driver chain          */
-    BASPAG           *basepage;      /* Basepage of this module             */
- } LAYER;
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
  *   Entry definition for function chain.
  */
 
@@ -243,25 +58,6 @@ typedef  struct func_list {
     int16    cdecl    (* handler) (IP_DGRAM *);
     struct func_list  *next;
  } FUNC_LIST;
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   CN functions structure for TCP and UDP.
- */
-
-typedef  struct cn_funcs {
-    int16  cdecl  (* CNkick) (void *);
-    int16  cdecl  (* CNbyte_count) (void *);
-    int16  cdecl  (* CNget_char) (void *);
-    NDB *  cdecl  (* CNget_NDB) (void *);
-    int16  cdecl  (* CNget_block) (void *, void *, int16);
-    CIB *  cdecl  (* CNgetinfo) (void *);
-    int16  cdecl  (* CNgets) (void *, char *, int16, char);
- } CN_FUNCS;
 
 
 
@@ -353,60 +149,6 @@ typedef  struct route_entry {
 
 
 /*
- *   Handler flag values.
- */
-
-#define  HNDLR_SET        0         /* Set new handler if space             */
-#define  HNDLR_FORCE      1         /* Force new handler to be set          */
-#define  HNDLR_REMOVE     2         /* Remove handler entry                 */
-#define  HNDLR_QUERY      3         /* Inquire about handler entry          */
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   Buffer for inquiring port names.
- */
-
-typedef  struct pnta {
-    PORT    *opaque;            /* PORT for current name                    */
-    int16   name_len;           /* Length of port name buffer               */
-    char    *port_name;         /* Buffer address                           */
- } PNTA;
-
-
-#define  CTL_KERN_FIRST_PORT    ('K' << 8 | 'F')    /* Query first port     */
-#define  CTL_KERN_NEXT_PORT     ('K' << 8 | 'N')    /* Query following port */
-#define  CTL_KERN_FIND_PORT     ('K' << 8 | 'G')    /* Port struct. address */
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   Other cntrl_port() opcodes.
- */
-
-#define  CTL_GENERIC_SET_IP     ('G' << 8 | 'H')    /* Set IP address       */
-#define  CTL_GENERIC_GET_IP     ('G' << 8 | 'I')    /* Get IP address       */
-#define  CTL_GENERIC_SET_MASK   ('G' << 8 | 'L')    /* Set subnet mask      */
-#define  CTL_GENERIC_GET_MASK   ('G' << 8 | 'M')    /* Get subnet mask      */
-#define  CTL_GENERIC_SET_MTU    ('G' << 8 | 'N')    /* Set line MTU         */
-#define  CTL_GENERIC_GET_MTU    ('G' << 8 | 'O')    /* Get line MTU         */
-#define  CTL_GENERIC_GET_MMTU   ('G' << 8 | 'P')    /* Get maximum MTU      */
-#define  CTL_GENERIC_GET_TYPE   ('G' << 8 | 'T')    /* Get port type        */
-#define  CTL_GENERIC_GET_STAT   ('G' << 8 | 'S')    /* Get statistics       */
-#define  CTL_GENERIC_CLR_STAT   ('G' << 8 | 'C')    /* Clear statistics     */
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
  *   Miscellaneous Definitions.
  */
 
@@ -416,47 +158,177 @@ typedef  struct pnta {
 
 /*--------------------------------------------------------------------------*/
 
+/*
+ * undef accessor macros from public headers
+ */
+#undef KRmalloc
+#undef KRfree
+#undef KRgetfree
+#undef KRrealloc
+#undef get_err_text
+#undef getvstr
+#undef carrier_detect
+#undef TCP_open
+#undef TCP_close
+#undef TCP_send
+#undef TCP_wait_state
+#undef TCP_ack_wait
+#undef UDP_open
+#undef UDP_close
+#undef UDP_send
+#undef CNkick
+#undef CNbyte_count
+#undef CNget_char
+#undef CNget_NDB
+#undef CNget_block
+#undef CNgetinfo
+#undef CNgets
+#undef housekeep
+#undef resolve
+#undef ser_disable
+#undef ser_enable
+#undef set_flag
+#undef clear_flag
+#undef on_port
+#undef off_port
+#undef setvstr
+#undef query_port
+#undef ICMP_send
+#undef ICMP_handler
+#undef ICMP_discard
+#undef TCP_info
+#undef cntrl_port
+
+#undef set_dgram_ttl
+#undef check_dgram_ttl
+#undef load_routing_table
+#undef set_sysvars
+#undef query_chains
+#undef IP_send
+#undef IP_fetch
+#undef IP_handler
+#undef IP_discard
+#undef PRTCL_announce
+#undef PRTCL_get_parameters
+#undef PRTCL_request
+#undef PRTCL_release
+#undef PRTCL_lookup
+#undef TIMER_call
+#undef TIMER_now
+#undef TIMER_elapsed
+#undef protect_exec
+#undef get_route_entry
+#undef set_route_entry
+
+
+extern CONFIG conf;
+extern PORT my_port;
+extern IP_PRTCL ip[];
+extern uint32 sting_clock;
+extern void *icmp;
+extern char sting_path[];
+
+typedef struct mem_header
+{
+	struct mem_header *mem_ptr;
+	uint32 size;
+} MEM_HDR;
+
+extern MEM_HDR *memory;
+
+typedef struct cn_desc
+{
+	int16 handle;
+	void *anonymous;
+	CN_FUNCS *funcs;
+	struct cn_desc *next_desc;
+} CN_DESC;
+
+
+extern CN_DESC *cn_array[MAX_HANDLE];
+
+
+
+int16 cdecl setvstr(const char *name, const char *value);
+const char *cdecl getvstr(const char *name);
+
+int32 cdecl set_sysvars(int16 new_act, int16 new_frac);
+void cdecl query_chains(PORT ** port, DRIVER ** drv, LAYER ** layer);
+const char *cdecl get_error_text(int16 error_code);
+
+int16 cdecl set_flag(int16 flag);
+void cdecl clear_flag(int16 flag);
+int32 cdecl protect_exec(void *parameter, int32 cdecl(*code) (void *));
+
+int16 cdecl on_port(const char *port);
+void cdecl off_port(const char *port);
+int16 cdecl query_port(const char *port);
+int16 cdecl cntrl_port(const char *port, uint32 argument, int16 code);
+
+void cdecl set_dgram_ttl(IP_DGRAM * datagram);
+int16 cdecl check_dgram_ttl(IP_DGRAM * datagram);
+
+int16 cdecl get_route_entry(int16 no, uint32 * tmplt, uint32 * mask, PORT ** port, uint32 * gway);
+int16 cdecl set_route_entry(int16 no, uint32 tmplt, uint32 mask, PORT * port, uint32 gway);
+int16 cdecl routing_table(void);
+int16 cdecl IP_send(uint32, uint32, uint8, uint16, uint8, uint8, uint16, void *, uint16, void *, uint16);
+IP_DGRAM *cdecl IP_fetch(int16 prtcl);
+int16 cdecl IP_handler(int16 prtcl, int16 cdecl(*hndlr) (IP_DGRAM *), int16 flag);
+void cdecl IP_discard(IP_DGRAM * datagram, int16 all_flag);
+
+extern LAYER icmp_desc;
+
+int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, void *data, uint16 len);
+int16 cdecl ICMP_handler(int16 cdecl(*hndlr) (IP_DGRAM *), int16 flag);
+void cdecl ICMP_discard(IP_DGRAM * datagram);
+
+long init_cookie(void);
+void install(void);
+
+uint16 check_sum(IP_HDR * header, void *options, int16 length);
+uint16 lock_exec(uint16 status);
+int16 check_sequence(uint32 first, uint32 second, int32 *diff);
+
+int16 KRinitialize(int32 size);
+void *cdecl KRmalloc(int32 size);
+void cdecl KRfree(void *mem_block);
+int32 cdecl KRgetfree(int16 block_flag);
+void *cdecl KRrealloc(void *mem_block, int32 new_size);
+
+
+int16 handle_lookup(int16 connec, void **anonymous, CN_FUNCS **entry);
+int16 cdecl PRTCL_announce(int16 protocol);
+int16 cdecl PRTCL_get_parameters(uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu);
+int16 cdecl PRTCL_request(void *anonymous, CN_FUNCS * cn_functions);
+void cdecl PRTCL_release(int16 handle);
+void *cdecl PRTCL_lookup(int16 handle, CN_FUNCS * cn_functions);
+
+int16 cdecl TIMER_call(int16 cdecl (*handler)(IP_DGRAM *), int16 flag);
+int32 cdecl TIMER_now(void);
+int32 cdecl TIMER_elapsed(int32 then);
+int16 reassembly(IP_DGRAM **datagram, int16 protocol);
+int16 fragment(IP_DGRAM **datagram, uint16 mtu);
+
+int16 cdecl ICMP_process(IP_DGRAM *dgram);
+int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple);
+
+
+PORT *route_it(uint32 ip_destination, uint32 *gateway);
+void init_ip(void);
+void cdecl my_send(PORT *port);
+void cdecl my_receive(PORT *port);
+
+void init_ports(void);
+
 
 /*
- *   Error return values.
+ * from thread.s
  */
+extern short fraction;
+extern short active;
 
-#define  E_NORMAL         0     /* No error occured ...                     */
-#define  E_OBUFFULL      -1     /* Output buffer is full                    */
-#define  E_NODATA        -2     /* No data available                        */
-#define  E_EOF           -3     /* EOF from remote                          */
-#define  E_RRESET        -4     /* Reset received from remote               */
-#define  E_UA            -5     /* Unacceptable packet received, reset      */
-#define  E_NOMEM         -6     /* Something failed due to lack of memory   */
-#define  E_REFUSE        -7     /* Connection refused by remote             */
-#define  E_BADSYN        -8     /* A SYN was received in the window         */
-#define  E_BADHANDLE     -9     /* Bad connection handle used.              */
-#define  E_LISTEN        -10    /* The connection is in LISTEN state        */
-#define  E_NOCCB         -11    /* No free CCB's available                  */
-#define  E_NOCONNECTION  -12    /* No connection matches this packet (TCP)  */
-#define  E_CONNECTFAIL   -13    /* Failure to connect to remote port (TCP)  */
-#define  E_BADCLOSE      -14    /* Invalid TCP_close() requested            */
-#define  E_USERTIMEOUT   -15    /* A user function timed out                */
-#define  E_CNTIMEOUT     -16    /* A connection timed out                   */
-#define  E_CANTRESOLVE   -17    /* Can't resolve the hostname               */
-#define  E_BADDNAME      -18    /* Domain name or dotted dec. bad format    */
-#define  E_LOSTCARRIER   -19    /* The modem disconnected                   */
-#define  E_NOHOSTNAME    -20    /* Hostname does not exist                  */
-#define  E_DNSWORKLIMIT  -21    /* Resolver Work limit reached              */
-#define  E_NONAMESERVER  -22    /* No nameservers could be found for query  */
-#define  E_DNSBADFORMAT  -23    /* Bad format of DS query                   */
-#define  E_UNREACHABLE   -24    /* Destination unreachable                  */
-#define  E_DNSNOADDR     -25    /* No address records exist for host        */
-#define  E_NOROUTINE     -26    /* Routine unavailable                      */
-#define  E_LOCKED        -27    /* Locked by another application            */
-#define  E_FRAGMENT      -28    /* Error during fragmentation               */
-#define  E_TTLEXCEED     -29    /* Time To Live of an IP packet exceeded    */
-#define  E_PARAMETER     -30    /* Problem with a parameter                 */
-#define  E_BIGBUF        -31    /* Input buffer is too small for data       */
-#define  E_FNAVAIL       -32    /* Function not available                   */
-#define  E_LASTERROR      32    /* ABS of last error code in this list      */
-
-
-
-/*--------------------------------------------------------------------------*/
-
+void install_PrivVio(void);
+void uninst_PrivVio(void);
+void clean_up(void);
+void poll_ports(void);
+void install_timer(void);

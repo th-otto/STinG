@@ -26,7 +26,8 @@
              .export   install_timer             ;" Function for installing timer
              .export   active                    ;" Flag for being active
              .export   fraction                  ;" Time between thread calls
-             .export   sting_clock               ;" STinG internal clock
+
+             .xref     sting_clock               ;" STinG internal clock
 
 
 ;-------------------------------------------------------------------------------------)
@@ -268,7 +269,7 @@ install_timer:
 old_200_Hz:  .ds.l   1                           ;" Old 200 Hz timer vector
 
 my_200_Hz:
-             add.l   #5, sting_clock             ;" Count stack internal clock
+             add.l   #5,sting_clock              ;" Count stack internal clock
              cmp.l   #86400000, sting_clock      ;" Test for one day [ms]
              bmi     clk_ok                      ;" If the day has elapsed, then
              sub.l   #86400000, sting_clock      ;" Reduce by one day [ms]
@@ -303,7 +304,6 @@ cleaning:    .dc.w   1                           ;" Counter for Cleaning up
 tm_sema:     .dc.w   0                           ;" Execution semaphore
 tm_exec:     .dc.w   0                           ;" Execution flags
 tm_busy:     .dc.w   0                           ;" Flag for been busy
-sting_clock: .dc.l   0                           ;" Internal clock
 sys_stack:   .dc.l   0                           ;" Stack address for STinG
 interupt:    .ds.w   1                           ;" Interupt level of code
 cpu_state:   .ds.l   16                          ;" Space for CPU registers

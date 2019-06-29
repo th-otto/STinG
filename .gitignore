@@ -3,3 +3,5 @@
 *.app
 *.o
 *.cpx
+aaa.cfg
+*.pdb

@@ -90,7 +90,7 @@ int16  install()
    PORT    *ports;
    DRIVER  *driver;
 
-   query_chains ((void **) & ports, (void **) & driver, NULL);
+   query_chains (& ports, & driver, NULL);
 
    (my_port.driver = & my_driver)->basepage = _BasPag;
 

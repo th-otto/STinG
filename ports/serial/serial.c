@@ -160,7 +160,7 @@ int  install()
 
    has_drv_u = (int) Supexec (find_drive_u);
 
-   query_chains ((void **) & ports, (void **) & driver, NULL);
+   query_chains (& ports, & driver, NULL);
 
    my_driver.basepage = _BasPag;
 

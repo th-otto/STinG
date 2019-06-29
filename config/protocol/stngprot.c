@@ -125,7 +125,7 @@ CPX_PARAMS  *para;
    if (tpl == (TPL *) NULL || stx == (STX *) NULL)
         return (NULL);
 
-   query_chains (NULL, NULL, (void **) & my_layers);
+   query_chains (NULL, NULL, & my_layers);
 
    for (count = 0; count < MAX_PRTCL; count++)
         layers[count] = NULL;

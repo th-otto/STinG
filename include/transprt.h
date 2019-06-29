@@ -35,7 +35,7 @@ typedef unsigned long  uint32;        /* Unsigned 32 bit (longword)         */
 
 
 #ifdef __PUREC__
-/* #define  cdecl cdecl */
+/* #define cdecl cdecl */
 #endif
 
 #ifdef LATTICE
@@ -58,16 +58,16 @@ typedef unsigned long  uint32;        /* Unsigned 32 bit (longword)         */
 
 
 typedef struct drv_header {                 /* Header part of TPL structure */
-    char *module;           /* Specific string that can be searched for     */
-    char *author;           /* Any string                                   */
-    char *version;          /* Format `00.00' Version:Revision              */
+    const char *module;           /* Specific string that can be searched for     */
+    const char *author;           /* Any string                                   */
+    const char *version;          /* Format `00.00' Version:Revision              */
  } DRV_HDR;
 
 
 typedef struct drv_list {
     char      magic[10];                    /* Magic string, def'd as MAGIC */
-    DRV_HDR * cdecl (*get_dftab) (char *);  /* Get Driver Function Table    */
-    int16     cdecl (*ETM_exec) (char *);   /* Execute a STinG module       */
+    DRV_HDR * cdecl (*get_dftab) (const char *);  /* Get Driver Function Table    */
+    int16     cdecl (*ETM_exec) (const char *);   /* Execute a STinG module       */
     void      *cfg;                         /* Config structure             */
     BASPAG    *sting_basepage;              /* STinG basepage address       */
  } DRV_LIST;
@@ -79,7 +79,6 @@ extern DRV_LIST *drivers;
 #define ETM_exec(x)     (*drivers->ETM_exec)(x)
 
 #define TRANSPORT_DRIVER    "TRANSPORT_TCPIP"
-#define TCP_DRIVER_VERSION  "01.00"
 
 
 
@@ -139,7 +138,7 @@ typedef struct tcpib {      /* TCP Information Block                        */
  */
 
 typedef  struct pnta {
-    uint32  opaque;             /* Kernel internal data                     */
+    void    *opaque;            /* Kernel internal data                     */
     int16   name_len;           /* Length of port name buffer               */
     char    *port_name;         /* Buffer address                           */
  } PNTA;
@@ -256,7 +255,7 @@ typedef  struct ip_packet {
 
 
 /*
- *   Input queue structure.
+ *   Network Data Block.  For data delivery.
  */
 
 typedef struct ndb {        /* Network Data Block.  For data delivery       */
@@ -299,46 +298,46 @@ typedef struct cib {        /* Connection Information Block                 */
  */
 
 typedef  struct tpl  {
-    char *     module;      /* Specific string that can be searched for     */
-    char *     author;      /* Any string                                   */
-    char *     version;     /* Format `00.00' Version:Revision              */
+    const char *     module;      /* Specific string that can be searched for     */
+    const char *     author;      /* Any string                                   */
+    const char *     version;     /* Format `00.00' Version:Revision              */
     void *     cdecl  (* KRmalloc) (int32);
     void       cdecl  (* KRfree) (void *);
     int32      cdecl  (* KRgetfree) (int16);
     void *     cdecl  (* KRrealloc) (void *, int32);
-    char *     cdecl  (* get_err_text) (int16);
-    char *     cdecl  (* getvstr) (char *);
+    const char *     cdecl  (* get_err_text) (int16);
+    const char *     cdecl  (* getvstr) (const char *);
     int16      cdecl  (* carrier_detect) (void);
     int16      cdecl  (* TCP_open) (uint32, uint16, uint16, uint16);
     int16      cdecl  (* TCP_close) (int16, int16, int16 *);
-    int16      cdecl  (* TCP_send) (int16, void *, int16);
+    int16      cdecl  (* TCP_send) (int16, const void *, int16);
     int16      cdecl  (* TCP_wait_state) (int16, int16, int16);
     int16      cdecl  (* TCP_ack_wait) (int16, int16);
     int16      cdecl  (* UDP_open) (uint32, uint16);
     int16      cdecl  (* UDP_close) (int16);
-    int16      cdecl  (* UDP_send) (int16, void *, int16);
+    int16      cdecl  (* UDP_send) (int16, const void *, int16);
     int16      cdecl  (* CNkick) (int16);
     int16      cdecl  (* CNbyte_count) (int16);
     int16      cdecl  (* CNget_char) (int16);
     NDB *      cdecl  (* CNget_NDB) (int16);
     int16      cdecl  (* CNget_block) (int16, void *, int16);
     void       cdecl  (* housekeep) (void);
-    int16      cdecl  (* resolve) (char *, char **, uint32 *, int16);
+    int16      cdecl  (* resolve) (const char *, char **, uint32 *, int16);
     void       cdecl  (* ser_disable) (void);
     void       cdecl  (* ser_enable) (void);
     int16      cdecl  (* set_flag) (int16);
     void       cdecl  (* clear_flag) (int16);
     CIB *      cdecl  (* CNgetinfo) (int16);
-    int16      cdecl  (* on_port) (char *);
-    void       cdecl  (* off_port) (char *);
-    int16      cdecl  (* setvstr) (char *, char *);
-    int16      cdecl  (* query_port) (char *);
+    int16      cdecl  (* on_port) (const char *);
+    void       cdecl  (* off_port) (const char *);
+    int16      cdecl  (* setvstr) (const char *, const char *);
+    int16      cdecl  (* query_port) (const char *);
     int16      cdecl  (* CNgets) (int16, char *, int16, char);
     int16      cdecl  (* ICMP_send) (uint32, uint8, uint8, void *, uint16);
     int16      cdecl  (* ICMP_handler) (int16 cdecl (*) (IP_DGRAM *), int16);
     void       cdecl  (* ICMP_discard) (IP_DGRAM *);
     int16      cdecl  (* TCP_info) (int16, TCPIB *);
-    int16      cdecl  (* cntrl_port) (char *, uint32, int16);
+    int16      cdecl  (* cntrl_port) (const char *, uint32, int16);
  } TPL;
 
 extern TPL *tpl;

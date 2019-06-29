@@ -149,7 +149,7 @@ int16	install()
 
 	/* Fetch address of high level protocol layer chain. */
 
-	query_chains (NULL, NULL, (void **) & layers);
+	query_chains (NULL, NULL, & layers);
 
 	/* Find last entry of high protocol layer chain. */
 

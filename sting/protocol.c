@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : API and IP kernel package                             */
@@ -17,255 +16,210 @@
 #include "globdefs.h"
 
 
-typedef  struct cn_desc {
-           int16           handle;
-           void            *anonymous;
-           CN_FUNCS        *funcs;
-           struct cn_desc  *next_desc;
-     } CN_DESC;
 
+CN_DESC *cn_array[MAX_HANDLE];
+uint32 sting_clock; /* Internal clock */
 
-uint16         lock_exec (uint16 status);
-
-PORT *         route_it (uint32 ip_destination, uint32 *gateway);
-
-void *  cdecl  KRmalloc (int32 size);
-void    cdecl  KRfree (void *mem_block);
-
-int16          do_lookup (int16 connec, void **anonymous, CN_FUNCS **entry);
-int16          handle_lookup (int16 connec, void **anonymous, CN_FUNCS **entry);
-int16   cdecl  PRTCL_announce (int16 protocol);
-int16   cdecl  PRTCL_get_parameters (uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu);
-int16   cdecl  PRTCL_request (void *anonymous, CN_FUNCS *cn_functions);
-void    cdecl  PRTCL_release (int16 handle);
-void *  cdecl  PRTCL_lookup (int16 handle, CN_FUNCS *cn_functions);
-int16   cdecl  TIMER_call (int16 cdecl handler (IP_DGRAM *), int16 flag);
-int32   cdecl  TIMER_now (void);
-int32   cdecl  TIMER_elapsed (int32 then);
-
-
-extern CONFIG    conf;
-extern IP_PRTCL  ip[];
-extern int32     sting_clock;
-
-CN_DESC  *cn_array[MAX_HANDLE];
-int16    next_handle = 0;
+static int16 next_handle = 0;
 
 
 
-int16  do_lookup (connec, anonymous, entry)
-
-int16     connec;
-void      **anonymous;
-CN_FUNCS  **entry;
-
+static int16 do_lookup(int16 connec, void **anonymous, CN_FUNCS **entry)
 {
-   CN_DESC  *walk;
+	CN_DESC *walk;
 
-   walk = cn_array[connec & (MAX_HANDLE - 1)];
+	walk = cn_array[connec & (MAX_HANDLE - 1)];
 
-   while (walk) {
-        if (walk->handle == connec) {
-             *anonymous = walk->anonymous;  *entry = walk->funcs;
-             return (TRUE);
-           }
-        walk = walk->next_desc;
-      }
+	while (walk)
+	{
+		if (walk->handle == connec)
+		{
+			*anonymous = walk->anonymous;
+			*entry = walk->funcs;
+			return TRUE;
+		}
+		walk = walk->next_desc;
+	}
 
-   return (FALSE);
- }
+	return FALSE;
+}
 
 
-int16  handle_lookup (connec, anonymous, entry)
-
-int16     connec;
-void      **anonymous;
-CN_FUNCS  **entry;
-
+int16 handle_lookup(int16 connec, void **anonymous, CN_FUNCS **entry)
 {
-   uint16  status;
-   int16   result;
+	uint16 status;
+	int16 result;
 
-   status = lock_exec (0);
-   result = do_lookup (connec, anonymous, entry);
-   lock_exec (status);
+	status = lock_exec(0);
+	result = do_lookup(connec, anonymous, entry);
+	lock_exec(status);
 
-   return (result);
- }
+	return result;
+}
 
 
-int16  cdecl  PRTCL_announce (protocol)
-
-int16  protocol;
-
+int16 cdecl PRTCL_announce(int16 protocol)
 {
-   int16  old_value;
+	int16 old_value;
 
-   if (protocol <= 1 || 255 < protocol)
-        return (E_PARAMETER);
+	if (protocol <= 1 || 255 < protocol)
+		return E_PARAMETER;
 
-   old_value = ip[protocol].active;
-   ip[protocol].active = TRUE;
+	old_value = ip[protocol].active;
+	ip[protocol].active = TRUE;
 
-   return (old_value);
- }
+	return old_value;
+}
 
 
-int16  cdecl  PRTCL_get_parameters (rem_host, src_ip, ttl, mtu)
-
-uint32  rem_host, *src_ip;
-int16   *ttl;
-uint16  *mtu;
-
+int16 cdecl PRTCL_get_parameters(uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu)
 {
-   PORT  *port;
+	PORT *port;
 
-   if ((long) (port = route_it (rem_host, NULL)) <= 0)
-        return (E_UNREACHABLE);
+	if ((long) (port = route_it(rem_host, NULL)) <= 0)
+		return E_UNREACHABLE;
 
-   if (src_ip)   *src_ip = port->ip_addr;
-   if (ttl)      *ttl    = conf.ttl;
-   if (mtu)      *mtu    = port->mtu;
+	if (src_ip)
+		*src_ip = port->ip_addr;
+	if (ttl)
+		*ttl = conf.ttl;
+	if (mtu)
+		*mtu = port->mtu;
 
-   return (E_NORMAL);
- }
+	return E_NORMAL;
+}
 
 
-int16  cdecl  PRTCL_request (anonymous, cn_functions)
-
-void      *anonymous;
-CN_FUNCS  *cn_functions;
-
+int16 cdecl PRTCL_request(void *anonymous, CN_FUNCS *cn_functions)
 {
-   CN_DESC   *new;
-   CN_FUNCS  *cn_dummy;
-   void      *ano_dummy;
-   uint16    status;
+	CN_DESC *new;
+	CN_FUNCS *cn_dummy;
+	void *ano_dummy;
+	uint16 status;
 
-   if ((new = (CN_DESC *) KRmalloc (sizeof (CN_DESC))) == NULL)
-        return (-1);
+	if ((new = (CN_DESC *) KRmalloc(sizeof(CN_DESC))) == NULL)
+		return -1;
 
-   status = lock_exec (0);
+	status = lock_exec(0);
 
-   do {
-        if (++next_handle == 32765)
-             next_handle = 0;
-     } while (do_lookup (next_handle, & ano_dummy, & cn_dummy) != 0);
+	do
+	{
+		if (++next_handle == 32765)
+			next_handle = 0;
+	} while (do_lookup(next_handle, &ano_dummy, &cn_dummy) != 0);
 
-   new->handle    = next_handle;
-   new->anonymous = anonymous;
-   new->funcs     = cn_functions;
+	new->handle = next_handle;
+	new->anonymous = anonymous;
+	new->funcs = cn_functions;
 
-   new->next_desc = cn_array[next_handle & (MAX_HANDLE - 1)];
-   cn_array[next_handle & (MAX_HANDLE - 1)] = new;
+	new->next_desc = cn_array[next_handle & (MAX_HANDLE - 1)];
+	cn_array[next_handle & (MAX_HANDLE - 1)] = new;
 
-   lock_exec (status);
+	lock_exec(status);
 
-   return (new->handle);
- }
+	return new->handle;
+}
 
 
-void  cdecl  PRTCL_release (handle)
-
-int16  handle;
-
+void cdecl PRTCL_release(int16 handle)
 {
-   CN_DESC  *walk, **previous;
-   uint16   status;
+	CN_DESC *walk;
+	CN_DESC **previous;
+	uint16 status;
 
-   status = lock_exec (0);
+	status = lock_exec(0);
 
-   walk = * (previous = & cn_array[handle & (MAX_HANDLE - 1)]);
+	walk = *(previous = &cn_array[handle & (MAX_HANDLE - 1)]);
 
-   while (walk) {
-        if (walk->handle == handle) {
-             *previous = walk->next_desc;   KRfree (walk);
-             break;
-           }
-        walk = * (previous = & walk->next_desc);
-      }
+	while (walk)
+	{
+		if (walk->handle == handle)
+		{
+			*previous = walk->next_desc;
+			KRfree(walk);
+			break;
+		}
+		walk = *(previous = &walk->next_desc);
+	}
 
-   lock_exec (status);
+	lock_exec(status);
 
-   return;
- }
+	return;
+}
 
 
-void *  cdecl  PRTCL_lookup (handle, cn_functions)
-
-int16     handle;
-CN_FUNCS  *cn_functions;
-
+void *cdecl PRTCL_lookup(int16 handle, CN_FUNCS *cn_functions)
 {
-   void      *anonymous;
-   CN_FUNCS  *entry;
+	void *anonymous;
+	CN_FUNCS *entry;
 
-   if (handle_lookup (handle, & anonymous, & entry) == 0)
-        return (NULL);
+	if (handle_lookup(handle, &anonymous, &entry) == 0)
+		return NULL;
 
-   if (entry != cn_functions)
-        return (NULL);
-     else
-        return (anonymous);
- }
+	if (entry != cn_functions)
+		return NULL;
+	else
+		return anonymous;
+}
 
 
-int16  cdecl  TIMER_call (handler, flag)
-
-int16  cdecl handler (IP_DGRAM *), flag;
-
+int16 cdecl TIMER_call(int16 cdecl (*handler)(IP_DGRAM *), int16 flag)
 {
-   FUNC_LIST  *walk, *previous, *this, *prev_this;
+	FUNC_LIST *walk;
+	FUNC_LIST *previous;
+	FUNC_LIST *this;
+	FUNC_LIST *prev_this;
 
-   this = prev_this = previous = NULL;
+	this = prev_this = previous = NULL;
 
-   for (walk = conf.interupt; walk; walk = walk->next) {
-        if (walk->handler == handler)
-             this = walk,  prev_this = previous;
-        previous = walk;
-      }
+	for (walk = conf.interupt; walk; walk = walk->next)
+	{
+		if (walk->handler == handler)
+			this = walk, prev_this = previous;
+		previous = walk;
+	}
 
-   switch (flag) {
-      case HNDLR_SET :
-      case HNDLR_FORCE :
-        if (this != NULL)   return (FALSE);
-        if ((this = KRmalloc (sizeof (FUNC_LIST))) == NULL)
-             return (FALSE);
-        this->handler = handler;   this->next = conf.interupt;
-        conf.interupt = this;
-        return (TRUE);
-      case HNDLR_REMOVE :
-        if (this == NULL)   return (FALSE);
-        if (prev_this)
-             prev_this->next = this->next;
-          else
-             conf.interupt = this->next;
-        KRfree (this);
-        return (TRUE);
-      case HNDLR_QUERY :
-        return ((this) ? TRUE : FALSE);
-      }
+	switch (flag)
+	{
+	case HNDLR_SET:
+	case HNDLR_FORCE:
+		if (this != NULL)
+			return FALSE;
+		if ((this = KRmalloc(sizeof(FUNC_LIST))) == NULL)
+			return FALSE;
+		this->handler = handler;
+		this->next = conf.interupt;
+		conf.interupt = this;
+		return TRUE;
+	case HNDLR_REMOVE:
+		if (this == NULL)
+			return FALSE;
+		if (prev_this)
+			prev_this->next = this->next;
+		else
+			conf.interupt = this->next;
+		KRfree(this);
+		return TRUE;
+	case HNDLR_QUERY:
+		return this ? TRUE : FALSE;
+	}
 
-   return (FALSE);
- }
+	return FALSE;
+}
 
 
-int32  cdecl  TIMER_now()
-
+int32 cdecl TIMER_now(void)
 {
-   return (sting_clock);
- }
+	return sting_clock;
+}
 
 
-int32  cdecl  TIMER_elapsed (then)
-
-int32  then;
-
+int32 cdecl TIMER_elapsed(int32 then)
 {
-   int32  diff;
+	int32 diff;
 
-   if ((diff = sting_clock - then) >= 0)
-        return (diff);
-     else
-        return (diff + 86400000L);
- }
+	if ((diff = sting_clock - then) >= 0)
+		return diff;
+	else
+		return diff + 86400000L;
+}

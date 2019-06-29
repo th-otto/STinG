@@ -122,7 +122,7 @@ int16  install()
    if ((machine >> 16) == 1 && (machine & 0xffffL) != 16)
         return (FALSE);
 
-   query_chains ((void **) & ports, (void **) & driver, NULL);
+   query_chains (& ports, & driver, NULL);
 
    (my_port.driver = & my_driver)->basepage = _BasPag;
 

@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : API and IP kernel package                             */
@@ -23,400 +22,412 @@
 #define  MAX_SEMAPHOR    64
 
 
-long           init_cookie (void);
-
-void           install_PrivVio (void);
-void           uninst_PrivVio (void);
-uint16         lock_exec (uint16 status);
-
-void           install (void);
-int16          KRinitialize (int32 size);
-void *  cdecl  KRmalloc (int32 size);
-void    cdecl  KRfree (void *mem_block);
-
-int16   cdecl  routing_table (void);
-
-void           get_path (void);
-long           get_boot_drv (void);
-int16          compare (char string_1[], char string_2[], int16 number);
-int16          search_value (char **string);
-int16          init_cfg (char filename[]);
-int16   cdecl  setvstr (char name[], char value[]);
-long           do_setvstr (void *array);
-char *  cdecl  getvstr (char name[]);
-void           load_stx (void);
-
-
-extern CONFIG  conf;
-extern void    *memory;
-
-char  sting_path[245], semaphors[MAX_SEMAPHOR];
+char sting_path[245];
+char semaphors[MAX_SEMAPHOR];
 
 
 
-void  main()
-
+static long get_boot_drv(void)
 {
-   int   count;
-   char  def_conf[255];
+	unsigned int *_bootdev = (void *) 0x446L;
 
-   puts ("\n\033p  *** STinG TCP/IP InterNet Connection Layer ***  \033q");
-
-   for (count = 0; count < MAX_SEMAPHOR; count++)
-        semaphors[count] = 0;
-
-   get_path();
-
-   strcpy (def_conf, sting_path);
-   strcat (def_conf, "DEFAULT.CFG");
-
-   install_PrivVio();
-
-   switch (init_cfg (def_conf)) {
-      case -3 :
-        puts ("Could not allocate enough memory ! No installation ...");
-        uninst_PrivVio();
-        return;
-      case -2 :
-        puts ("ALLOCMEM must be at least 1024 bytes ! No installation ...");
-        uninst_PrivVio();
-        return;
-      case -1 :
-        puts ("Problem finding/reading DEFAULT.CFG ! No installation ...");
-        uninst_PrivVio();
-        return;
-      }
-
-   if (Supexec (init_cookie) < 0) {
-        puts ("STinG already installed ! No installation ...");
-        uninst_PrivVio();
-        if (memory)   Mfree (memory);
-        return;
-      }
-
-   install();
-   load_stx();
-   routing_table();
-
-   strcpy (def_conf, "STinG version ");   strcat (def_conf, TCP_DRIVER_VERSION);
-   strcat (def_conf, " (");               strcat (def_conf, STX_LAYER_VERSION);
-   strcat (def_conf, ") installed ...");
-   puts (def_conf);
-
-   Ptermres (_PgmSize, 0);
- }
+	return 'A' + *_bootdev;
+}
 
 
-void  get_path()
-
+static void get_path(void)
 {
-   int   handle;
-   long  len;
-   char  *ptr, file[] = "\\STING.INF", path[] = "\\STING\\";
+	int handle;
+	long len;
+	char *ptr;
+	static char const file[] = "\\STING.INF";
+	static char const path[] = "\\STING\\";
 
-   sting_path[0] = 'A' + Dgetdrv();
-   sting_path[1] = ':';
-   Dgetpath (&sting_path[2], 0);
-   strcat (sting_path, file);
-   handle = (int) Fopen (sting_path, 0);
+	sting_path[0] = 'A' + Dgetdrv();
+	sting_path[1] = ':';
+	Dgetpath(&sting_path[2], 0);
+	strcat(sting_path, file);
+	handle = (int) Fopen(sting_path, 0);
 
-   if (handle < 0) {
-        strcpy (&sting_path[3], "AUTO");
-        strcat (sting_path, file);
-        handle = (int) Fopen (sting_path, 0);
+	if (handle < 0)
+	{
+		strcpy(&sting_path[3], "AUTO");
+		strcat(sting_path, file);
+		handle = (int) Fopen(sting_path, 0);
 
-        if (handle < 0) {
-             strcpy (&sting_path[2], file);
-             handle = (int) Fopen (sting_path, 0);
+		if (handle < 0)
+		{
+			strcpy(&sting_path[2], file);
+			handle = (int) Fopen(sting_path, 0);
 
-             if (handle < 0) {
-                  sting_path[0] = (char) Supexec (get_boot_drv);
-                  handle = (int) Fopen (sting_path, 0);
+			if (handle < 0)
+			{
+				sting_path[0] = (char) Supexec(get_boot_drv);
+				handle = (int) Fopen(sting_path, 0);
 
-                  if (handle < 0) {
-                       strcpy (sting_path, path);
-                       return;
-                     }
-                }
-           }
-      }
+				if (handle < 0)
+				{
+					strcpy(sting_path, path);
+					return;
+				}
+			}
+		}
+	}
 
-   len = Fread (handle, 240L, sting_path);
-   Fclose (handle);
+	len = Fread(handle, 240L, sting_path);
+	Fclose(handle);
 
-   if (len > 0) {
-        if ((ptr = strchr (sting_path, '\r')) != NULL)   *ptr = '\0';
-        if ((ptr = strchr (sting_path, '\n')) != NULL)   *ptr = '\0';
-        sting_path[len] = '\0';
-      }
-     else
-        strcpy (sting_path, path);
- }
+	if (len > 0)
+	{
+		if ((ptr = strchr(sting_path, '\r')) != NULL)
+			*ptr = '\0';
+		if ((ptr = strchr(sting_path, '\n')) != NULL)
+			*ptr = '\0';
+		sting_path[len] = '\0';
+	} else
+	{
+		strcpy(sting_path, path);
+	}
+}
 
 
-long  get_boot_drv()
-
+static int16 compare(const char *string_1, const char *string_2, int16 number)
 {
-   unsigned  int  *_bootdev = (void *) 0x446L;
+	int16 count;
 
-   return ((long) ('A' + *_bootdev));
- }
+	for (count = 0; count < number; count++)
+	{
+		if (toupper(string_1[count]) != toupper(string_2[count]))
+			return FALSE;
+		if (!string_1[count] || !string_2[count])
+			return FALSE;
+	}
+
+	return TRUE;
+}
 
 
-int16  compare (string_1, string_2, number)
-
-char   string_1[], string_2[];
-int16  number;
-
+static int16 search_value(char **string)
 {
-   int16  count;
+	while (**string == ' ' || **string == '\t')
+		(*string)++;
 
-   for (count = 0; count < number; count++) {
-        if (toupper (string_1[count]) != toupper (string_2[count]))
-             return (FALSE);
-        if (! string_1[count] || ! string_2[count])
-             return (FALSE);
-      }
+	if (**string != '=')
+		return **string == '\r' || **string == '\n' ? 1 : -1;
 
-   return (TRUE);
- }
+	(*string)++;
+
+	while (**string == ' ' || **string == '\t')
+		(*string)++;
+
+	return 0;
+}
 
 
-int16  search_value (string)
-
-char  **string;
-
+static int16 init_cfg(char fname[])
 {
-   int16  count;
+	int32 status;
+	int32 length;
+	int32 count;
+	int32 memory;
+	int16 handle;
+	char *cfg_ptr;
+	char *work;
+	char *name;
+	const char *value;
+	char *tmp;
 
-   while (**string == ' ' || **string == '\t')
-        (*string)++;
+	if ((status = Fopen(fname, FO_READ)) < 0)
+		return -1;
+	handle = (int16) status;
 
-   if (**string != '=')
-        return ((**string == '\r' || **string == '\n') ? 1 : -1);
+	length = Fseek(0, handle, 2);
+	Fseek(0, handle, 0);
 
-   (*string)++;
+	if ((cfg_ptr = (char *) Malloc(length + 3)) == NULL)
+	{
+		Fclose(handle);
+		return -1;
+	}
+	status = Fread(handle, length, cfg_ptr);
+	Fclose(handle);
 
-   while (**string == ' ' || **string == '\t')
-        (*string)++;
+	if (status != length)
+	{
+		Mfree(cfg_ptr);
+		return -1;
+	}
+	strcpy(&cfg_ptr[length], "\r\n");
 
-   return (0);
- }
+	for (count = 0; count < length; count++)
+		if (compare(&cfg_ptr[count], "ALLOCMEM", 8))
+		{
+			work = &cfg_ptr[count - 1];
+			if (count != 0 && *work != '\r' && *work != '\n')
+				continue;
+			work = &cfg_ptr[count + 8];
+			if (search_value(&work) != 0)
+			{
+				Mfree(cfg_ptr);
+				return -1;
+			}
+			if ((memory = atol(work)) < 1024)
+			{
+				Mfree(cfg_ptr);
+				return -2;
+			}
+			if (KRinitialize(memory) < 0)
+				return -3;
+			break;
+		}
+
+	if (count >= length)
+	{
+		Mfree(cfg_ptr);
+		return -1;
+	}
+
+	for (count = 0; count < CFG_NUM; count++)
+		conf.cv[count] = NULL;
+
+	work = cfg_ptr;
+
+	while (*work && work < &cfg_ptr[length] && count > 0)
+	{
+		if (isalpha(*work))
+		{
+			name = work;
+			while (isalpha(*work) || *work == '_')
+				work++;
+			tmp = work;
+			value = work;
+			switch (search_value(&work))
+			{
+			case 0:
+				if (*work == '\r' || *work == '\n')
+				{
+					value = "0";
+					break;
+				}
+				/* fall through */
+			case -1:
+				value = work;
+				break;
+			case 1:
+				value = "1";
+				break;
+			}
+			while (*work && *work != '\r' && *work != '\n')
+				work++;
+			--work;
+			while (*work == ' ' || *work == '\t')
+				--work;
+			work++;
+			*work++ = *tmp = '\0';
+			setvstr(name, value);
+			count--;
+		}
+		while (*work && *work != '\r' && *work != '\n')
+			work++;
+		while (*work == '\r' || *work == '\n')
+			work++;
+	}
+
+	Mfree(cfg_ptr);
+	return 0;
+}
 
 
-int16  init_cfg (fname)
-
-char  fname[];
-
+static void load_stx(void)
 {
-   int32  status, length, count, memory;
-   int16  handle;
-   char   *cfg_ptr, *work, *name, *value, *tmp;
+	DTA *my_dta;
+	char *walk = sting_path;
+	char temp[32];
+	int16 error;
+	int16 modules = FALSE;
 
-   if ((status = Fopen (fname, FO_READ)) < 0)
-        return (-1);
-   handle = (int16) status;
+	if (sting_path[0] != '\\')
+	{
+		walk += 2;
+		Dsetdrv(sting_path[0] - 'A');
+	}
+	Dsetpath(walk);
 
-   length = Fseek (0, handle, 2);
-   Fseek (0, handle, 0);
+	my_dta = Fgetdta();
 
-   if ((cfg_ptr = (char *) Malloc (length + 3)) == NULL) {
-        Fclose (handle);
-        return (-1);
-      }
-   status = Fread (handle, length, cfg_ptr);
-   Fclose (handle);
+	printf("Loading Modules : ");
 
-   if (status != length) {
-        Mfree (cfg_ptr);   return (-1);
-      }
-   strcpy (& cfg_ptr[length], "\r\n");
+	error = Fsfirst("*.STX", 0);
 
-   for (count = 0; count < length; count++)
-        if (compare (& cfg_ptr[count], "ALLOCMEM", 8)) {
-             work = & cfg_ptr[count - 1];
-             if (count != 0 && *work != '\r' && *work != '\n')
-                  continue;
-             work = & cfg_ptr[count + 8];
-             if (search_value (& work) != 0) {
-                  Mfree (cfg_ptr);
-                  return (-1);
-                }
-             if ((memory = atol (work)) < 1024) {
-                  Mfree (cfg_ptr);
-                  return (-2);
-                }
-             if (KRinitialize (memory) < 0)
-                  return (-3);
-             break;
-           }
+	while (error >= 0)
+	{
+		strcpy(temp, my_dta->d_fname);
+		if (strchr(temp, '.'))
+			*strchr(temp, '.') = '\0';
+		printf("%s, ", temp);
+		Pexec(0, my_dta->d_fname, "\012STinG_Load", "");
+		modules = TRUE;
+		error = Fsnext();
+	}
 
-   if (count >= length) {
-        Mfree (cfg_ptr);   return (-1);
-      }
-
-   for (count = 0; count < CFG_NUM; count++)
-        conf.cv[count] = NULL;
-
-   work = cfg_ptr;
-
-   while (*work && work < &cfg_ptr[length] && count > 0) {
-        if (isalpha (*work)) {
-             name = work;
-             while (isalpha (*work) || *work == '_')
-                  work++;
-             tmp = work;
-             switch (search_value (&work)) {
-                case  0 :
-                  if (*work == '\r' || *work == '\n') {
-                       value = "0";
-                       break;
-                     }
-                case -1 :   value = work;   break;
-                case  1 :   value = "1";    break;
-                }
-             while (*work && *work != '\r' && *work != '\n')
-                  work++;
-             --work;
-             while (*work == ' ' || *work == '\t')
-                  --work;
-             work++;
-             *work++ = *tmp = '\0';
-             setvstr (name, value);
-             count--;
-           }
-        while (*work && *work != '\r' && *work != '\n')
-             work++;
-        while (*work == '\r' || *work == '\n')
-             work++;
-      }
-
-   Mfree (cfg_ptr);
-   return (0);
- }
+	if (modules)
+		printf("\b\b.\r\n");
+	else
+		printf("None.\r\n");
+}
 
 
-int16  cdecl  setvstr (name, value)
-
-char  *name, value[];
-
+int main(void)
 {
-   uint16  length, status, count;
-   char    *work;
+	int count;
+	char def_conf[255];
 
-   length = strlen (name);
+	puts("\n\033p  *** STinG TCP/IP InterNet Connection Layer ***  \033q");
 
-   status = lock_exec (0);
+	for (count = 0; count < MAX_SEMAPHOR; count++)
+		semaphors[count] = 0;
 
-   for (count = 0; count < length; count++)
-        if (! isalpha (name[count]) && name[count] != '_') {
-             lock_exec (status);
-             return (FALSE);
-           }
+	get_path();
 
-   for (count = 0; count < CFG_NUM; count++)
-        if (conf.cv[count]) {
-             if (compare (name, conf.cv[count], length))
-                  break;
-           }
-          else
-             break;
+	strcpy(def_conf, sting_path);
+	strcat(def_conf, "DEFAULT.CFG");
 
-   if (count >= CFG_NUM || (length = length + strlen (value) + 3) > 253) {
-        lock_exec (status);
-        return (FALSE);
-      }
+	install_PrivVio();
 
-   if (conf.cv[count]) {
-        if (length <= (int) *(conf.cv[count] - 1))
-             work = conf.cv[count];
-          else {
-             if ((work = KRmalloc (length)) == NULL) {
-                  lock_exec (status);
-                  return (FALSE);
-                }
-             KRfree (conf.cv[count] - 1);
-             *work++ = (unsigned char) length;
-           }
-      }
-     else {
-        if ((work = KRmalloc (length)) == NULL) {
-             lock_exec (status);
-             return (FALSE);
-           }
-        *work++ = (unsigned char) length;
-      }
+	switch (init_cfg(def_conf))
+	{
+	case -3:
+		puts("Could not allocate enough memory ! No installation ...");
+		uninst_PrivVio();
+		return 1;
+	case -2:
+		puts("ALLOCMEM must be at least 1024 bytes ! No installation ...");
+		uninst_PrivVio();
+		return 1;
+	case -1:
+		puts("Problem finding/reading DEFAULT.CFG ! No installation ...");
+		uninst_PrivVio();
+		return 1;
+	}
 
-   conf.cv[count] = work;
-   strcpy (work, name);   strcat (work, "=");   strcat (work, value);
+	if (Supexec(init_cookie) < 0)
+	{
+		puts("STinG already installed ! No installation ...");
+		uninst_PrivVio();
+		if (memory)
+			Mfree(memory);
+		return 1;
+	}
 
-   lock_exec (status);
+	install();
+	load_stx();
+	routing_table();
 
-   return (TRUE);
- }
+	strcpy(def_conf, "STinG version ");
+	strcat(def_conf, TCP_DRIVER_VERSION);
+	strcat(def_conf, " (");
+	strcat(def_conf, STX_LAYER_VERSION);
+	strcat(def_conf, ") installed ...");
+	puts(def_conf);
+
+	Ptermres(_PgmSize, 0);
+	return 0;
+}
 
 
-char *  cdecl  getvstr (name)
-
-char  *name;
-
+int16 cdecl setvstr(const char *name, const char *value)
 {
-   uint16  length, status, count;
-   char    *result;
+	uint16 length;
+	uint16 status;
+	uint16 count;
+	char *work;
 
-   length = strlen (name);
+	length = strlen(name);
 
-   status = lock_exec (0);
+	status = lock_exec(0);
 
-   for (count = 0; count < CFG_NUM; count++)
-        if (conf.cv[count]) {
-             if (compare (name, conf.cv[count], length))
-                  break;
-           }
-          else
-             break;
+	for (count = 0; count < length; count++)
+		if (!isalpha(name[count]) && name[count] != '_')
+		{
+			lock_exec(status);
+			return FALSE;
+		}
 
-   result = conf.cv[count] + length + 1;
+	for (count = 0; count < CFG_NUM; count++)
+		if (conf.cv[count])
+		{
+			if (compare(name, conf.cv[count], length))
+				break;
+		} else
+			break;
 
-   if (count == CFG_NUM || conf.cv[count] == NULL)
-        result = "0";
+	if (count >= CFG_NUM || (length = length + strlen(value) + 3) > 253)
+	{
+		lock_exec(status);
+		return FALSE;
+	}
 
-   lock_exec (status);
+	if (conf.cv[count])
+	{
+		if (length <= (int) *(conf.cv[count] - 1))
+			work = conf.cv[count];
+		else
+		{
+			if ((work = KRmalloc(length)) == NULL)
+			{
+				lock_exec(status);
+				return FALSE;
+			}
+			KRfree(conf.cv[count] - 1);
+			*work++ = (unsigned char) length;
+		}
+	} else
+	{
+		if ((work = KRmalloc(length)) == NULL)
+		{
+			lock_exec(status);
+			return FALSE;
+		}
+		*work++ = (unsigned char) length;
+	}
 
-   return (result);
- }
+	conf.cv[count] = work;
+	strcpy(work, name);
+	strcat(work, "=");
+	strcat(work, value);
+
+	lock_exec(status);
+
+	return TRUE;
+}
 
 
-void  load_stx()
-
+const char *cdecl getvstr(const char *name)
 {
-   DTA    *my_dta;
-   char   *walk = sting_path, temp[32];
-   int16  error, modules = FALSE;
+	uint16 length;
+	uint16 status;
+	uint16 count;
+	const char *result;
 
-   if (sting_path[0] != '\\') {
-        walk += 2;
-        Dsetdrv (sting_path[0] - 'A');
-      }
-   Dsetpath (walk);
+	length = strlen(name);
 
-   my_dta = Fgetdta();
+	status = lock_exec(0);
 
-   printf ("Loading Modules : ");
+	for (count = 0; count < CFG_NUM; count++)
+		if (conf.cv[count])
+		{
+			if (compare(name, conf.cv[count], length))
+				break;
+		} else
+			break;
 
-   error = Fsfirst ("*.STX", 0);
+	result = conf.cv[count] + length + 1;
 
-   while (error >= 0) {
-        strcpy (temp, my_dta->d_fname);
-        if (strchr (temp, '.'))   * strchr (temp, '.') = '\0';
-        printf ("%s, ", temp);
-        Pexec (0, my_dta->d_fname, "\012STinG_Load", "");
-        modules = TRUE;
-        error = Fsnext();
-      }
+	if (count == CFG_NUM || conf.cv[count] == NULL)
+		result = "0";
 
-   if (modules)
-        printf ("\b\b.\r\n");
-     else
-        printf ("None.\r\n");
- }
+	lock_exec(status);
+
+	return result;
+}
+

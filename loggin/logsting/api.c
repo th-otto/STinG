@@ -1626,7 +1626,7 @@ LAYER   **layer;
                 }
            }
       }
-   query_chains ((void **) port, (void **) driver, (void **) layer);
+   query_chains (port, driver, layer);
 
    if (mod_flags[4] && generic[1]) {
         if (generic[2]) {
