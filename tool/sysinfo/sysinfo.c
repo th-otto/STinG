@@ -78,7 +78,7 @@ static void do_some_work(void)
 	for (layr = config->layers; layr; layr = layr->next)
 		num_layers++;
 
-	printf("Basepage address :  0x%lxL\n", sting_drivers->sting_basepage);
+	printf("Basepage address :  0x%lx\n", (unsigned long)sting_drivers->sting_basepage);
 
 	printf("Loaded :  %d drivers comprising %d ports, %d high level protocols.\n\n",
 		   num_drivers, num_ports, num_layers);
@@ -103,7 +103,7 @@ static void do_some_work(void)
 		printf("Driver \"%s\" (%d port%s)\n", driv->name, num_ports, (num_ports > 1) ? "s" : "");
 		printf("  Version %s, %d/%d/%d by %s\n", driv->version,
 			   driv->date & 0x1f, (driv->date >> 5) & 0xf, 80 + ((driv->date >> 9) & 0x7f), driv->author);
-		printf("  Basepage address : 0x%lxL\n", driv->basepage);
+		printf("  Basepage address : 0x%lx\n", (unsigned long)driv->basepage);
 		for (port = config->ports; port; port = port->next)
 		{
 			if (port->driver == driv)
@@ -127,7 +127,7 @@ static void do_some_work(void)
 		printf("Protocol \"%s\"\n", layr->name);
 		printf("  Version %s, %d/%d/%d by %s\n", layr->version,
 			   layr->date & 0x1f, (layr->date >> 5) & 0xf, 1980 + ((layr->date >> 9) & 0x7f), layr->author);
-		printf("  Basepage address : 0x%lxL\n", layr->basepage);
+		printf("  Basepage address : 0x%lx\n", (unsigned long)layr->basepage);
 		printf("  Statistics : %d datagrams dropped\n", layr->stat_dropped);
 		puts("");
 	}

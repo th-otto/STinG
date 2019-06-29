@@ -1,0 +1,11 @@
+CROSSPREFIX=m68k-atari-mint-
+
+CC=$(CROSSPREFIX)gcc
+WARN=-Wall -W -Wstrict-prototypes -Wmissing-prototypes -Werror
+CFLAGS= -O2 -fomit-frame-pointer $(WARN)
+
+all::
+
+
+clean::
+	$(RM) *.o *.prg *.pdb

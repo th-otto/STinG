@@ -1,8 +1,6 @@
-CROSSPREFIX=m68k-atari-mint-
+include ../configvars
 
-CC=$(CROSSPREFIX)gcc
-WARN=-Wall -W -Wstrict-prototypes -Wmissing-prototypes -Werror
-CFLAGS= -O2 -fomit-frame-pointer $(WARN) -I../include
+CFLAGS += -I../include
 
 SRCS = \
 	api.c \
@@ -17,10 +15,7 @@ SRCS = \
 	$(empty)
 OBJS = $(SRCS:.c=.o)
 
-all: sting.prg
+all:: sting.prg
 
 sting.prg: $(OBJS)
 	$(CC) -o $@ $(OBJS)
-
-clean::
-	$(RM) *.o *.prg *.pdb
