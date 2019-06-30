@@ -1,13 +1,21 @@
+@if VERSION >= 6
+@os Atari
+@charset atarist
+@inputenc atarist
+@lang en
+@endif
 @database "STinG Dokumentation"
 @options "+g -a -i +z -t4 -s"
 @author "Peter Rottengatter"
 @help "Credits and Copyright"
-@$VER: sting.hyp 0.10 (4/4/1997)
-@subject "Dokumentation/DFš"
+@$VER: sting.hyp 0.11 (18/1/1998)
+@subject "Documentation/DFUE"
+@width 75
 
 
 @node "Main" "STinG : ST Internet Next Generation"
-@image PICS\TITEL.IMG 12 0 0
+@remark 400x144x2
+@image "pics/titel.img" 12
 This is the documentation for
 
 
@@ -17,7 +25,7 @@ This is the documentation for
 
 
 
-the `ST Internet Next Generation', that enables your Atari computer 
+the `ST Internet Next Generation', that enables your Atari computer
 to connect to every other computer on the whole world !
 
 
@@ -25,7 +33,7 @@ to connect to every other computer on the whole world !
                 Contents :
 
                     @{"Introduction" LINK "Introduction"}
-                    @{"The TCP/IP philosophy" LINK "The TCP/IP philosophy"}
+                    @{"The TCP/IP philosophy" LINK "The TCP/IP Philosophy"}
                     @{"Configuring STinG" LINK "Configuring STinG"}
                     @{"Dialing Modem Connections" LINK "Modem Connections"}
                     @{"STinG Code Modules" LINK "STinG Modules"}
@@ -45,24 +53,25 @@ write to my @{"e-mail address" LINK "Credits and Copyright"}.
 @endnode
 
 
-@include chapter\intro.sti
+@include chapter/intro.sti
 
-@include chapter\tcp_ip.sti
+@include chapter/tcp_ip.sti
 
-@include chapter\config.sti
+@include chapter/config.sti
 
-@include chapter\modem.sti
+@include chapter/modem.sti
 
-@include chapter\module.sti
+@include chapter/module.sti
 
-@include chapter\inetd.sti
+@include chapter/inetd.sti
 
-@include chapter\program.sti
+@include chapter/program.sti
 
-@include chapter\faq.sti
+@include chapter/faq.sti
 
 
 @node "Credits and Copyright"
+@next "Credits and Copyright"
 @prev "Credits and Copyright"
 Credits and Copyright                                              STinG
 @line 1 72 0 0 7
@@ -97,7 +106,7 @@ If in doubt, contact
    30161 Hannover
    Germany
    Tel. :   +(49) (511) 668759, +(49) (511) 722905
-   E-mail : perot@pallas.amp.uni-hannover.de
+   E-mail : perot@@pallas.amp.uni-hannover.de
    WWW :    http://www.stud.uni-hannover.de/~perot
 
 
@@ -106,7 +115,7 @@ If in doubt, contact
    14570 Norsborg
    Sweden
    Tel. :   +(46) (8) 53184105
-   E-mail : dlanor@oden.se
+   E-mail : dlanor@@oden.se
    WWW :    http://www.oden.se/~dlanor
 
 
@@ -114,16 +123,16 @@ If in doubt, contact
    Wunderburggasse 3
    90403 Nuernberg
    Germany
-   E-mail : kriesten@mailer.uni-marburg.de
+   E-mail : kriesten@@mailer.uni-marburg.de
 
 
-STinG and all it's components are Freeware, nobody is required to pay 
+STinG and all it's components are Freeware, nobody is required to pay
 for it. I would appreciate a lot however if you'd just send a postcard
 showing the area where you're living, so that I can see how the places
 look like where STinG is used.
 
-If however you're desperately trying to let me have some money, well, 
-that's ok with me ;-) Here is the bank account where you can leave your 
+If however you're desperately trying to let me have some money, well,
+that's ok with me ;-) Here is the bank account where you can leave your
 wealth :
 
    Peter Rottengatter
@@ -133,4 +142,3 @@ wealth :
 
 
 @endnode
-

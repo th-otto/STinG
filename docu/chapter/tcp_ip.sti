@@ -1,5 +1,3 @@
-
-
 @node "The TCP/IP Philosophy"
 @prev "The TCP/IP Philosophy"
 The TCP/IP Philosophy                                              STinG
@@ -52,7 +50,7 @@ Description of the entries :
    TOS
           IP datagram @{"Type Of Service" LINK "IP Type Of Service"}
    Total Length
-          The total length of the datagram, including header, options and 
+          The total length of the datagram, including header, options and
           data, specified in bytes.
    Identification
           A unique number assigned by the sender to aid in reassembling a
@@ -100,7 +98,7 @@ Description of the entries :
 IP Type Of Service                                                 STinG
 @line 1 72 0 0 7
 
-The IP type of service parameter is an 8 bit number, the bits of which 
+The IP type of service parameter is an 8 bit number, the bits of which
 have specific meanings referring to precedence and what characteristics
 are desired for the datagram involved :
 
@@ -124,7 +122,7 @@ are desired for the datagram involved :
           101              Critical
           110              Internetwork control
           111              Network control
-          
+
 @endnode
 
 
@@ -215,29 +213,28 @@ IP Next Generation                                                 STinG
 
 
 The current version of the IP protocol has a number of shortcomings, most
-seriously probably the problem of the limited address space of only four 
+seriously probably the problem of the limited address space of only four
 billion IP addresses. This seems to be enough, but the net has grown ra-
 pidly in recent years, and by December 1994 it comprised over 32000 net-
-works connecting over 3.8 million hosts in more than 90 countries. Still 
-this number seems to be small compared to the 4 billion mentioned above, 
-but the current concept of dividing the address space into class A, B and 
+works connecting over 3.8 million hosts in more than 90 countries. Still
+this number seems to be small compared to the 4 billion mentioned above,
+but the current concept of dividing the address space into class A, B and
 C networks of different, but fixed size wastes an awful lot of numbers.
 
-At the time of September 1981, when the most recent specification of IPv4 
-originated, it was unthinkable that once there will be such a vast number 
-of machines needing an IP address. Bill Gates's ideas of coffee machines 
+At the time of September 1981, when the most recent specification of IPv4
+originated, it was unthinkable that once there will be such a vast number
+of machines needing an IP address. Bill Gates's ideas of coffee machines
 running Windows and being hooked up to the Net will make this number ex-
-plode once again. While it's fun to think about where you could plug the 
-computer mouse into the coffee machine, some serious computer scientists 
+plode once again. While it's fun to think about where you could plug the
+computer mouse into the coffee machine, some serious computer scientists
 have come up with some decent specifications on how IPng (IP Next Genera-
-tion), or IPv6, should look like. However, up to now there is virtually 
-no host running IPv6. As soon as there is any significant number, STinG 
+tion), or IPv6, should look like. However, up to now there is virtually
+no host running IPv6. As soon as there is any significant number, STinG
 will be adapted to fully explore the additional features of IPv6.
 
-If anyone is interested in IPv6, some proposed details are summed up in 
+If anyone is interested in IPv6, some proposed details are summed up in
 RFC #1550. This document can be fetched via the following URL :
 
           ftp://ftp.internic.net/rfc/rfc1550.txt
 
 @endnode
-

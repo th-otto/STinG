@@ -1,11 +1,10 @@
-
-
 @node "Configuring STinG"
 @prev "Configuring STinG"
 Configuring STinG                                                  STinG
 @line 1 72 0 0 7
 
-@image PICS\CPX.IMG 36 0 0
+@remark 272x208x2
+@image "pics/cpx.img" 36
 
 @{"STinG Internals" LINK "CPX : STinG Internals"}
 @{"STinG Port Setup" LINK "CPX : STinG Port Setup"}
@@ -19,21 +18,8 @@ Configuring STinG                                                  STinG
 CPX : STinG Internals                                              STinG
 @line 1 72 0 0 7
 
-@image PICS\MAINCPX.IMG 36 0 0
-Okay, so this is all text !!!
-Line2
-Line3
-Line4
-Line5
-Line6
-Line7
-Line8
-Line9
-Line10
-Line11
-Line12
-Line13
-And this is an utterly exceptionally long line ;-) !
+@remark 258x196x2
+@limage "pics/maincpx.img" 36
 
 @endnode
 
@@ -42,37 +28,11 @@ And this is an utterly exceptionally long line ;-) !
 CPX : STinG Port Setup                                             STinG
 @line 1 72 0 0 7
 
-@image PICS\PORTCPX1.IMG 36 0 0
-Okay, so this is all text !!!
-Line2
-Line3
-Line4
-Line5
-Line6
-Line7
-Line8
-Line9
-Line10
-Line11
-Line12
-Line13
-And this is an utterly exceptionally long line ;-) !
+@remark 258x196x2
+@limage "pics/portcpx1.img" 36
 
-@image PICS\PORTCPX2.IMG 36 0 0
-Okay, so this is all text !!!
-Line2
-Line3
-Line4
-Line5
-Line6
-Line7
-Line8
-Line9
-Line10
-Line11
-Line12
-Line13
-And this is an utterly exceptionally long line ;-) !
+@remark 258x196x2
+@limage "pics/portcpx2.img" 36
 
 @endnode
 
@@ -81,37 +41,11 @@ And this is an utterly exceptionally long line ;-) !
 CPX : STinG Protocols                                              STinG
 @line 1 72 0 0 7
 
-@image PICS\PROTOTCP.IMG 36 0 0
-Okay, so this is all text !!!
-Line2
-Line3
-Line4
-Line5
-Line6
-Line7
-Line8
-Line9
-Line10
-Line11
-Line12
-Line13
-And this is an utterly exceptionally long line ;-) !
+@remark 258x196x2
+@limage "pics/prototcp.img" 36
 
-@image PICS\PROTOUDP.IMG 36 0 0
-Okay, so this is all text !!!
-Line2
-Line3
-Line4
-Line5
-Line6
-Line7
-Line8
-Line9
-Line10
-Line11
-Line12
-Line13
-And this is an utterly exceptionally long line ;-) !
+@remark 258x196x2
+@limage "pics/protoudp.img" 36
 
 @endnode
 
@@ -123,4 +57,3 @@ The ConfSTinG Tool                                                 STinG
 ConfSTinG is not finished yet.
 
 @endnode
-

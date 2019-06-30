@@ -1,5 +1,3 @@
-
-
 @node "STinG Modules"
 @prev "STinG Modules"
 STinG Modules                                                      STinG
@@ -29,12 +27,12 @@ STinG Modules                                                      STinG
 SERIAL.STX : Serial Line Networking                                STinG
 @line 1 72 0 0 7
 
-The driver SERIAL.STX supplies driving code for all serial ports 
-on Atari computers. It recognizes all standard ports from ST, STE, 
-Mega STE, TT and Falcons. The Midi port is treated as a serial 
-port too. All additional port hardware, provided OS-level drivers 
-are installed into BIOS and an RSVF descriptor exists, is recognized 
-too and can be used just like the standard ports. BIOS and RSVF 
+The driver SERIAL.STX supplies driving code for all serial ports
+on Atari computers. It recognizes all standard ports from ST, STE,
+Mega STE, TT and Falcons. The Midi port is treated as a serial
+port too. All additional port hardware, provided OS-level drivers
+are installed into BIOS and an RSVF descriptor exists, is recognized
+too and can be used just like the standard ports. BIOS and RSVF
 installation is done by the HSMODEM drivers, for instance.
 
 The names of the standard ports are as follows :
@@ -43,26 +41,26 @@ XXXX ST     :   "Modem 1", "Midi"
 Mega STE    :   "Modem 1", "Modem 2", "Ser.2/LAN", "Midi"
 TT          :   "Modem 1", "Modem 2", "Serial 1", "Ser.2/LAN", "Midi"
 Falcon      :   "Modem 1", "Modem 2", "LAN", "Midi"
-Note that you need to do a little hardware work to be able to use 
-Modem 1 on a Falcon. The Falcon port that is labeled "Modem" on the 
+Note that you need to do a little hardware work to be able to use
+Modem 1 on a Falcon. The Falcon port that is labeled "Modem" on the
 case is "Modem 2".
 
-If this driver is to be used under a TOS version that does not support 
-Bconmap() in XBIOS (if you use a TOS 1.x then this is most probably 
-the case) then HSMODEM or an equivalent package *must* be installed. 
-To check for this, simply have STinG load this driver, and look into 
-the STNGPORT.CPX, or run ConfSTinG from the desktop, or check whether 
-Modem 1 is there. Modem 1 should be shown available on every machine, 
+If this driver is to be used under a TOS version that does not support
+Bconmap() in XBIOS (if you use a TOS 1.x then this is most probably
+the case) then HSMODEM or an equivalent package *must* be installed.
+To check for this, simply have STinG load this driver, and look into
+the STNGPORT.CPX, or run ConfSTinG from the desktop, or check whether
+Modem 1 is there. Modem 1 should be shown available on every machine,
 even the Falcon. If it isn't on yours, you must install HSMODEM.
 
-If you want to use Midi for serial point to point networking then you 
-must install HSMODEM too. Note that you won't find a Midi entry in 
-STNGPORT.CPX or ConfSTinG if you haven't got HSMODEM installed. Do not 
-confuse this with MidiNet, which is a Midi based ring network that 
+If you want to use Midi for serial point to point networking then you
+must install HSMODEM too. Note that you won't find a Midi entry in
+STNGPORT.CPX or ConfSTinG if you haven't got HSMODEM installed. Do not
+confuse this with MidiNet, which is a Midi based ring network that
 brings it's own driver, as HSMODEM MIDI.PRG can't be used for it.
 
-If HSMODEM is used on a TT or Mega STE to control the SCC ports 
-("Modem 2" and "Ser.2/LAN") then the HSMODEM SCC.PRG variable "LANBIT" 
+If HSMODEM is used on a TT or Mega STE to control the SCC ports
+("Modem 2" and "Ser.2/LAN") then the HSMODEM SCC.PRG variable "LANBIT"
 should be set to "Yes".
 
 @endnode
@@ -70,6 +68,7 @@ should be set to "Yes".
 
 @node "CEN_PLIP.STX : Connect Networks Instead of Printers"
 CEN_PLIP.STX : Connect Networks Instead of Printers                STinG
+@xref "cen_plip.hyp/Main" "CEN_PLIP.STX"
 @line 1 72 0 0 7
 
 This module is not available yet for this kernel version.
@@ -103,7 +102,7 @@ though.
 LCLTLK.STX : Atari Bites the Apple                                 STinG
 @line 1 72 0 0 7
 
-This module only contains dummy code as yet. It's been an early 
+This module only contains dummy code as yet. It's been an early
 suggestion by Dan Ackerman. Nobody is working on it right now.
 
 @endnode
@@ -111,18 +110,19 @@ suggestion by Dan Ackerman. Nobody is working on it right now.
 
 @node "MASQUE.STX : Carnival on the Net"
 MASQUE.STX : Carnival on the Net                                   STinG
+@xref "masque.hyp/Main" "MASQUE.STX"
 @line 1 72 0 0 7
 
  Documentation for Masque.Stx version 1.08
  Created by Ulf Ronald Andersson
 
- @{U}Contents@{0}
+ @{U}Contents@{u}
 
- @{"Introduction to Masque" link "Masque : Introduction"}
- @{"Configuring Masque" link "Masque : Configuration"}
- @{"Installation of Masque" link "Masque : Installation"}
- @{"Masque Development History" link "Masque : Development History"}
- @{"Masque Feedback" link "Credits and Copyright"}
+ @{"Introduction to Masque" LINK "Masque : Introduction"}
+ @{"Configuring Masque" LINK "Masque : Configuration"}
+ @{"Installation of Masque" LINK "Masque : Installation"}
+ @{"Masque Development History" LINK "Masque : Development History"}
+ @{"Masque Feedback" LINK "Credits and Copyright"}
 
 @endnode
 
@@ -131,10 +131,10 @@ MASQUE.STX : Carnival on the Net                                   STinG
 Masque : Introduction                                              STinG
 @line 1 72 0 0 7
 
-Masque.Stx is a STinG module which implements IP masking, so that all of 
-the computers on a local network can access internet through a single 
-connection of one of them.  More than one of those computers may have 
-Masque installed, but only linked to ports that are either passive, or 
+Masque.Stx is a STinG module which implements IP masking, so that all of
+the computers on a local network can access internet through a single
+connection of one of them.  More than one of those computers may have
+Masque installed, but only linked to ports that are either passive, or
 connected to internet (or another intranet).
 
 For example:
@@ -173,7 +173,7 @@ Here are some examples and important rules concerning this:
 
 I use the Midi and Plip drivers for local networks and my subnet route
 (on a line above the default route) for Midi looks like this:
-1.1.2.0		255.255.255.0	Midi		0.0.0.0
+1.1.2.0     255.255.255.0   Midi        0.0.0.0
 
 On each of the computers using this subnet I have set up the Midi ports
 to use the IP addresses 1.1.2.x, with 'x' standing for an arbitrary
@@ -187,7 +187,7 @@ connected to Internet, since STinG's router will use the local ones.
 On a very simple network the machines not connected to the dial-up modem
 can manage with a single default route allowing them to reach the modem-
 connected machine, and such a route should then look like this:
-0.0.0.0		0.0.0.0		Midi		0.0.0.0 
+0.0.0.0     0.0.0.0     Midi        0.0.0.0
 
 But the modem-connected machine _must_ have the local route defined as a
 subnet  (see further above)  since its default route after  dial-up will
@@ -292,7 +292,7 @@ With this background I can now describe complete installation very simply:
 1:  Copy MASQUE.STX to your STinG STX collection folder on the machine used
     for connecting to the Internet (usually the one with the fastest modem).
 
-2:  Configure masquerading as described in the section  @{"Configuring Masque" link "Masque : Configuration"}
+2:  Configure masquerading as described in the section  @{"Configuring Masque" LINK "Masque : Configuration"}
 
 That's it...
 
@@ -303,99 +303,99 @@ That's it...
 Masque : Development History                                       STinG
 @line 1 72 0 0 7
 
-@{U} Version 1.10	1998 January 13 @{0}
+@{U} Version 1.10   1998 January 13 @{u}
 
-	Masking methods modified to allow local servers to be contacted
-	by clients on the Internet.
+    Masking methods modified to allow local servers to be contacted
+    by clients on the Internet.
 
-	Hypertext was amended to describe usage with latest STinG.
-
-
-@{U} Version 1.09	1997 October 25 @{0}
-
-	Added module basepage pointer to DRIVER structure.
-	This is a new standard defined to ease debugging.
+    Hypertext was amended to describe usage with latest STinG.
 
 
-@{U} Version 1.08	1997 September 7 @{0}
+@{U} Version 1.09   1997 October 25 @{u}
 
-	Partial ICMP support added for 3 (of 6) message classes:
-
-		Incoming error messages for UDP and TCP connections
-		Outgoing ICMP requests (echo, timestamp, etc)
-		Incoming ICMP replies (echo, timestamp, etc)
-
-	The types now supported are sufficient for the normal PING
-	and TRACEROUTE implementations, and tests with those tools
-	as implemented both in the dialer and in separate programs
-	in the  STinG  release verify this.  All these now work in
-	the same way with Masquerade as they do without it.
-
-	The following three message classes are not yet supported,
-	and such packets will still merely be dropped and ignored:
-
-		Outgoing error messages for UDP and TCP connections
-		Incoming ICMP requests (echo, timestamp, etc)
-		Outgoing ICMP replies (echo, timestamp, etc)
-
-	Of those only the first is of any real interest, since the
-	others will never occur on a normal ISP connection.
-
-	Undefined/Future ICMP message types are also ignored, which
-	is the recommended treatment of such enhancements when they
-	can not be properly supported.
-
-	The hypertext was reworked a bit for improved readability,
-	and extended with some clues on how to set up a functional
-	LAN, for those who are not yet familiar with this aspect
-	of STinG.  (Suggested by beta tester Eabe Kuik.)
+    Added module basepage pointer to DRIVER structure.
+    This is a new standard defined to ease debugging.
 
 
-@{U} Version 1.07	1997 August 21 @{0}
+@{U} Version 1.08   1997 September 7 @{u}
 
-	Port illegality test added, as suggested by Peter
+    Partial ICMP support added for 3 (of 6) message classes:
 
+        Incoming error messages for UDP and TCP connections
+        Outgoing ICMP requests (echo, timestamp, etc)
+        Incoming ICMP replies (echo, timestamp, etc)
 
-@{U} Version 1.06	1997 August 21 @{0}
+    The types now supported are sufficient for the normal PING
+    and TRACEROUTE implementations, and tests with those tools
+    as implemented both in the dialer and in separate programs
+    in the  STinG  release verify this.  All these now work in
+    the same way with Masquerade as they do without it.
 
-	Change of default IP numbers, as suggested by Peter
+    The following three message classes are not yet supported,
+    and such packets will still merely be dropped and ignored:
 
+        Outgoing error messages for UDP and TCP connections
+        Incoming ICMP requests (echo, timestamp, etc)
+        Outgoing ICMP replies (echo, timestamp, etc)
 
-@{U} Version 1.05	1997 August 20 @{0}
+    Of those only the first is of any real interest, since the
+    others will never occur on a normal ISP connection.
 
-	Bug correction of mislinked masquerade queues
+    Undefined/Future ICMP message types are also ignored, which
+    is the recommended treatment of such enhancements when they
+    can not be properly supported.
 
-
-@{U} Version 1.04	1997 August 19 @{0}
-
-	Update for longer port name "Masquerade" requested by Peter
-
-
-@{U} Version 1.03	1997 August 18 @{0}
-
-	Update for new STinG port type implemented by Peter in
-	STNGPORT.CPX and Dialer.
-
-
-@{U} Version 1.02	1997 August 18 @{0}
-
-	Update for new configuration method suggested by Peter.
-	Documentation converted to hypertext.
-
-
-@{U} Version 1.01	1997 August 14 @{0}
-
-	Update for unblocking time limitation on mask/unmask work
+    The hypertext was reworked a bit for improved readability,
+    and extended with some clues on how to set up a functional
+    LAN, for those who are not yet familiar with this aspect
+    of STinG.  (Suggested by beta tester Eabe Kuik.)
 
 
-@{U} Version 1.00	1997 August 12 @{0}
+@{U} Version 1.07   1997 August 21 @{u}
 
-	First functional release (to me and Peter only)
+    Port illegality test added, as suggested by Peter
 
 
-@{U} Version 0.xx	1997 August 10-12 @{0}
+@{U} Version 1.06   1997 August 21 @{u}
 
-	Project start and various pre-release experiments
+    Change of default IP numbers, as suggested by Peter
+
+
+@{U} Version 1.05   1997 August 20 @{u}
+
+    Bug correction of mislinked masquerade queues
+
+
+@{U} Version 1.04   1997 August 19 @{u}
+
+    Update for longer port name "Masquerade" requested by Peter
+
+
+@{U} Version 1.03   1997 August 18 @{u}
+
+    Update for new STinG port type implemented by Peter in
+    STNGPORT.CPX and Dialer.
+
+
+@{U} Version 1.02   1997 August 18 @{u}
+
+    Update for new configuration method suggested by Peter.
+    Documentation converted to hypertext.
+
+
+@{U} Version 1.01   1997 August 14 @{u}
+
+    Update for unblocking time limitation on mask/unmask work
+
+
+@{U} Version 1.00   1997 August 12 @{u}
+
+    First functional release (to me and Peter only)
+
+
+@{U} Version 0.xx   1997 August 10-12 @{u}
+
+    Project start and various pre-release experiments
 
 @endnode
 
@@ -423,12 +423,12 @@ RESOLVE.STX : The DNS-Resolver                                     STinG
  Documentation for Resolve.Stx version 1.06
  Created by Ulf Ronald Andersson
 
- @{U}Contents@{0}
+ @{U}Contents@{u}
 
- @{"Introduction to the DNS-Resolver" link "Resolver : Introduction"}
- @{"Resolver Command List" link "Resolver : Command List"}
- @{"Resolver Development History" link "Resolver : Development History"}
- @{"Resolver Feedback" link "Credits and Copyright"}
+ @{"Introduction to the DNS-Resolver" LINK "Resolver : Introduction"}
+ @{"Resolver Command List" LINK "Resolver : Command List"}
+ @{"Resolver Development History" LINK "Resolver : Development History"}
+ @{"Resolver Feedback" LINK "Credits and Copyright"}
 
 @endnode
 
@@ -478,20 +478,20 @@ nor significant, so "[LOAD]" does the same as "[load]" or even "[LoAd]" etc.
 Resolver : Command List                                            STinG
 @line 1 72 0 0 7
 
-Command list:		Six commands are defined at present
+Command list:       Six commands are defined at present
 
-[LOAD]		no argument	Loads the CACHE.DNS file into RAM from disk
-[SAVE]		no argument	Saves the CACHE.DNS file from RAM onto disk
-[FIRST]		no argument	Resolves the root entry of DNS RAM cache
-[NEXT]		no argument	Resolves the next entry of DNS RAM cache
-[CNAME]	arg1 = arg2 : arg3	Defines a canonical domain name for an IP
-[ALIAS] arg1 = arg2 : arg3	Defines an alias domain name for an IP
+[LOAD]      no argument Loads the CACHE.DNS file into RAM from disk
+[SAVE]      no argument Saves the CACHE.DNS file from RAM onto disk
+[FIRST]     no argument Resolves the root entry of DNS RAM cache
+[NEXT]      no argument Resolves the next entry of DNS RAM cache
+[CNAME] arg1 = arg2 : arg3  Defines a canonical domain name for an IP
+[ALIAS] arg1 = arg2 : arg3  Defines an alias domain name for an IP
 
 The last two commands have identical syntax and the meaning of argument is:
 
-arg1	The domain name.	eg: hugin.oden.se	(My ISP's main server)
-arg2	The dotted IP.		eg: 193.45.240.2	(IP number of the same)
-arg3	Time To Live (seconds)	eg: 172800		(valid for two days)
+arg1    The domain name.    eg: hugin.oden.se   (My ISP's main server)
+arg2    The dotted IP.      eg: 193.45.240.2    (IP number of the same)
+arg3    Time To Live (seconds)  eg: 172800      (valid for two days)
 
 The TTL entry and the preceding ':' are optional, and if excluded a default of
 10 years will be used. This is intended for entry of semi-permanent IP numbers
@@ -515,14 +515,14 @@ also relates only to the other aliases of the same CNAME.
 
 Command results as returned to the resolving client program:
 
-keyword		Results
--------		-------
-[LOAD]		Resolves the 'root' entry of successfully loaded cache
-[SAVE]		Resolves the 'current' entry of the cache on successful save
-[FIRST]		Resolves the 'root' entry of the cache, unless it is empty
-[NEXT]		Resolves the 'next' entry of the cache, unless already at end
-[CNAME]		Resolves the entry defined, if that succeeds
-[ALIAS]		Resolves the entry defined, if that succeeds
+keyword     Results
+-------     -------
+[LOAD]      Resolves the 'root' entry of successfully loaded cache
+[SAVE]      Resolves the 'current' entry of the cache on successful save
+[FIRST]     Resolves the 'root' entry of the cache, unless it is empty
+[NEXT]      Resolves the 'next' entry of the cache, unless already at end
+[CNAME]     Resolves the entry defined, if that succeeds
+[ALIAS]     Resolves the entry defined, if that succeeds
 
 NB: For safety reasons given in the introduction, all failures of the commands
     will be returned to the calling client as the error code  'E_CANTRESOLVE'.
@@ -541,38 +541,37 @@ NB: Since most clients will attempt to make some use of each resolved address,
 Resolver : Development History                                     STinG
 @line 1 72 0 0 7
 
-Version		Major changes from last version
--------		-------------------------------
+Version     Major changes from last version
+-------     -------------------------------
 
-  1.06		Modified [NEXT] to recognize cache end in user scans
-97.09.24	Fixed bug returning E_NOMEM on RAM error to use E_CANTRESOLVE
-		Fixed bomber bug in cache that struck ALIASes without CNAMEs
-		Added multiple IP return to network DNS queries
-		Added multiple caching for DNS queries with multiple results
-		Added multiple IP return to DNS cache queries
-		Added ICMP error message response, so all LAN machines notice
-		  when DNS requests to ISP fail due to offline state
+  1.06      Modified [NEXT] to recognize cache end in user scans
+97.09.24    Fixed bug returning E_NOMEM on RAM error to use E_CANTRESOLVE
+        Fixed bomber bug in cache that struck ALIASes without CNAMEs
+        Added multiple IP return to network DNS queries
+        Added multiple caching for DNS queries with multiple results
+        Added multiple IP return to DNS cache queries
+        Added ICMP error message response, so all LAN machines notice
+          when DNS requests to ISP fail due to offline state
 
-  1.05		Removed case sensitivity from command word interpreter
-97.09.12	Restructured some caching code
+  1.05      Removed case sensitivity from command word interpreter
+97.09.12    Restructured some caching code
 
-  1.04		Fixed some command bugs
-97.08.06	Fixed some caching bugs
-		Changed local name ttl default to eternity, to avoid losing
-		  entries when starting without proper time set.
+  1.04      Fixed some command bugs
+97.08.06    Fixed some caching bugs
+        Changed local name ttl default to eternity, to avoid losing
+          entries when starting without proper time set.
 
-  1.03		First proper release
-97.06.??	Implemented cache commands
-		Fixed various bugs
-		Restructured some DNS query code
+  1.03      First proper release
+97.06.??    Implemented cache commands
+        Fixed various bugs
+        Restructured some DNS query code
 
-  1.02		First functional version
-97.05.??	Combined caching with network queries
-		Implemented UDP retries with TCP fallback
-		
- 0.00-1.01	Early experimental versions, first by Peter then later by me
-  various	These included separately developed code for network queries
-		and for the basic cache system (still largely retained).
+  1.02      First functional version
+97.05.??    Combined caching with network queries
+        Implemented UDP retries with TCP fallback
+
+ 0.00-1.01  Early experimental versions, first by Peter then later by me
+  various   These included separately developed code for network queries
+        and for the basic cache system (still largely retained).
 
 @endnode
-

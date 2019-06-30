@@ -1,5 +1,3 @@
-
-
 @node "Introduction"
 @prev "Introduction"
 General remarks                                                    STinG
@@ -23,7 +21,7 @@ rent protocols have been invented to facilitate networking. Some examples
 are the IPX protocol as used by Novell, or the Netbeui used by Microsoft
 Windows 95. Another one is @{"TCP/IP" LINK "The TCP/IP Philosophy"}, which is the one implemented by STinG.
 By a lucky coincidence, TCP/IP is used by the world-wide Internet too, so
-with STinG you can connect to, and have your computer become a part of, 
+with STinG you can connect to, and have your computer become a part of,
 the Internet.
 
 As mentioned above, networking means running connections between computers
@@ -31,16 +29,16 @@ and use them to exchange data. There are many different ways to connect
 machines. Most people will know serial lines, which in the case of a null-
 modem connection can connect two computers. Several serial ports, as with
 the Mega STE or TT, allow extending such a "serial network" to many more
-than just two machines, by having computers forward data that is bound for 
+than just two machines, by having computers forward data that is bound for
 others that can't be reached directly. The software package is responsible
 for picking up the data from one serial port, and delivering it to the one
-other serial port that will bring the data a bit closer to the destination 
+other serial port that will bring the data a bit closer to the destination
 machine. Such a forwarding machine, which is called a @{B}Router@{b}, is essential
 for the proper functioning of the network. It needs to be always switched
 on, otherwise the network won't work. Ways around that have been searched
 for, and in the seventies the company Digital Equipment came up with the
 @{"Ethernet" LINK "The Ethernet"} standard.  Ethernet is a long cable to which many computers are
-attached. Sending data is a bit like broadcasting, i.e. every machine on 
+attached. Sending data is a bit like broadcasting, i.e. every machine on
 the Ethernet gets all the data, and it needs to ignore everything that's
 not bound for itself.  Hence, here only the two machines talking to each
 other need to be switched on.
@@ -75,13 +73,13 @@ The Internet                                                       STinG
 Ethernet is a development by Digital Equipment Corporation in the seven-
 ties. It means networking by means of a cable to which many computers are
 connected (the Ether). Computers simply broadcast the data, all machines
-can listen to it, but will ignore it if the data is bound for a specific 
+can listen to it, but will ignore it if the data is bound for a specific
 machine that is not itself. First, Ethernet was a thick, unflexible cable
 with the huge N type connectors, carrying data with 10 MBit per second.
 People soon discovered that normal BNC type cable did just as well, which
 allows far more easy wiring and handling. It is also much cheaper, thus
-the name "Cheapernet" for this variant.  Eventually people went for the 
-still cheaper UTP wiring (unshielded twisted pair). Now this requires a 
+the name "Cheapernet" for this variant.  Eventually people went for the
+still cheaper UTP wiring (unshielded twisted pair). Now this requires a
 change of the physical topology : It's not a cable to which all computers
 are linked too, but cables lead from all machines to a central hub, which
 resembles a star-like structure. Still each machine can listen to all the
@@ -113,20 +111,20 @@ exists only for cards employing the AMD LANCE chipset.
 The Internet                                                       STinG
 @line 1 72 0 0 7
 
-There is no clear and plain definition for the term "Internet". Generally 
+There is no clear and plain definition for the term "Internet". Generally
 it is viewed as being an  @{I}interconnected set of networks@{i}, which is also
-from what the name is derived. It has grown from the military ARPAnet of 
+from what the name is derived. It has grown from the military ARPAnet of
 the seventies, by linking more and more previously isolated separate net-
-works that had mainly been operated by universities and many other, most 
-notably military, research laboratories, as well as some big enterprises 
-that already at that time used computing extensively.  Few people really 
-had access to the Internet at the time, which comprised mainly mainframe 
+works that had mainly been operated by universities and many other, most
+notably military, research laboratories, as well as some big enterprises
+that already at that time used computing extensively.  Few people really
+had access to the Internet at the time, which comprised mainly mainframe
 machines. The last five years, i.e. the middle of the nineties, saw a tre-
-mendeous growth,  to which significantly contributed the rise of the ISP 
-business, enterprises the mere purpose of which is granting access to the 
-Internet. Everybody can connect to the Internet now, by simply phoning up 
+mendeous growth,  to which significantly contributed the rise of the ISP
+business, enterprises the mere purpose of which is granting access to the
+Internet. Everybody can connect to the Internet now, by simply phoning up
 some ISP's PoP (point of presence), and establishing the required link via
-that phone line. Networking software packages like STinG are necessary to 
+that phone line. Networking software packages like STinG are necessary to
 make the network services available on the machine to be used, and network
 client software like web browsers, news readers and mail exchange clients
 provide all the functionality people are after.
@@ -146,7 +144,7 @@ without MiNT, with all versions of MagiC, and also all known AES replace-
 ments, i.e. NAES, Geneva, XaAES, oAESis. Release versions of the MultiTOS
 AES work resonably well too. Note that AES 4.1 is @{B}not@{b} a release version
 of MultiTOS, it is an incomplete beta version, that somehow found it's way
-from the programmer's labs where it ought to have stayed, to the world. It 
+from the programmer's labs where it ought to have stayed, to the world. It
 is also badly bug-ridden, so do not expect a package that links so deeply
 into TOS like STinG does to work with AES 4.1.
 
@@ -155,8 +153,8 @@ is @{"run from the AUTO folder" LINK "Loading STinG"}, and loads all the externa
 STinG extension, or STX, modules. The kernel does all the OS linking, and
 provides basic services. It implements the IP layer of the @{"TCP/IP" LINK "The TCP/IP Philosophy"} protocol
 suite, but it does not deal directly with link level (PPP for instance) or
-high level (TCP for instance) protocols. The latter is the task of all the 
-modules. There is a module for running serial point-to-point links, called 
+high level (TCP for instance) protocols. The latter is the task of all the
+modules. There is a module for running serial point-to-point links, called
 @{"SERIAL.STX" LINK "SERIAL.STX : Serial Line Networking"}, which implements the required link level protocols, being SLIP
 and PPP. @{"TCP.STX" LINK "TCP.STX : Transmission Control Protocol"}, @{"UDP.STX" LINK "UDP.STX : User Datagram Protocol"} and @{"RESOLVE.STX" LINK "RESOLVE.STX : The DNS-Resolver"} are the most important high level
 modules, the function of which are obvious from the name.
@@ -170,43 +168,44 @@ machine STinG is running on.
 
 
 
-@limage PICS\CONCEPT.IMG 15 0 0
+@remark 312x429x2
+@limage "pics/concept.img" 15
 
 
-In the lower part you see an outer annulus which contains the names of the 
-ports. This means the low level drivers for the port hardware, which in the 
-case of serial and parallel port are part of the operating system, or added 
-by HSMODEM. Inside this you see another annulus cut into some pieces. These 
+In the lower part you see an outer annulus which contains the names of the
+ports. This means the low level drivers for the port hardware, which in the
+case of serial and parallel port are part of the operating system, or added
+by HSMODEM. Inside this you see another annulus cut into some pieces. These
 pieces resemble the STinG port drivers, which are loaded by STinG. Current-
-ly there is SERIAL.STX for serial ports, later CENTR.STX for the Centronics 
-port, ETHER.STX for Ethernet, LCLTLK.STX for LocalTalk and MIDI.STX for a 
-Midi based network may be added. The SERIAL.STX also contains protocol code 
-for handling the SLIP, CSLIP or PPP protocols, as these make sense only for 
-serial ports. The diagram suggests a limit of seven external ports, however 
+ly there is SERIAL.STX for serial ports, later CENTR.STX for the Centronics
+port, ETHER.STX for Ethernet, LCLTLK.STX for LocalTalk and MIDI.STX for a
+Midi based network may be added. The SERIAL.STX also contains protocol code
+for handling the SLIP, CSLIP or PPP protocols, as these make sense only for
+serial ports. The diagram suggests a limit of seven external ports, however
 in STinG's reality this number is only limited by hardware.
 
-Inside all this you see a star shaped structure which is the STinG kernel. 
-This part communicates with all *.STX, fetching IP datagrams from them and 
-routing them to another *.STX, to be send out. In the middle is the router, 
-which basically determines for any given IP address the port the datagram 
-is to be sent to. 
+Inside all this you see a star shaped structure which is the STinG kernel.
+This part communicates with all *.STX, fetching IP datagrams from them and
+routing them to another *.STX, to be send out. In the middle is the router,
+which basically determines for any given IP address the port the datagram
+is to be sent to.
 
-The high level protocols, and clients on the same machine, basically are 
-just another port for the STinG kernel. This is even internally arranged 
-this way. At the end of this special port you see a big block standing for 
-all the other parts of an IP implementation : Reassembly, datagram header 
+The high level protocols, and clients on the same machine, basically are
+just another port for the STinG kernel. This is even internally arranged
+this way. At the end of this special port you see a big block standing for
+all the other parts of an IP implementation : Reassembly, datagram header
 generation and evaluation, and the protocol multiplexer.
 
 On top of this, but still interwoven with the @{"IP" LINK "Internet Protocol (IP)"} layer, is @{"ICMP" LINK "Internet Control Message Protocol (ICMP)"}, the inter-
-net control facility. For each of them a programming interface is provided. 
-Some miscellaneous services are provided by the kernel too, like memory 
-handling (KRmalloc), semaphores (set_flag, clear_flag), and some functions 
+net control facility. For each of them a programming interface is provided.
+Some miscellaneous services are provided by the kernel too, like memory
+handling (KRmalloc), semaphores (set_flag, clear_flag), and some functions
 for port control. The broken line encircles all parts with are located in-
 side the STinG kernel.
 
-On top of the IP part you will find the high level protocols @{"TCP" LINK "Transmission Control Protocol (TCP)"}, @{"UDP" LINK "User Datagram Protocol (UDP)"}, and 
-the DNS resolve facility as separate modules to be loaded after the kernel 
-has initialized itself. Other protocols can be added in principle by just 
+On top of the IP part you will find the high level protocols @{"TCP" LINK "Transmission Control Protocol (TCP)"}, @{"UDP" LINK "User Datagram Protocol (UDP)"}, and
+the DNS resolve facility as separate modules to be loaded after the kernel
+has initialized itself. Other protocols can be added in principle by just
 providing appropriate *.STX files.
 
 @endnode
@@ -216,26 +215,25 @@ providing appropriate *.STX files.
 Loading STinG                                                      STinG
 @line 1 72 0 0 7
 
-The way STinG loads and starts up works like the following : 
+The way STinG loads and starts up works like the following :
 
-From the AUTO folder STING.PRG (the kernel) is loaded and started.  Then 
-the kernel in turn loads STING.INF (also in the AUTO folder), which points 
-to a path everything else can be located. From here DEFAULT.CFG is loaded. 
-Then the kernel looks for all *.STX files, and loads and executes them in 
-exactly the sequence they are found (which is the physical sequence inside 
+From the AUTO folder STING.PRG (the kernel) is loaded and started.  Then
+the kernel in turn loads STING.INF (also in the AUTO folder), which points
+to a path everything else can be located. From here DEFAULT.CFG is loaded.
+Then the kernel looks for all *.STX files, and loads and executes them in
+exactly the sequence they are found (which is the physical sequence inside
 the folder, just like AUTO folder execution, but this is of little signifi-
 cance). Each of the @{"*.STX modules" LINK "STinG Modules"} links itself into internal kernel struc-
-tures, and provides it's services this way.  Finally @{"ROUTE.TAB" LINK "The Routing Table"} is loaded, 
+tures, and provides it's services this way.  Finally @{"ROUTE.TAB" LINK "The Routing Table"} is loaded,
 which is a human readable text file to be provided by the system adminis-
-trator, that tells the router where to send a datagram bound for a certain 
-IP address. Startup is finished now, and STinG is operating. However, all 
-ports are inactive. The ports can be configured then via the AUTO folder 
-program @{"ConfSTinG" LINK "The ConfSTinG Tool"} (that does so via a provided *.INF file) or (optionally 
-interactively) via @{"CPX" LINK "CPX : STinG Port Setup"}. All the permanent connections are working now, and 
-thus you can use STinG for Intranetworking.  If you want to dial up a SLIP 
-or PPP connection to some internet service provider, you simply start the 
+trator, that tells the router where to send a datagram bound for a certain
+IP address. Startup is finished now, and STinG is operating. However, all
+ports are inactive. The ports can be configured then via the AUTO folder
+program @{"ConfSTinG" LINK "The ConfSTinG Tool"} (that does so via a provided *.INF file) or (optionally
+interactively) via @{"CPX" LINK "CPX : STinG Port Setup"}. All the permanent connections are working now, and
+thus you can use STinG for Intranetworking.  If you want to dial up a SLIP
+or PPP connection to some internet service provider, you simply start the
 @{"Dialer" LINK "The Dialer"} utility that does all the main work, and also configures the corres-
 ponding port.
 
 @endnode
-

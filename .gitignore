@@ -5,3 +5,5 @@
 *.cpx
 aaa.cfg
 *.pdb
+*.hyp
+*.ref
