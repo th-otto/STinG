@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : Save-IP Network Tool                                  */
@@ -15,119 +14,126 @@
 #include <string.h>
 
 #include "transprt.h"
-#include "port.h"
-
-
-long  get_sting_cookie (void);
-void  do_some_work (void);
-
-
-DRV_LIST    *sting_drivers;
-STX         *stx;
-
-char  *path, port_name[32] = "";
-
-char  arguments[] = "[1][ |  Two arguments : File and port   ][ Ok ]";
-char  not_there[] = "[1][ |  STinG is not loaded or enabled !   ][ Hmmm ]";
-char  corrupted[] = "[1][ |  STinG structures corrupted !   ][ Oooops ]";
-char  no_open[]   = "[1][ |  Can't create file \'IP.INF\' !   ][ Shit ]";
+#include "layer.h"
 
 
 
-void main (argc, argv)
 
-int   argc;
-char  *argv[];
+static DRV_LIST *sting_drivers;
+STX *stx;
 
+static char *path;
+static char port_name[32];
+
+static char const arguments[] = "[1][ |  Two arguments : File and port   ][ Ok ]";
+static char const not_there[] = "[1][ |  STinG is not loaded or enabled !   ][ Hmmm ]";
+static char const corrupted[] = "[1][ |  STinG structures corrupted !   ][ Oooops ]";
+static char const no_open[] = "[1][ |  Can't create file \'IP.INF\' !   ][ Shit ]";
+
+
+
+static long get_sting_cookie(void)
 {
-   int  count;
+	long *work;
 
-   appl_init();
+	work = *(long **) 0x5a0L;
+	if (work == 0)
+		return 0;
+	for (; *work != 0L; work += 2)
+		if (*work == STIK_COOKIE_MAGIC)
+			return (*++work);
 
-   if (argc < 3) {
-        form_alert (1, arguments);
-        return;
-      }
-
-   path = argv[1];
-
-   for (count = 2; count < argc; count++) {
-        strcat (port_name, argv[count]);
-        if (count < argc - 1)   strcat (port_name, " ");
-      }
-
-   sting_drivers = (DRV_LIST *) Supexec (get_sting_cookie);
-
-   if (sting_drivers == 0L) {
-        form_alert (1, not_there);
-        return;
-      }
-   if (strcmp (sting_drivers->magic, MAGIC) != 0) {
-        form_alert (1, corrupted);
-        return;
-      }
-
-   stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
-
-   if (stx != (STX *) NULL)   do_some_work();
-
-   appl_exit();
- }
+	return (0L);
+}
 
 
-long  get_sting_cookie()
-
+static void do_some_work(void)
 {
-   long  *work;
+	PORT *chain;
+	uint32 ip;
+	int16 file;
+	char *name;
+	char ip_addr[20];
 
-   work = * (long **) 0x5a0L;
-   if (work == 0)
-   	return 0;
-   for (; *work != 0L; work += 2)
-        if (*work == STIK_COOKIE_MAGIC)
-             return (*++work);
+	if (path[1] == ':')
+	{
+		Dsetdrv(path[0] - 'A');
+		path = &path[2];
+	}
 
-   return (0L);
- }
+	name = path;
+
+	if (strrchr(path, '\\') == NULL)
+	{
+		Dsetpath("\\");
+	} else
+	{
+		*((name = strrchr(path, '\\') + 1) - 1) = '\0';
+		Dsetpath(path);
+	}
+
+	if ((file = (int16) Fcreate(name, 0)) < 0)
+	{
+		form_alert(1, no_open);
+		return;
+	}
+
+	query_chains(&chain, NULL, NULL);
+
+	while (chain != NULL)
+	{
+		if (strcmp(chain->name, port_name) == 0)
+		{
+			ip = chain->ip_addr;
+			sprintf(ip_addr, "%ld.%ld.%ld.%ld\r\n", (ip >> 24) & 0xff, (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff);
+			Fwrite(file, strlen(ip_addr), ip_addr);
+		}
+		chain = chain->next;
+	}
+
+	Fclose(file);
+}
 
 
-void  do_some_work()
-
+int main(int argc, char **argv)
 {
-   PORT    *chain;
-   uint32  ip;
-   int16   file;
-   void    *dummy;
-   char    *name, ip_addr[20];
+	int count;
 
-   if (path[1] == ':') {
-        Dsetdrv (path[0] - 'A');   path = & path[2];
-      }
+	appl_init();
 
-   name = path;
+	if (argc < 3)
+	{
+		form_alert(1, arguments);
+		return 1;
+	}
 
-   if (strrchr (path, '\\') == NULL)
-        Dsetpath ("\\");
-     else {
-        * ((name = strrchr (path, '\\') + 1) - 1) = '\0';
-        Dsetpath (path);
-      }
+	path = argv[1];
 
-   if ((file = (int16) Fcreate (name, 0)) < 0) {
-        form_alert (1, no_open);
-        return;
-      }
+	for (count = 2; count < argc; count++)
+	{
+		strcat(port_name, argv[count]);
+		if (count < argc - 1)
+			strcat(port_name, " ");
+	}
 
-   query_chains (& chain, NULL, NULL);
+	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
-   while (chain != NULL) {
-        if (strcmp (chain->name, port_name) == 0) {
-             ip = chain->ip_addr;
-             sprintf (ip_addr, "%ld.%ld.%ld.%ld\r\n", (ip >> 24) & 0xff, (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff);
-             Fwrite (file, strlen (ip_addr), ip_addr);
-           }
-        chain = chain->next;
-      }
+	if (sting_drivers == 0L)
+	{
+		form_alert(1, not_there);
+		return 1;
+	}
+	if (strcmp(sting_drivers->magic, MAGIC) != 0)
+	{
+		form_alert(1, corrupted);
+		return 1;
+	}
 
-   Fclose (file);
- }
+	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
+
+	if (stx != (STX *) NULL)
+		do_some_work();
+
+	appl_exit();
+	return 0;
+}

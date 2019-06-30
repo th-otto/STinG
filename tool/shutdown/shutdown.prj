@@ -1,0 +1,24 @@
+shutdown.prg
+
+.C[-I..\..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=4096]
+
+=
+cauto.o
+
+shutdown.c
+shut.s [-S]
+
+pcgemlib.lib
+pctoslib.lib
+pcstdlib.lib

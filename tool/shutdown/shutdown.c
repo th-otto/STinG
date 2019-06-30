@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : Shutdown Tool                                         */
@@ -11,6 +10,7 @@
 
 #include <aes.h>
 #include <tos.h>
+#include <mint/sysvars.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -19,165 +19,174 @@
 #include "layer.h"
 
 
-long  unlink_vectors (void);
-void  disable_interrupts (void);
-void  enable_interrupts (void);
+DRV_LIST *sting_drivers;
+TPL *tpl;
+STX *stx;
 
-long  get_sting_cookie (void);
-void  ports_off (void);
-long  remove_mem (void);
-long  destroy_sting_cookie (void);
+static char const not_there[] = "\033ESTinG is not loaded or enabled !";
+static char const corrupted[] = "\033ESTinG structures corrupted !";
+static char const link_fail[] = "\033ESTinG exception vectors not linked !";
 
-
-DRV_LIST    *sting_drivers;
-TPL         *tpl;
-STX         *stx;
-
-char  not_there[] = "\033ESTinG is not loaded or enabled !";
-char  corrupted[] = "\033ESTinG structures corrupted !";
-char  link_fail[] = "\033ESTinG exception vectors not linked !";
+void disable_interrupts(void);
+void enable_interrupts(void);
+long unlink_vectors(void);
 
 
-
-void main()
-
+static long get_sting_cookie(void)
 {
-   appl_init();
+	long *work;
 
-   sting_drivers = (DRV_LIST *) Supexec (get_sting_cookie);
+	work = *(long **) 0x5a0L;
+	if (work == 0)
+		return 0;
+	for (; *work != 0L; work += 2)
+		if (*work == STIK_COOKIE_MAGIC)
+			return *++work;
 
-   if (sting_drivers == 0L) {
-        puts (not_there);
-        return;
-      }
-   if (strcmp (sting_drivers->magic, MAGIC) != 0) {
-        puts (corrupted);
-        return;
-      }
-
-   tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
-   stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
-
-   if (tpl != (TPL *) NULL && stx != (STX *) NULL) {
-        ports_off();
-        if (Supexec (unlink_vectors) != 0L)
-             puts (link_fail);
-        Supexec (destroy_sting_cookie);
-        Supexec (remove_mem);
-      }
-
-   appl_exit();
- }
+	return 0;
+}
 
 
-long  get_sting_cookie()
-
+static void ports_off(void)
 {
-   long  *work;
+	PORT *port = NULL;
+	int flag = FALSE;
 
-   work = * (long **) 0x5a0L;
-   if (work == 0)
-   	return 0;
-   for (; *work != 0L; work += 2)
-        if (*work == STIK_COOKIE_MAGIC)
-             return *++work;
+	query_chains(&port, NULL, NULL);
 
-   return 0;
- }
+	while (port)
+	{
+		if (query_port(port->name) == TRUE)
+		{
+			flag = TRUE;
+			off_port(port->name);
+		}
+		port = port->next;
+	}
+
+	if (flag)
+		evnt_timer(3000);
+
+	set_sysvars(FALSE, 10);
+}
 
 
-void  ports_off()
-
+static long remove_mem(void)
 {
-   PORT  *port;
-   int   flag = FALSE;
+	DRIVER *driver;
+	DRIVER *next_driver;
+	LAYER *layer;
+	LAYER *next_layer;
+	BASPAG *sting;
+	BASPAG **process;
+	BASPAG *old_proc;
+	STIK_CONFIG *conf;
+	OSHEADER *oshdr = *(OSHEADER **) 0x4f2L;
 
-   query_chains (& port, NULL, NULL);
+	disable_interrupts();
 
-   while (port) {
-        if (query_port (port->name) == TRUE) {
-             flag = TRUE;
-             off_port (port->name);
-           }
-        port = port->next;
-      }
+	if (oshdr->os_version >= 0x0102)
+		process = (BASPAG **) oshdr->p_run;
+	else
+		process = (BASPAG **) (((oshdr->os_conf >> 1) == 4) ? 0x873cL : 0x602cL);
 
-   if (flag)
-        evnt_timer (3000, 0);
+	old_proc = *process;
 
-   set_sysvars (FALSE, 10);
- }
+	query_chains(NULL, &driver, &layer);
+
+	sting = (BASPAG *) sting_drivers->sting_basepage;
+	conf = sting_drivers->cfg;
+
+	*process = sting;
+
+	while (driver)
+	{
+		next_driver = driver->next;
+		if (driver->basepage != sting)
+		{
+			Mfree(driver->basepage->p_env);
+			Mfree(driver->basepage);
+		}
+		driver = next_driver;
+	}
+
+	while (layer)
+	{
+		next_layer = layer->next;
+		if (layer->basepage != sting)
+		{
+			Mfree(layer->basepage->p_env);
+			Mfree(layer->basepage);
+		}
+		layer = next_layer;
+	}
+
+	Mfree(conf->memory);
+
+	if (!conf->new_cookie)
+	{
+		*process = sting->p_parent;
+		Mfree(sting->p_env);
+		Mfree(sting);
+	}
+
+	*process = old_proc;
+
+	enable_interrupts();
+
+	return 0;
+}
 
 
-long  remove_mem()
-
+static long destroy_sting_cookie(void)
 {
-   DRIVER    *driver, *next_driver;
-   LAYER     *layer, *next_layer;
-   BASPAG    *sting, **process, *old_proc;
-   STIK_CONFIG    *conf;
-   OSHEADER  *oshdr = * (OSHEADER **) 0x4f2L;
+	long *work;
 
-   disable_interrupts();
+	for (work = *(long **) 0x5a0L; *work != 0L; work += 2)
+		if (*work == STIK_COOKIE_MAGIC)
+		{
+			do
+			{
+				work[0] = work[2];
+				work[1] = work[3];
+				work += 2;
+			} while (work[0] != 0L);
+			break;
+		}
 
-   if (oshdr->os_version >= 0x0102)
-        process = oshdr->p_run;
-     else
-        process = (BASPAG **) (((oshdr->os_conf >> 1) == 4) ? 0x873cL : 0x602cL);
-
-   old_proc = *process;
-
-   query_chains (NULL, & driver, & layer);
-
-   sting = (BASPAG *) sting_drivers->sting_basepage;
-   conf  = sting_drivers->cfg;
-
-   *process = sting;
-
-   while (driver) {
-        next_driver = driver->next;
-        if (driver->basepage != sting) {
-             Mfree (driver->basepage->p_env);   Mfree (driver->basepage);
-           }
-        driver = next_driver;
-      }
-
-   while (layer) {
-        next_layer = layer->next;
-        if (layer->basepage != sting) {
-             Mfree (layer->basepage->p_env);   Mfree (layer->basepage);
-           }
-        layer = next_layer;
-      }
-
-   Mfree (conf->memory);
-
-   if (! conf->new_cookie) {
-        *process = sting->p_parent;
-        Mfree (sting->p_env);   Mfree (sting);
-      }
-
-   *process = old_proc;
-
-   enable_interrupts();
-
-   return (0L);
- }
+	return 0;
+}
 
 
-long  destroy_sting_cookie()
-
+int main(void)
 {
-   long  *work;
+	appl_init();
 
-   for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == STIK_COOKIE_MAGIC) {
-             do {
-                  work[0] = work[2];   work[1] = work[3];
-                  work += 2;
-               } while (work[0] != 0L);
-             break;
-           }
+	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
-   return (0L);
- }
+	if (sting_drivers == 0L)
+	{
+		puts(not_there);
+		return 1;
+	}
+	if (strcmp(sting_drivers->magic, MAGIC) != 0)
+	{
+		puts(corrupted);
+		return 1;
+	}
+
+	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
+	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
+
+	if (tpl != (TPL *) NULL && stx != (STX *) NULL)
+	{
+		ports_off();
+		if (Supexec(unlink_vectors) != 0)
+			puts(link_fail);
+		Supexec(destroy_sting_cookie);
+		Supexec(remove_mem);
+	}
+
+	appl_exit();
+	return 0;
+}
