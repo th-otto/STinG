@@ -94,7 +94,7 @@ char  *argv[];
 
    if (sting_drivers == NULL)   return;
 
-   if (strcmp (sting_drivers->magic, MAGIC) != 0)
+   if (strcmp (sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
         return;
 
    tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);

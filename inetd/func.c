@@ -48,7 +48,7 @@ char  stik_version[];
 
    if (stik_drivers == NULL)
         return (1);
-   if (strcmp (stik_drivers->magic, MAGIC) != 0)
+   if (strcmp (stik_drivers->magic, STIK_DRVR_MAGIC) != 0)
         return (1);
 
    tpl = (TPL *) (*stik_drivers->get_dftab) (TRANSPORT_DRIVER);

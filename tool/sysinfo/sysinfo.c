@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 		puts(not_there);
 		return 1;
 	}
-	if (strcmp(sting_drivers->magic, MAGIC) != 0)
+	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
 		puts(corrupted);
 		return 1;

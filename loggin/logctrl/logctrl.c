@@ -196,7 +196,7 @@ int  init_data()
         return (0);
       }
 
-   if (strcmp (sting_drivers->magic, MAGIC) != 0) {
+   if (strcmp (sting_drivers->magic, STIK_DRVR_MAGIC) != 0) {
         form_alert (1, "[1][ |  STinG structures corrupted !   ][ Fuck ]");
         return (0);
       }

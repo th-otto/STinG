@@ -103,9 +103,12 @@ typedef struct
 	void __CDECL (*cpx_close) (_WORD flag);
 } CPXINFO;
 
-
-CPXINFO *__CDECL cpx_init(XCPB *Xcpb)
+#ifndef GNU_ASM_NAME
 #ifdef __GNUC__
-	__asm__("cpx_init")
+#define GNU_ASM_NAME(x) __asm__(x)
+#else
+#define GNU_ASM_NAME(x)
 #endif
-	;
+#endif
+
+CPXINFO *__CDECL cpx_init(XCPB *Xcpb) GNU_ASM_NAME("cpx_init");

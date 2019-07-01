@@ -1121,7 +1121,7 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 	if (sting_drivers == 0L)
 		return NULL;
 
-	if (strcmp(sting_drivers->magic, MAGIC) != 0)
+	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 		return NULL;
 
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);

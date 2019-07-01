@@ -52,7 +52,7 @@ static int locate_sting(void)
 	if (sting_drivers == 0L)
 		return FALSE;
 
-	if (strcmp(sting_drivers->magic, MAGIC) != 0)
+	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 		return FALSE;
 
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);

@@ -53,8 +53,7 @@ typedef unsigned long  uint32;        /* Unsigned 32 bit (longword)         */
  *   Driver access structure / functions.
  */
 
-#define MAGIC   "STiKmagic"                 /* Magic for DRV_LIST.magic     */
-#define CJTAG   "STiK"
+#define STIK_DRVR_MAGIC   "STiKmagic"                 /* Magic for DRV_LIST.magic     */
 
 
 typedef struct drv_header {                 /* Header part of TPL structure */
@@ -102,7 +101,7 @@ typedef struct _sting_config
 
 /* cookie points to: */
 typedef struct drv_list {
-	char      magic[10];                    /* Magic string, def'd as MAGIC */
+	char      magic[10];                    /* Magic string, def'd as STIK_DRVR_MAGIC */
 	DRV_HDR * cdecl (*get_dftab) (const char *);  /* Get Driver Function Table    */
 	int16     cdecl (*ETM_exec) (const char *);   /* Execute a STinG module       */
 	STIK_CONFIG *cfg;                         /* Config structure             */

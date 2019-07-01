@@ -201,7 +201,7 @@ static void gem_program(void)
 		form_alert(1, not_there);
 		return;
 	}
-	if (strcmp(sting_drivers->magic, MAGIC) != 0)
+	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
 		form_alert(1, corrupted);
 		return;

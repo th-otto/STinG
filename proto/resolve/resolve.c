@@ -96,7 +96,7 @@ char  *argv[];
 
    if (stik_drivers == 0L)   return;
 
-   if (strcmp (stik_drivers->magic, MAGIC) != 0)
+   if (strcmp (stik_drivers->magic, STIK_DRVR_MAGIC) != 0)
         return;
 
    tpl = (TPL *) (*stik_drivers->get_dftab) (TRANSPORT_DRIVER);

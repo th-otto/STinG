@@ -107,7 +107,7 @@ char  sting_version[];
 
    if (sting_drivers == NULL)
         return (2);
-   if (strcmp (sting_drivers->magic, MAGIC) != 0)
+   if (strcmp (sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
         return (2);
 
    conf_block = sting_drivers->cfg;
