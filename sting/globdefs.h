@@ -245,14 +245,14 @@ int16 cdecl check_dgram_ttl(IP_DGRAM * datagram);
 int16 cdecl get_route_entry(int16 no, uint32 * tmplt, uint32 * mask, PORT ** port, uint32 * gway);
 int16 cdecl set_route_entry(int16 no, uint32 tmplt, uint32 mask, PORT * port, uint32 gway);
 int16 cdecl routing_table(void);
-int16 cdecl IP_send(uint32, uint32, uint8, uint16, uint8, uint8, uint16, void *, uint16, void *, uint16);
+int16 cdecl IP_send(uint32 source, uint32 dest, uint8 tos, uint16 fragm_flg, uint8 ttl, uint8 protocol, uint16 ident, void *data, uint16 data_len, void *options, uint16 opt_len);
 IP_DGRAM *cdecl IP_fetch(int16 prtcl);
 int16 cdecl IP_handler(int16 prtcl, int16 cdecl(*hndlr) (IP_DGRAM *), int16 flag);
 void cdecl IP_discard(IP_DGRAM * datagram, int16 all_flag);
 
 extern LAYER icmp_desc;
 
-int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, void *data, uint16 len);
+int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, const void *data, uint16 len);
 int16 cdecl ICMP_handler(int16 cdecl(*hndlr) (IP_DGRAM *), int16 flag);
 void cdecl ICMP_discard(IP_DGRAM * datagram);
 

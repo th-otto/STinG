@@ -1,0 +1,24 @@
+logsting.prg
+
+.C[-I..\..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=4096]
+
+=
+cstart0.o
+
+install.c
+api.c
+
+pcgemlib.lib
+pctoslib.lib
+pcstdlib.lib

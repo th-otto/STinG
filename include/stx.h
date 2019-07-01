@@ -78,8 +78,7 @@ typedef struct stx {
 	int16	   cdecl  (* load_routing_table) (void);
 	int32	   cdecl  (* set_sysvars) (int16 new_act, int16 new_frac);
 	void	   cdecl  (* query_chains) (PORT ** port, DRIVER ** drv, LAYER ** layer);
-	int16	   cdecl  (* IP_send) (uint32, uint32, uint8, uint16, uint8, uint8, uint16,
-								   void *, uint16, void *, uint16);
+	int16	   cdecl  (* IP_send) (uint32 src, uint32 dest, uint8 tos, uint16 frg, uint8 ttl, uint8 prctl, uint16 id, void *data, uint16 dlen, void *opt, uint16 olen);
 	IP_DGRAM * cdecl  (* IP_fetch) (int16 prtcl);
 	int16	   cdecl  (* IP_handler) (int16 prtctl, int16 cdecl (*handleler) (IP_DGRAM *), int16 flag);
 	void	   cdecl  (* IP_discard) (IP_DGRAM *datagram, int16 all_flag);

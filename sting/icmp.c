@@ -205,7 +205,7 @@ int16 cdecl ICMP_process(IP_DGRAM *dgram)
 }
 
 
-int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, void *data, uint16 dat_length)
+int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, const void *data, uint16 dat_length)
 {
 	uint16 length;
 	uint8 *packet;

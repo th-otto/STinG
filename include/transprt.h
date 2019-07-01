@@ -369,7 +369,7 @@ typedef  struct tpl  {
     int16      cdecl  (* setvstr) (const char *, const char *);
     int16      cdecl  (* query_port) (const char *);
     int16      cdecl  (* CNgets) (int16, char *, int16, char);
-    int16      cdecl  (* ICMP_send) (uint32, uint8, uint8, void *, uint16);
+    int16      cdecl  (* ICMP_send) (uint32, uint8, uint8, const void *, uint16);
     int16      cdecl  (* ICMP_handler) (int16 cdecl (*) (IP_DGRAM *), int16);
     void       cdecl  (* ICMP_discard) (IP_DGRAM *);
     int16      cdecl  (* TCP_info) (int16, TCPIB *);
