@@ -26,4 +26,4 @@ clean::
 release::
 	$(MKDIR) $(RELEASE_DIR)/cpx
 	cp -a serial.cpx $(RELEASE_DIR)/cpx
-	cp -a README $(RELEASE_DIR)/cpx/README.ser
+	cp -a README $(RELEASE_DIR)/cpx/serial.txt

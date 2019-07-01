@@ -1,39 +1,49 @@
+/*
+ *   Structures for interfacing to INetD ...
+ */
+typedef struct ism_api
+{
+	void (*ext_objects) (_WORD ism_index, _WORD rsc);
+	void (*set_trees) (_WORD ism_index, OBJECT *trees[], _WORD global[]);
+	_WORD (*open_window) (_WORD ism_index, _WORD rsc, _WORD edit);
+	_WORD (*close_window) (_WORD ism_index, _WORD rsc);
+	void (*set_callbacks) (_WORD ism_index, _WORD rsc, int (*click)(_WORD obj), int (*key)(unsigned short scan));
+	void (*change_flags) (_WORD ism_index, _WORD rsc, _WORD obj, _WORD what, _WORD flags, _WORD state);
+	void (*do_popup) (_WORD ism_index, _WORD pu, _WORD *sel, _WORD par, _WORD obj, _WORD len);
+	void (*editing) (_WORD ism_index, _WORD rsc, _WORD what, _WORD edit);
+	_WORD (*top_window) (_WORD ism_index, _WORD rsc);
+	void (*rsc_size) (_WORD ism_index, _WORD rsc, _WORD width, _WORD height, _WORD parent);
+	void (*free_string) (_WORD ism_index, _WORD rsc, _WORD obj, _WORD par, char txt[], _WORD len);
+	void (*tedinfo) (_WORD ism_index, _WORD rsc, _WORD obj, _WORD par, _WORD w, char txt[], _WORD len);
+	void (*finish_user) (_WORD ism_index);
+	void (*finish_server) (_WORD ism_index);
+} ISM_API;
 
-typedef  int  cdecl  (*CB_FUNC) (int);
+typedef struct ism_para
+{
+	void *module_resident;
+	short index;
+	_WORD char_width;
+	_WORD char_height;
+	short protocol;
+	short connection;
+	ISM_API *server_api;
+} ISM_PARA;
 
-typedef  struct ism_api {
-            void   cdecl  (* ext_objects)   (int i, int rsc);
-            void   cdecl  (* set_trees)     (int i, long trees[], int global[], int len);
-            int    cdecl  (* open_window)   (int i, int rsc, int edit);
-            int    cdecl  (* close_window)  (int i, int rsc);
-            void   cdecl  (* callback)      (int i, int rsc, CB_FUNC click, CB_FUNC key);
-            void   cdecl  (* change_flags)  (int i, int rsc, int obj, int what, int flags, int state);
-            void   cdecl  (* do_popup)      (int i, int pu, int *sel, int par, int obj, int len);
-            void   cdecl  (* editing)       (int i, int rsc, int what, int edit);
-            int    cdecl  (* top_window)    (int i, int rsc);
-            void   cdecl  (* rsc_size)      (int i, int rsc, int width, int height, int parent);
-            void   cdecl  (* free_string)   (int i, int rsc, int obj, int par, char txt[], int len);
-            void   cdecl  (* tedinfo)       (int i, int rsc, int obj, int par, int w, char txt[], int len);
-            void   cdecl  (* finish_user)   (int i);
-            void   cdecl  (* finish_server) (int i);
-    } ISM_API;
+typedef struct ism_specs ISM_SPECS;
 
-typedef  struct ism_para {
-            void      *module_resident;
-            int       index;
-            int       char_width, char_height;
-            int       protocol, connection;
-            ISM_API   *server_api;
-    } ISM_PARA;
-
-typedef  long  cdecl  (* IND_FUNC) (ISM_PARA  *module_data);
-
-typedef  struct ism_specs {
-            IND_FUNC  ism_init, ism_term, ism_user, ism_server;
-            ICONBLK   *ism_icon;
-            int       ism_num_trees, ism_protocol, ism_tos;
-            char      ism_name[17];
-    } ISM_SPECS;
+struct ism_specs
+{
+	ISM_SPECS *(*ism_init)(ISM_PARA *module_data);
+	void (*ism_term)(ISM_PARA *module_data);
+	void (*ism_user)(ISM_PARA *module_data);
+	void (*ism_server)(ISM_PARA *module_data);
+	ICONBLK *ism_icon;
+	short ism_num_trees;
+	short ism_protocol;
+	short ism_tos;
+	char ism_name[17];
+};
 
 #define  ISM_UDP       1
 #define  ISM_TCP       2
@@ -41,12 +51,49 @@ typedef  struct ism_specs {
 #define  ACT_USER      1
 #define  ACT_SERVER    2
 
-typedef  struct ism_internals {
-            char      ism_name[17], ism_ictxt[13], ism_icon[96];
-            char      file[14], resident[64];
-            int       action, rsc_offset, rsc_num, protocol, tos;
-            long      ism_dterm, ism_duser, ism_dserver;
-            IND_FUNC  ism_init, ism_term, ism_user, ism_server;
-            BASPAG    *basepage;
-    } ISM_INTERN;
+typedef struct ism_internals
+{
+	char ism_name[17];
+	char ism_ictxt[13];
+	char ism_icon[96];
+	char file[14];
+	char resident[64];
+	short action;
+	short rsc_offset;
+	short rsc_num;
+	short protocol;
+	short tos;
+	long ism_dterm;
+	long ism_duser;
+	long ism_dserver;
+	ISM_SPECS *(*ism_init)(ISM_PARA *module_data);
+	void (*ism_term)(ISM_PARA *module_data);
+	void (*ism_user)(ISM_PARA *module_data);
+	void (*ism_server)(ISM_PARA *module_data);
+	BASPAG *basepage;
+} ISM_INTERN;
 
+
+#ifndef GNU_ASM_NAME
+#ifdef __GNUC__
+#define GNU_ASM_NAME(x) __asm__(x)
+#else
+#define GNU_ASM_NAME(x)
+#endif
+#endif
+
+ISM_SPECS *module_init(ISM_PARA *module_data) GNU_ASM_NAME("module_init");
+
+
+/*
+ *   for handling Dialogs in Windows ...
+ */
+
+#define  BEGIN            1
+#define  END              2
+
+#define  TE_PTEXT         0
+#define  TE_PTMPLT        1
+#define  TE_PVALID        2
+
+#define  CLOSER_CLICKED   0x7654

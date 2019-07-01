@@ -2,34 +2,68 @@
  *   Library for handling Dialogs in Windows ...
  */
 
-#define  BEGIN            1
-#define  END              2
+#ifndef FALSE
+#define  FALSE             0
+#define  TRUE              1
+#endif
 
-#define  CB_TIMER         -1
-#define  CB_MESSAGE       -2
-#define  CB_MENU          -3
-#define  CB_EVENT         -4
-
-#define  TE_PTEXT         0
-#define  TE_PTMPLT        1
-#define  TE_PVALID        2
-
-#define  CLOSER_CLICKED   0x7654
+#define  CNTRL_Q          0x1011
 
 
-typedef  int  cdecl (* FUNC) ();
+extern ISM_INTERN *ism_data;
+extern int num_modules;
+extern char inetd_path[];
+extern _WORD conf_shown;
+extern ISM_PARA parameter;
+extern char *strings;
 
 
-int   initialise_windows (int number_trees, int icnfy_index);
-int   leave_windows (void);
-int   open_rsc_window (int rsc_tree, int edit_object, char window_name[], char short_name[], int parent_tree);
-int   close_rsc_window (int rsc_tree, int wind_handle);
-void  set_callbacks (int rsc_tree, int cdecl click_func (int obj), int cdecl key_func (int scan));
-int   operate_events (void);
-void  interupt_editing (int rsc_tree, int what, int new_edit);
-void  change_rsc_size (int rsc_tree, int new_width, int new_height, int parent_obj);
-void  change_freestring (int rsc_tree, int object, int parent_obj, char text[], int length);
-void  change_tedinfo (int rsc_tree, int object, int parent_obj, int which, char text[], int length);
-void  change_flags (int rsc_tree, int object, int change_flag, int flags, int state);
-int   top_rsc_window (int rsc_tree);
-void  pop_up (int popup_tree, int *object, int dialog_tree, int string_obj, int length);
+
+int initialise_windows(_WORD number_trees, _WORD icnfy_index);
+int leave_windows(void);
+_WORD open_rsc_window(_WORD rsc_tree, _WORD edit_object, const char *window_name, const char *short_name, _WORD parent_tree);
+int close_rsc_window(_WORD rsc_tree, _WORD wind_handle);
+void set_callbacks(_WORD rsc_tree, int click_func(_WORD obj), int key_func(unsigned short scan));
+void set_timer_callback(int (*timer_func)(void), long timer_delay);
+void set_message_callback(int (*message_func)(_WORD *message));
+void set_menu_callback(int (*menu_func)(_WORD title, _WORD item));
+void set_event_callback(int (*event_func)(void));
+int operate_events(void);
+void interupt_editing(_WORD rsc_tree, _WORD what, _WORD new_edit);
+void change_rsc_size(_WORD rsc_tree, _WORD new_width, _WORD new_height, _WORD parent_obj);
+void change_freestring(_WORD rsc_tree, _WORD object, _WORD parent_obj, const char *text, _WORD length);
+void change_tedinfo(_WORD rsc_tree, _WORD object, _WORD parent_obj, _WORD which, const char *text, _WORD length);
+void change_flags(_WORD rsc_tree, _WORD object, _WORD change_flag, _WORD flags, _WORD state);
+_WORD top_rsc_window(_WORD rsc_tree);
+void pop_up(_WORD popup_tree, _WORD *object, _WORD dialog_tree, _WORD string_obj, _WORD length);
+
+
+void init_configs(void);
+void fill_in_config_box(void);
+int conf_click(_WORD object);
+int conf_typed(unsigned short scancode);
+void set_tedinfo_text(_WORD rsc_tree, _WORD object, const char *text);
+void get_tedinfo_text(_WORD rsc_tree, _WORD object, char *text);
+void set_tedinfo_number(_WORD rsc_tree, _WORD object, int number);
+void get_tedinfo_number(_WORD rsc_tree, _WORD object, int *number);
+void rsc_ext_objects(OBJECT *tree);
+
+extern char ism_path[];
+extern int disp_offset;
+extern OBJECT **my_tree_index;
+extern char const version[];
+extern _WORD const mdle_box[];
+extern _WORD const click_box[];
+extern _WORD const mdle_icon[];
+extern _WORD const mdle_name[];
+extern _WORD const edit[];
+
+int get_version(char stik[]);
+int init_modules(void);
+void terminate_modules(void);
+void call_module(int which);
+int check_modules(void);
+void insert_modules(int draw_flag);
+int get_version(char *stik_version);
+
+void set_api_struct(void);
