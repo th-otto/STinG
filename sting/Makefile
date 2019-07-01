@@ -22,3 +22,11 @@ thread.o: thread.s
 
 sting.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/auto
+	$(MKDIR) $(RELEASE_DIR)/sting
+	cp -a sting.prg $(RELEASE_DIR)/auto
+	echo "C:\\STING\\" > $(RELEASE_DIR)/auto/sting.inf
+	cp -a default.cfg $(RELEASE_DIR)/sting
+	cp -a route.tab $(RELEASE_DIR)/sting

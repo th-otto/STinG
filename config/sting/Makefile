@@ -22,3 +22,7 @@ sting.bin: $(OBJS)
 
 clean::
 	$(RM) *.cpx *.bin
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/cpx
+	cp -a sting.cpx $(RELEASE_DIR)/cpx

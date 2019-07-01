@@ -18,3 +18,7 @@ sting.hyp: $(STG)
 
 clean::
 	$(RM) *.hyp *.ref
+
+release::
+	$(MKDIR) $(RELEASE_DIR)
+	cp -a sting.hyp sting.ref $(RELEASE_DIR)

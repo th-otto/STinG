@@ -8,9 +8,12 @@ LDFLAGS=-s
 LIBS=
 
 HCP = hcp
+MKDIR = mkdir -p
 
 all::
 
 
 clean::
 	$(RM) *.o *.prg *.pdb
+
+release::

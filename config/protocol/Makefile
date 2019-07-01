@@ -22,3 +22,7 @@ stngprot.bin: $(OBJS)
 
 clean::
 	$(RM) *.cpx *.bin
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/cpx
+	cp -a stngprot.cpx $(RELEASE_DIR)/cpx

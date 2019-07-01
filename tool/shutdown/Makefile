@@ -13,3 +13,7 @@ all:: shutdown.prg
 
 shutdown.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/tools
+	cp -a shutdown.prg $(RELEASE_DIR)/tools

@@ -22,3 +22,8 @@ serial.bin: $(OBJS)
 
 clean::
 	$(RM) *.cpx *.bin
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/cpx
+	cp -a serial.cpx $(RELEASE_DIR)/cpx
+	cp -a README $(RELEASE_DIR)/cpx/README.ser

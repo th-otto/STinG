@@ -13,3 +13,7 @@ all:: logsting.prg
 
 logsting.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/dev-kit/logsting
+	cp -a logsting.prg $(RELEASE_DIR)/dev-kit/logsting

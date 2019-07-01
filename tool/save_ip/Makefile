@@ -12,3 +12,7 @@ all:: save_ip.prg
 
 save_ip.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+release::
+	$(MKDIR) $(RELEASE_DIR)/tools
+	cp -a save_ip.prg $(RELEASE_DIR)/tools
