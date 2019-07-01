@@ -1,6 +1,7 @@
 include ../../configvars
 
 CFLAGS += -I../../include
+LIBS += -lgem
 
 SRCS = \
 	tracrout.c \

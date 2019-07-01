@@ -20,6 +20,14 @@
 
 #define  MAX_HANDLE    64    /* Number of handles assigned by PRTCL_request */
 
+#ifndef GNU_ASM_NAME
+#ifdef __GNUC__
+#define GNU_ASM_NAME(x) __asm__(x)
+#else
+#define GNU_ASM_NAME(x)
+#endif
+#endif
+
 /*
  *   Defragmentation queue entries.
  */
@@ -190,7 +198,7 @@ typedef  struct route_entry {
 extern STIK_CONFIG conf;
 extern PORT my_port;
 extern IP_PRTCL ip[];
-extern uint32 sting_clock;
+extern uint32 sting_clock GNU_ASM_NAME("sting_clock");
 extern void *icmp;
 extern char sting_path[];
 
@@ -222,9 +230,9 @@ int32 cdecl set_sysvars(int16 new_act, int16 new_frac);
 void cdecl query_chains(PORT ** port, DRIVER ** drv, LAYER ** layer);
 const char *cdecl get_error_text(int16 error_code);
 
-int16 cdecl set_flag(int16 flag);
-void cdecl clear_flag(int16 flag);
-int32 cdecl protect_exec(void *parameter, int32 cdecl(*code) (void *));
+int16 cdecl set_flag(int16 flag) GNU_ASM_NAME("set_flag");
+void cdecl clear_flag(int16 flag) GNU_ASM_NAME("clear_flag");
+int32 cdecl protect_exec(void *parameter, int32 cdecl(*code) (void *)) GNU_ASM_NAME("protect_exec");
 
 int16 cdecl on_port(const char *port);
 void cdecl off_port(const char *port);
@@ -251,8 +259,8 @@ void cdecl ICMP_discard(IP_DGRAM * datagram);
 long init_cookie(void);
 void install(void);
 
-uint16 check_sum(IP_HDR * header, void *options, int16 length);
-uint16 lock_exec(uint16 status);
+uint16 check_sum(IP_HDR * header, void *options, int16 length) GNU_ASM_NAME("check_sum");
+uint16 lock_exec(uint16 status) GNU_ASM_NAME("lock_exec");
 int16 check_sequence(uint32 first, uint32 second, int32 *diff);
 
 int16 KRinitialize(int32 size);
@@ -286,15 +294,19 @@ void cdecl my_receive(PORT *port);
 
 void init_ports(void);
 
+#ifdef __GNUC__
+#define _BasPag _base
+#endif
+
 
 /*
  * from thread.s
  */
-extern short fraction;
-extern short active;
+extern short active GNU_ASM_NAME("active");
+extern short fraction GNU_ASM_NAME("fraction");
 
-void install_PrivVio(void);
-void uninst_PrivVio(void);
-void clean_up(void);
-void poll_ports(void);
-void install_timer(void);
+void install_PrivVio(void) GNU_ASM_NAME("install_PrivVio");
+void uninst_PrivVio(void) GNU_ASM_NAME("uninst_PrivVio");
+void clean_up(void) GNU_ASM_NAME("clean_up");
+void poll_ports(void) GNU_ASM_NAME("poll_ports");
+void install_timer(void) GNU_ASM_NAME("install_timer");

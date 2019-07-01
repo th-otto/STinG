@@ -23,13 +23,13 @@
 
 
 char sting_path[245];
-char semaphors[MAX_SEMAPHOR];
+char semaphors[MAX_SEMAPHOR] GNU_ASM_NAME("semaphors");
 
 
 
 static long get_boot_drv(void)
 {
-	unsigned int *_bootdev = (void *) 0x446L;
+	unsigned short *_bootdev = (void *) 0x446L;
 
 	return 'A' + *_bootdev;
 }

@@ -17,6 +17,8 @@
 
 #include "globdefs.h"
 
+short active;     /* Flag for being active */
+short fraction;   /* Time between thread calls */
 
 static const char *const error_array[] = {
 	"No error.",
