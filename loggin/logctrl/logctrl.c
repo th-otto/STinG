@@ -229,14 +229,14 @@ int  init_data()
    memcpy (cli_set, log_this->client_itf, cli_num);
    memcpy (mod_set, log_this->module_itf, mod_num);
 
-   if (get_cookie ('MagX', & value)) {
+   if (get_cookie (0x4D616758L, & value)) { /* 'MagX' */
         if ((value = * (long *) (value + 8) + 12 * sizeof (long)) > 100) {
              if (* (int *) value >= 0x300)
                   return (1);
            }
       }
 
-   if (get_cookie ('MiNT', & value)) {
+   if (get_cookie (0x4D694E54L, & value)) { /* 'MiNT' */
         if (value >= 0x100)
              return (1);
       }

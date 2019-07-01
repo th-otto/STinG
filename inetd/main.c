@@ -148,11 +148,11 @@ void  get_path()
    strcpy (ism_path, inetd_path);
 
    strcat (ism_path, file);
-   handle = (int) Fopen (ism_path, 0);
+   handle = (int) Fopen (ism_path, FO_READ);
 
    if (handle < 0) {
         strcpy (&ism_path[2], file);
-        handle = (int) Fopen (ism_path, 0);
+        handle = (int) Fopen (ism_path, FO_READ);
 
         if (handle < 0) {
              strcpy (ism_path, path);

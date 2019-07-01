@@ -8,10 +8,8 @@
 #ifndef STING_PORT_H
 #define STING_PORT_H
 
-#ifndef MODULE_DRIVER
-#define MODULE_DRIVER	 "MODULE_LAYER"
-#endif
-
+#include "stx.h"
+#include "layer.h"
 
 
 /*--------------------------------------------------------------------------*/
@@ -21,7 +19,7 @@
  *	 Internal port descriptor.
  */
 
-typedef  struct port_desc {
+struct port_desc {
 	const char		*name;		/* Name of port 							*/
 	int16	  type; 			/* Type of port 							*/
 	int16	  active;			/* Flag for port active or not				*/
@@ -37,26 +35,7 @@ typedef  struct port_desc {
 	int16	  stat_dropped; 	/* Statistics of dropped datagrams			*/
 	struct drv_desc   *driver;	/* Driver program to handle this port		*/
 	struct port_desc  *next;	/* Next port in port chain					*/
-} PORT;
-
-
-/*
- *	 Port driver descriptor.
- */
-
-typedef  struct drv_desc {
-	int16 cdecl  (* set_state) (PORT *, int16); 	  /* Setup and shutdown */
-	int16 cdecl  (* cntrl) (PORT *, uint32, int16);   /* Control functions	*/
-	void  cdecl  (* send) (PORT *); 				  /* Send packets		*/
-	void  cdecl  (* receive) (PORT *);				  /* Receive packets	*/
-	const char		 *name; 	/* Name of driver							*/
-	const char		 *version;	/* Version of driver in "xx.yy" format		*/
-	uint16			 date;		/* Compile date in GEMDOS format			*/
-	const char		 *author;	/* Name of programmer						*/
-	struct drv_desc  *next; 	/* Next driver in driver chain				*/
-	BASPAG			 *basepage; /* Basepage of this module					*/
-} DRIVER;
-
+};
 
 
 /*--------------------------------------------------------------------------*/
@@ -76,6 +55,5 @@ typedef  struct drv_desc {
 #define  L_MASQUE	  7 		  /*   Masquerading pseudo port 			*/
 
 /*--------------------------------------------------------------------------*/
-
 
 #endif /* STING_PORT_H */

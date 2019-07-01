@@ -18,4 +18,4 @@ OBJS = $(SRCS:.c=.o)
 all:: sting.prg
 
 sting.prg: $(OBJS)
-	$(CC) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)

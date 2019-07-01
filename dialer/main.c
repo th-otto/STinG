@@ -216,22 +216,22 @@ void  get_path(void)
    config_path[1] = ':';
    Dgetpath (& config_path[2], 0);
    strcat (config_path, file);
-   handle = (int) Fopen (config_path, 0);
+   handle = (int) Fopen (config_path, FO_READ);
 
    if (handle < 0) {
         strcpy (& config_path[2], file);
-        handle = (int) Fopen (config_path, 0);
+        handle = (int) Fopen (config_path, FO_READ);
 
         if (handle < 0) {
              config_path[0] = (char) Supexec (get_boot_drv);
-             handle = (int) Fopen (config_path, 0);
+             handle = (int) Fopen (config_path, FO_READ);
 
              if (handle < 0) {
                   if (! shel_find (& file[1])) {
                        strcpy (config_path, path);
                        return;
                      }
-                  if ((handle = (int) Fopen (& file[1], 0)) < 0) {
+                  if ((handle = (int) Fopen (& file[1], 0)) < FO_READ) {
                        strcpy (config_path, path);
                        return;
                      }

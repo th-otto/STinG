@@ -113,7 +113,7 @@ int16  install()
    DRIVER  *driver;
    long    machine;
 
-   if (! get_cookie ('_MCH', & machine))
+   if (! get_cookie (0x5F4D4348L, & machine)) /* '_MCH' */
         return (FALSE);
 
    if ((machine >> 16) < 1 || 3 < (machine >> 16))

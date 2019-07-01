@@ -1,0 +1,24 @@
+include ../../configvars
+
+CFLAGS += -I../../include
+LDFLAGS += -nostartfiles
+LIBS += -lgem
+
+SRCS = \
+	sting.c \
+	$(empty)
+OBJS = cpxstart.o $(SRCS:.c=.o)
+
+cpxstart.o: cpxstart.s
+	$(AS) $(CFLAGS) -c -o $@ $<
+
+all:: sting.cpx
+
+sting.cpx: sting.hdr sting.bin
+	cat $^ > $@
+
+sting.bin: $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+clean::
+	$(RM) *.cpx *.bin

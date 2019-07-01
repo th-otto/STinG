@@ -140,7 +140,7 @@ void  install()
    PORT    *ports;
    DRIVER  *driver;
 
-   if (! get_cookie ('_CPU', & _cpu))
+   if (! get_cookie (0x5F435055L, & _cpu)) /* '_CPU' */
         _cpu = 0;
    _cpu = (_cpu >= 20) ? 1 : 0;
 
@@ -407,7 +407,7 @@ int  type;
         rdp = PAM_RDP;   rap = PAM_RAP;   memory = PAM_MEMBOT;
         break;
       case 1 :
-        if (! get_cookie ('_MCH', & machine))
+        if (! get_cookie (0x5F4D4348L, & machine)) /* '_MCH' */
              machine = 0;
         if ((machine >> 16) != 2 && ((machine >> 16) != 1 || (machine & 0xffffL) != 16))
              result = FALSE;
@@ -422,7 +422,7 @@ int  type;
         rdp = RIEBL_HACK_RDP;   rap = RIEBL_HACK_RAP;   memory = RIEBL_HACK_MEMBOT;
         break;
       case 4 :
-        if (! get_cookie ('_MCH', & machine))
+        if (! get_cookie (0x5F4D4348L, & machine)) /* '_MCH' */
              machine = 0;
         switch (machine >> 16) {
            case 1 :

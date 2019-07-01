@@ -1,6 +1,7 @@
 include ../../configvars
 
 CFLAGS += -I../../include
+LIBS += -lgem
 
 SRCS = \
 	sysinfo.c \
@@ -10,4 +11,4 @@ OBJS = $(SRCS:.c=.o)
 all:: sysinfo.ttp
 
 sysinfo.ttp: $(OBJS)
-	$(CC) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)

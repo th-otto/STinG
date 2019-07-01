@@ -47,23 +47,23 @@ static void get_path(void)
 	sting_path[1] = ':';
 	Dgetpath(&sting_path[2], 0);
 	strcat(sting_path, file);
-	handle = (int) Fopen(sting_path, 0);
+	handle = (int) Fopen(sting_path, FO_READ);
 
 	if (handle < 0)
 	{
 		strcpy(&sting_path[3], "AUTO");
 		strcat(sting_path, file);
-		handle = (int) Fopen(sting_path, 0);
+		handle = (int) Fopen(sting_path, FO_READ);
 
 		if (handle < 0)
 		{
 			strcpy(&sting_path[2], file);
-			handle = (int) Fopen(sting_path, 0);
+			handle = (int) Fopen(sting_path, FO_READ);
 
 			if (handle < 0)
 			{
 				sting_path[0] = (char) Supexec(get_boot_drv);
-				handle = (int) Fopen(sting_path, 0);
+				handle = (int) Fopen(sting_path, FO_READ);
 
 				if (handle < 0)
 				{

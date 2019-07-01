@@ -10,4 +10,4 @@ OBJS = $(SRCS:.c=.o)
 all:: tracrout.prg
 
 tracrout.prg: $(OBJS)
-	$(CC) -o $@ $(OBJS) -lgem
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)

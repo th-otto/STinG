@@ -1,6 +1,7 @@
 include ../../configvars
 
 CFLAGS += -I../../include
+LIBS += -lgem
 
 SRCS = \
 	shutdown.c \
@@ -11,4 +12,4 @@ OBJS = $(SRCS:.c=.o)
 all:: shutdown.prg
 
 shutdown.prg: $(OBJS)
-	$(CC) -o $@ $(OBJS) -lgem
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)

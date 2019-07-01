@@ -163,7 +163,7 @@ void  read_services()
    work = &inetd_path[strlen (inetd_path)];
    strcpy (work, "\\IND.SRV");
 
-   if ((handle = (int) Fopen (inetd_path, 0)) < 0) {
+   if ((handle = (int) Fopen (inetd_path, FO_READ)) < 0) {
         *work = '\0';
         return;
       }

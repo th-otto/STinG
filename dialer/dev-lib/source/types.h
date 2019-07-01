@@ -11,7 +11,7 @@
 /*--- includes              ---*/
 
 #include <tos.h>
-#include <mint\mintbind.h>
+#include <mint/mintbind.h>
 
 /*--- defines               ---*/
 

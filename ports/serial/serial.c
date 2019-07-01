@@ -200,7 +200,7 @@ void  add_standard_ports()
 
    map_ptr = (BCONMAP *) Bconmap (-2);
 
-   if (! get_cookie ('_MCH', & machine))
+   if (! get_cookie (0x5F4D4348L, & machine)) /* '_MCH' */
         machine = 0;
 
    switch (machine >> 16) {
@@ -257,7 +257,7 @@ void  add_rsvf_ports()
 
    map_ptr = (BCONMAP *) Bconmap (-2);
 
-   if (! get_cookie ('RSVF', (long *) & rsvf_head))
+   if (! get_cookie (0x52535646L, (long *) & rsvf_head)) /* 'RSVF' */
         rsvf_head = NULL;
 
    if ((rest = map_ptr->maptabsize - space) == 0 || rsvf_head == NULL)

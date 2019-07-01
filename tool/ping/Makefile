@@ -1,6 +1,7 @@
 include ../../configvars
 
 CFLAGS += -I../../include
+LIBS += -lgem
 
 SRCS = \
 	ping.c \
@@ -10,4 +11,4 @@ OBJS = $(SRCS:.c=.o)
 all:: ping.prg
 
 ping.prg: $(OBJS)
-	$(CC) -o $@ $(OBJS) -lgem
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
