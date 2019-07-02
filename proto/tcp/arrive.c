@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     High Level Protokoll : TCP                                    */
@@ -21,40 +20,14 @@
 #include "tcp.h"
 
 
-uint16 check_sum(uint32 src_ip, uint32 dest_ip, TCP_HDR * packet, uint16 length);
-
-void send_sync(CONNEC * connec);
-void process_sync(CONNEC * connec, IP_DGRAM * dgram);
-void process_options(CONNEC * connec, IP_DGRAM * dgram);
-void send_reset(IP_DGRAM * dgram);
-int16 sequ_within(uint32 actual, uint32 low, uint32 high);
-void close_self(CONNEC * connec, int16 reason);
-
-void update_wind(CONNEC * connec, TCP_HDR * tcph);
-int16 trim_segm(CONNEC * connec, IP_DGRAM * dgram, RESEQU ** block, int16 flag);
-void add_resequ(CONNEC * connec, RESEQU * block);
-void do_output(CONNEC * connec);
-
-int16 cdecl TCP_handler(IP_DGRAM * dgram);
-void do_arrive(CONNEC * conn, IP_DGRAM * dgram);
-
-
-extern TCP_CONF my_conf;
-extern CONNEC *root_list;
-
-
-
-int16 cdecl TCP_handler(datagram)
-IP_DGRAM *datagram;
-
+int16 cdecl TCP_handler(IP_DGRAM *datagram)
 {
-	CONNEC *connect,
-	*option;
+	CONNEC *connect;
+	CONNEC *option;
 	TCP_HDR *hdr;
 	IP_DGRAM *walk;
-	uint16 len,
-	 count,
-	 max_mss;
+	uint16 len;
+	uint16 max_mss;
 
 	hdr = (TCP_HDR *) datagram->pkt_data;
 	len = datagram->pkt_length;
@@ -62,13 +35,13 @@ IP_DGRAM *datagram;
 	if (len < sizeof(TCP_HDR))
 	{
 		my_conf.generic.stat_dropped++;
-		return (TRUE);
+		return TRUE;
 	}
 
 	if (check_sum(datagram->hdr.ip_src, datagram->hdr.ip_dest, hdr, len) != 0)
 	{
 		my_conf.generic.stat_dropped++;
-		return (TRUE);
+		return TRUE;
 	}
 
 	for (connect = root_list, option = NULL; connect; connect = connect->next)
@@ -117,19 +90,19 @@ IP_DGRAM *datagram;
 	{
 		send_reset(datagram);
 		my_conf.generic.stat_dropped++;
-		return (TRUE);
+		return TRUE;
 	}
 	if (connect->state == TCLOSED)
 	{
 		send_reset(datagram);
 		my_conf.generic.stat_dropped++;
-		return (TRUE);
+		return TRUE;
 	}
 
 	if ((walk = (IP_DGRAM *) KRmalloc(sizeof(IP_DGRAM))) == NULL)
 	{
 		my_conf.generic.stat_dropped++;
-		return (TRUE);
+		return TRUE;
 	}
 	memcpy(walk, datagram, sizeof(IP_DGRAM));
 
@@ -143,24 +116,23 @@ IP_DGRAM *datagram;
 		for (walk = connect->pending; walk->next; walk = walk->next) ;
 		walk->next = datagram;
 	} else
+	{
 		connect->pending = datagram;
+	}
 
-	return (TRUE);
+	return TRUE;
 }
 
 
-void do_arrive(conn, datagram)
-CONNEC *conn;
-IP_DGRAM *datagram;
-
+void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 {
 	TCP_HDR *hdr;
-	RESEQU *net_data,
-	 temp;
-	NDB *ndb,
-	*work;
-	int16 stored,
-	 trim;
+	RESEQU *net_data;
+	RESEQU temp;
+	NDB *ndb;
+	NDB *work;
+	int16 stored;
+	int16 trim;
 	uint16 len;
 
 	hdr = (TCP_HDR *) datagram->pkt_data;
@@ -366,7 +338,7 @@ IP_DGRAM *datagram;
 				temp = *net_data;
 				ndb = (NDB *) net_data;
 				ndb->ptr = (char *) temp.hdr;
-				ndb->ndata = temp.data;
+				ndb->ndata = (char *) temp.data;
 				ndb->len = temp.data_len;
 				ndb->next = NULL;
 				if (conn->recve.queue)
@@ -446,6 +418,4 @@ IP_DGRAM *datagram;
 	}
 
 	do_output(conn);
-
-	return;
 }

@@ -17,7 +17,7 @@
  *   Evaluate Precedence
  */
 
-#define	PREC(x)		((x)>>5 & 7)       /* Calculate Precedence from IP tos  */
+#define	PREC(x)		(((x)>>5) & 7)       /* Calculate Precedence from IP tos  */
 
 
 
@@ -60,7 +60,7 @@ typedef  struct header  {
      uint16    window;          /* Receive window                           */
      uint16    chksum;          /* Checksum of all header, options and data */
      uint16    urg_ptr;         /* First byte following urgent data         */
- } TCP_HDR;
+} TCP_HDR;
 
 
 
@@ -75,6 +75,7 @@ typedef  struct header  {
 #define  RETRAN      2          /* Flag indicating this is a retransmission */
 #define  CLOSING     4          /* Flag indicating background close action  */
 #define  DISCARD     8          /* Flag forcing discarding of CONNEC block  */
+#define  BLOCK      16          /* Flag indicating blocking TCP_close()     */
 
 
 
@@ -91,7 +92,7 @@ typedef  struct resequ  {
      TCP_HDR          *hdr;          /* Pointer to TCP header data          */
      uint8            *data;         /* Pointer to data in this segment     */
      uint16           data_len;      /* Amount of data in this segment      */
- } RESEQU;
+} RESEQU;
 
 
 
@@ -128,7 +129,7 @@ typedef  struct connec  {
          int16    count;             /*   Data (with flags) in queue        */
          uint32   ini_sequ;          /*   Initial sequence number           */
          NDB      *queue;            /*   Send queue                        */
-      } send;                        /* End of SEND info                    */
+     } send;                         /* End of SEND info                    */
      struct {                        /* Structure containing RECEIVE info : */
          uint32   next;              /*   Next acceptable sequence number   */
          uint16   window;            /*   Actual size of receive window     */
@@ -136,29 +137,29 @@ typedef  struct connec  {
          RESEQU   *reseq;            /*   Segment queue for resequencing    */
          int16    count;             /*   Real data in queue                */
          NDB      *queue;            /*   Receive queue                     */
-      } recve;                       /* End of RECEIVE info                 */
+     } recve;                        /* End of RECEIVE info                 */
      struct {                        /* Struct. for retransmission timer :  */
          uint32   start;             /*   Starting time                     */
          uint32   timeout;           /*   Timeout (ms)                      */
          uint8    mode;              /*   Mode flag : Running / Stopped     */
          uint8    backoff;           /*   Retransmission backoff counter    */
-      } rtrn;                        /* End of retransmission timer info    */
+     } rtrn;                         /* End of retransmission timer info    */
      struct {                        /* Structure for round trip timer :    */
          uint32   start;             /*   Starting time                     */
          uint8    mode;              /*   Mode flag : Running / Stopped     */
          uint32   smooth;            /*   Smoothed round trip time          */
          uint32   sequ;              /*   Sequence number being timed       */
-      } rtrp;                        /* End of round trip timer info        */
+     } rtrp;                         /* End of round trip timer info        */
      struct {                        /* Structure for closing timer :       */
          uint32   start;             /*   Starting time                     */
-         uint8    timeout;           /*   Timeout time                      */
-      } close;                       /* End of closing timer info           */
-     int16     sema;                 /* Semaphore for locking structures    */
+         uint32   timeout;           /*   Timeout time                      */
+     } close;                        /* End of closing timer info           */
+     volatile signed char sema;      /* Semaphore for locking structures    */
      int16     *result;              /* Return deferred results here        */
      uint32    last_work;            /* Last time work has been done        */
      IP_DGRAM  *pending;             /* Pending IP datagrams                */
      struct connec  *next;           /* Link to next connection in chain    */
- } CONNEC;
+} CONNEC;
 
 
 
@@ -179,11 +180,69 @@ typedef  struct tcp_desc  {
      uint16  con_out;              /* Outgoing connection attempts          */
      uint16  con_in;               /* Incoming connection attempts          */
      uint16  resets;               /* Counting sent resets                  */
- } TCP_CONF;
+} TCP_CONF;
 
 
 
 /*--------------------------------------------------------------------------*/
+
+void _appl_yield(void);
+
+
+#ifndef GNU_ASM_NAME
+#ifdef __GNUC__
+#define GNU_ASM_NAME(x) __asm__(x)
+#else
+#define GNU_ASM_NAME(x)
+#endif
+#endif
+
+#ifndef NO_CONST
+#  ifdef __GNUC__
+#    define NO_CONST(p) __extension__({ union { const void *cs; void *s; } x; x.cs = p; x.s; })
+#  else
+#    define NO_CONST(p) ((void *)(p))
+#  endif
+#endif
+
+
+int16 cdecl TCP_handler(IP_DGRAM *dgram);
+void do_output(CONNEC *connec);
+
+extern CONNEC *root_list;
+extern TCP_CONF my_conf;
+extern uint16 tcp_id;
+
+int16 cdecl timer_function(IP_DGRAM *);
+int16 poll_receive(CONNEC *connec);
+int16 cdecl do_ICMP(IP_DGRAM *dgram);
+void send_sync(CONNEC *connec);
+
+void do_arrive(CONNEC *conn, IP_DGRAM *dgram);
+
+uint16 pull_up(NDB **queue, char *buffer, uint16 length);
+void do_output(CONNEC *connec);
+void update_wind(CONNEC *connec, TCP_HDR *tcph);
+int16 trim_segm(CONNEC *connec, IP_DGRAM *dgram, RESEQU **block, int16 make_resequ);
+void add_resequ(CONNEC *connec, RESEQU *block);
+
+void process_sync(CONNEC *connec, IP_DGRAM *dgram);
+void process_options(CONNEC *connec, IP_DGRAM *dgram);
+void send_reset(IP_DGRAM *dgram);
+int16 sequ_within(uint32 actual, uint32 low, uint32 high);
+void close_self(CONNEC * connec, int16 reason);
+int16 halfdup_close(CONNEC *connec);
+int16 fuldup_close(CONNEC *connec, int32 timeout);
+int16 receive(CONNEC *connec, uint8 *buffer, int16 *length, int16 flag);
+int16 categorize(CONNEC *connec);
+
+void wait_flag(volatile signed char *semaphore) GNU_ASM_NAME("wait_flag");
+int16 req_flag(volatile signed char *semaphore) GNU_ASM_NAME("req_flag");
+void rel_flag(volatile signed char *semaphore) GNU_ASM_NAME("rel_flag");
+long dis_intrpt(void) GNU_ASM_NAME("dis_intrpt");
+long en_intrpt(void) GNU_ASM_NAME("en_intrpt");
+IP_DGRAM *get_pending(IP_DGRAM **pointer) GNU_ASM_NAME("get_pending");
+uint16 check_sum(uint32 src_ip, uint32 dest_ip, TCP_HDR *packet, uint16 length) GNU_ASM_NAME("check_sum");
 
 
 #endif /* TCP_H */

@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     High Level Protokoll : TCP                                    */
@@ -21,34 +20,14 @@
 #include "tcp.h"
 
 
-void wait_flag(int16 * semaphore);
-int16 req_flag(int16 * semaphore);
-void rel_flag(int16 * semaphore);
-uint16 check_sum(uint32 src_ip, uint32 dest_ip, TCP_HDR * packet, uint16 length);
-
-int16 sequ_within(uint32 actual, uint32 low, uint32 high);
-
-void update_wind(CONNEC * connec, TCP_HDR * tcph);
-uint16 pull_up(NDB ** queue, char *buffer, uint16 length);
-int16 trim_segm(CONNEC * connec, IP_DGRAM * dgram, RESEQU ** block, int16 flag);
-void add_resequ(CONNEC * connec, RESEQU * block);
-void do_output(CONNEC * connec);
-uint8 *prep_segment(CONNEC * connec, TCP_HDR * hdr, uint16 * length, uint16 offset, uint16 size);
-
-
-extern TCP_CONF my_conf;
-
 uint16 tcp_id = 0;
 
 
 
-void update_wind(connec, tcph)
-CONNEC *connec;
-TCP_HDR *tcph;
-
+void update_wind(CONNEC *connec, TCP_HDR *tcph)
 {
-	uint32 rtrip,
-	 acked;
+	uint32 rtrip;
+	uint32 acked;
 
 	if ((int32) tcph->acknowledge - (int32) connec->send.next > 0)
 	{
@@ -116,15 +95,11 @@ TCP_HDR *tcph;
 }
 
 
-uint16 pull_up(queue, buffer, length)
-NDB **queue;
-char *buffer;
-uint16 length;
-
+uint16 pull_up(NDB **queue, char *buffer, uint16 length)
 {
 	NDB *temp;
-	uint16 avail,
-	 accu = 0;
+	uint16 avail;
+	uint16 accu = 0;
 
 	while (length > 0 && *queue != NULL)
 	{
@@ -147,31 +122,25 @@ uint16 length;
 		length -= avail;
 	}
 
-	return (accu);
+	return accu;
 }
 
 
-int16 trim_segm(connec, dgram, block, make_resequ)
-CONNEC *connec;
-IP_DGRAM *dgram;
-RESEQU **block;
-int16 make_resequ;
-
+int16 trim_segm(CONNEC *connec, IP_DGRAM *dgram, RESEQU **block, int16 make_resequ)
 {
 	TCP_HDR *hdr;
-	uint32 wind_beg,
-	 wind_end;
-	int32 dupes,
-	 excess;
-	int16 accept,
-	 dat_len,
-	 seq_len;
+	uint32 wind_beg, wind_end;
+	int32 dupes;
+	int32 excess;
+	int16 accept;
+	int16 dat_len;
+	int16 seq_len;
 	uint8 *data;
 
 	if (make_resequ)
 	{
 		if ((*block = KRmalloc(sizeof(RESEQU))) == NULL)
-			return (FALSE);
+			return FALSE;
 		(*block)->tos = dgram->hdr.tos;
 		(*block)->hdr = hdr = (TCP_HDR *) dgram->pkt_data;
 		(*block)->data = (uint8 *) dgram->pkt_data + hdr->offset * 4;
@@ -196,7 +165,7 @@ int16 make_resequ;
 	if (connec->recve.window == 0)
 	{
 		if (hdr->sequence == connec->recve.next && seq_len == 0)
-			return (TRUE);
+			return TRUE;
 	} else
 	{
 		if (sequ_within(hdr->sequence, wind_beg, wind_end))
@@ -211,7 +180,7 @@ int16 make_resequ;
 	}
 
 	if (!accept)
-		return (FALSE);
+		return FALSE;
 
 	if ((dupes = connec->recve.next - hdr->sequence) > 0)
 	{
@@ -237,14 +206,11 @@ int16 make_resequ;
 	(*block)->data = data;
 	(*block)->data_len = dat_len;
 
-	return (TRUE);
+	return TRUE;
 }
 
 
-void add_resequ(connec, block)
-CONNEC *connec;
-RESEQU *block;
-
+void add_resequ(CONNEC *connec, RESEQU *block)
 {
 	RESEQU *work;
 
@@ -268,17 +234,74 @@ RESEQU *block;
 }
 
 
-void do_output(connec)
-CONNEC *connec;
+static uint8 *prep_segment(CONNEC *connec, TCP_HDR *hdr, uint16 *length, uint16 offset, uint16 size)
+{
+	NDB *work;
+	uint16 *walk;
+	uint16 chunk;
+	uint8 *mem;
+	uint8 *ptr;
 
+	*length = sizeof(TCP_HDR) + ((hdr->sync) ? 4 : 0) + size;
+
+	if ((mem = KRmalloc(*length)) == NULL)
+		return NULL;
+
+	hdr->src_port = connec->local_port;
+	hdr->dest_port = connec->remote_port;
+	hdr->offset = (hdr->sync) ? 6 : 5;
+	hdr->resvd = 0;
+	hdr->window = connec->recve.window;
+	hdr->urg_ptr = 0;
+
+	if (hdr->sync)
+	{
+		walk = (uint16 *) (mem + sizeof(TCP_HDR));
+		*walk++ = 0x0204;
+		*walk++ = connec->mss;
+	}
+	memcpy(mem, hdr, sizeof(TCP_HDR));
+
+	if (size > 0)
+	{
+		ptr = mem + sizeof(TCP_HDR) + ((hdr->sync) ? 4 : 0);
+
+		for (work = connec->send.queue; work != NULL; work = work->next)
+		{
+			if (work->len > offset)
+				break;
+			offset -= work->len;
+		}
+
+		for (; work != NULL && size > 0; work = work->next, offset = 0)
+		{
+			chunk = (work->len - offset < size) ? work->len - offset : size;
+			size -= chunk;
+			memcpy(ptr, work->ndata + offset, chunk);
+			ptr += chunk;
+		}
+	}
+
+	((TCP_HDR *) mem)->chksum = 0;
+
+	((TCP_HDR *) mem)->chksum =
+		check_sum(connec->local_IP_address, connec->remote_IP_address, (TCP_HDR *) mem, *length);
+
+	connec->recve.lst_win = connec->recve.window;
+
+	return mem;
+}
+
+
+void do_output(CONNEC *connec)
 {
 	TCP_HDR hdr;
 	int16 value;
-	uint16 length,
-	 sent,
-	 usable_win,
-	 size,
-	 raw_size;
+	uint16 length;
+	uint16 sent;
+	uint16 usable_win;
+	uint16 size;
+	uint16 raw_size;
 	uint8 *block;
 
 	if (connec->state == TCLOSED || connec->state == TLISTEN)
@@ -377,67 +400,3 @@ CONNEC *connec;
 }
 
 
-uint8 *prep_segment(connec, hdr, length, offset, size)
-CONNEC *connec;
-TCP_HDR *hdr;
-uint16 *length,
-	offset,
-	size;
-
-{
-	NDB *work;
-	uint32 chksum;
-	uint16 *walk,
-	 chunk;
-	uint8 *mem,
-	*ptr;
-
-	*length = sizeof(TCP_HDR) + ((hdr->sync) ? 4 : 0) + size;
-
-	if ((mem = KRmalloc(*length)) == NULL)
-		return (NULL);
-
-	hdr->src_port = connec->local_port;
-	hdr->dest_port = connec->remote_port;
-	hdr->offset = (hdr->sync) ? 6 : 5;
-	hdr->resvd = 0;
-	hdr->window = connec->recve.window;
-	hdr->urg_ptr = 0;
-
-	if (hdr->sync)
-	{
-		walk = (uint16 *) (mem + sizeof(TCP_HDR));
-		*walk++ = 0x0204;
-		*walk++ = connec->mss;
-	}
-	memcpy(mem, hdr, sizeof(TCP_HDR));
-
-	if (size > 0)
-	{
-		ptr = mem + sizeof(TCP_HDR) + ((hdr->sync) ? 4 : 0);
-
-		for (work = connec->send.queue; work != NULL; work = work->next)
-		{
-			if (work->len > offset)
-				break;
-			offset -= work->len;
-		}
-
-		for (; work != NULL && size > 0; work = work->next, offset = 0)
-		{
-			chunk = (work->len - offset < size) ? work->len - offset : size;
-			size -= chunk;
-			memcpy(ptr, work->ndata + offset, chunk);
-			ptr += chunk;
-		}
-	}
-
-	((TCP_HDR *) mem)->chksum = 0;
-
-	((TCP_HDR *) mem)->chksum =
-		check_sum(connec->local_IP_address, connec->remote_IP_address, (TCP_HDR *) mem, *length);
-
-	connec->recve.lst_win = connec->recve.window;
-
-	return (mem);
-}

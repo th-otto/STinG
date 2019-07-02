@@ -1,4 +1,4 @@
-resolve.stx
+tcp.stx
 
 .C[-I..\..\include]
 
@@ -16,11 +16,11 @@ resolve.stx
 =
 cstart0.o
 
-cache.c
-query.c
-resolve.c
-reso_sub.s
-yield.s
+tcp.c
+arrive.c
+inout.c
+tool.c
+check.s [-S]
 
 pcgemlib.lib
 pctoslib.lib

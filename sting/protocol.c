@@ -175,7 +175,10 @@ int16 cdecl TIMER_call(int16 cdecl (*handler)(IP_DGRAM *), int16 flag)
 	for (walk = conf.interupt; walk; walk = walk->next)
 	{
 		if (walk->handler == handler)
-			this = walk, prev_this = previous;
+		{
+			this = walk;
+			prev_this = previous;
+		}
 		previous = walk;
 	}
 
