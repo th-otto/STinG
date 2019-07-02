@@ -60,7 +60,7 @@ void update_wind(CONNEC *connec, TCP_HDR *tcph)
 			else
 				connec->rtrp.smooth = (15 * connec->rtrp.smooth + rtrip) / 16;
 			connec->rtrn.start = TIMER_now();
-			connec->rtrn.timeout = 2L * ((connec->rtrp.smooth > 1) ? connec->rtrp.smooth : 1);
+			connec->rtrn.timeout = 2L * (connec->rtrp.smooth > 1 ? connec->rtrp.smooth : 1);
 			connec->rtrn.backoff = 0;
 		}
 	}
@@ -76,14 +76,14 @@ void update_wind(CONNEC *connec, TCP_HDR *tcph)
 	pull_up(&connec->send.queue, NULL, acked);
 
 	connec->send.count -= acked;
-	connec->send.total -= (tcph->fin) ? (acked - 1) : acked;
+	connec->send.total -= tcph->fin ? (acked - 1) : acked;
 	connec->send.unack = tcph->acknowledge;
 
 	if (connec->send.unack != connec->send.next)
 	{
 		connec->rtrn.mode = TRUE;
 		connec->rtrn.start = TIMER_now();
-		connec->rtrn.timeout = 2L * ((connec->rtrp.smooth > 1) ? connec->rtrp.smooth : 1);
+		connec->rtrn.timeout = 2L * (connec->rtrp.smooth > 1 ? connec->rtrp.smooth : 1);
 		connec->rtrn.backoff = 0;
 	} else
 		connec->rtrn.mode = FALSE;
@@ -103,7 +103,7 @@ uint16 pull_up(NDB **queue, char *buffer, uint16 length)
 
 	while (length > 0 && *queue != NULL)
 	{
-		avail = ((*queue)->len < length) ? (*queue)->len : length;
+		avail = (*queue)->len < length ? (*queue)->len : length;
 		if (buffer)
 		{
 			memcpy(buffer, (*queue)->ndata, avail);
@@ -242,14 +242,14 @@ static uint8 *prep_segment(CONNEC *connec, TCP_HDR *hdr, uint16 *length, uint16 
 	uint8 *mem;
 	uint8 *ptr;
 
-	*length = sizeof(TCP_HDR) + ((hdr->sync) ? 4 : 0) + size;
+	*length = sizeof(TCP_HDR) + (hdr->sync ? 4 : 0) + size;
 
 	if ((mem = KRmalloc(*length)) == NULL)
 		return NULL;
 
 	hdr->src_port = connec->local_port;
 	hdr->dest_port = connec->remote_port;
-	hdr->offset = (hdr->sync) ? 6 : 5;
+	hdr->offset = hdr->sync ? 6 : 5;
 	hdr->resvd = 0;
 	hdr->window = connec->recve.window;
 	hdr->urg_ptr = 0;
@@ -264,7 +264,7 @@ static uint8 *prep_segment(CONNEC *connec, TCP_HDR *hdr, uint16 *length, uint16 
 
 	if (size > 0)
 	{
-		ptr = mem + sizeof(TCP_HDR) + ((hdr->sync) ? 4 : 0);
+		ptr = mem + sizeof(TCP_HDR) + (hdr->sync ? 4 : 0);
 
 		for (work = connec->send.queue; work != NULL; work = work->next)
 		{
@@ -334,8 +334,8 @@ void do_output(CONNEC *connec)
 		}
 
 		size = connec->send.count - sent;
-		size = (size < usable_win) ? size : usable_win;
-		size = (size < connec->mss) ? size : connec->mss;
+		size = size < usable_win ? size : usable_win;
+		size = size < connec->mss ? size : connec->mss;
 		raw_size = size;
 
 		if (size == 0 && (connec->flags & FORCE) == 0)
@@ -343,7 +343,7 @@ void do_output(CONNEC *connec)
 		connec->flags &= ~FORCE;
 
 		hdr.urgent = hdr.push = hdr.reset = hdr.sync = hdr.fin = FALSE;
-		hdr.ack = (connec->state == TSYN_SENT) ? FALSE : TRUE;
+		hdr.ack = connec->state == TSYN_SENT ? FALSE : TRUE;
 
 		if (connec->send.ptr == connec->send.ini_sequ)
 		{

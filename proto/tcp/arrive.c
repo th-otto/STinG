@@ -81,7 +81,7 @@ int16 cdecl TCP_handler(IP_DGRAM *datagram)
 				}
 				PRTCL_get_parameters(datagram->hdr.ip_src, NULL, &connect->ttl, &connect->mtu);
 				max_mss = connect->mtu - sizeof(IP_HDR) - sizeof(TCP_HDR);
-				connect->mss = (connect->mss < max_mss) ? connect->mss : max_mss;
+				connect->mss = connect->mss < max_mss ? connect->mss : max_mss;
 			}
 		}
 	}

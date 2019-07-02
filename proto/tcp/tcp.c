@@ -64,7 +64,7 @@ static int16 cdecl my_CNkick(void *connec)
 
 	wait_flag(&conn->sema);
 
-	smooth = (conn->rtrp.smooth > 1) ? conn->rtrp.smooth : 1;
+	smooth = conn->rtrp.smooth > 1 ? conn->rtrp.smooth : 1;
 
 	conn->rtrn.mode = FALSE;
 	conn->rtrn.backoff = 0;
@@ -339,14 +339,14 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 		rem_host = cab->rhost;
 		rport = cab->rport;
 		lcl_host = cab->lhost;
-		lport = (cab->lport) ? cab->lport : next_port();
+		lport = cab->lport ? cab->lport : next_port();
 	}
 
 	if (rem_host != 0L)
 	{
 		if (PRTCL_get_parameters(rem_host, &aux_ip, &ttl, &mtu) != E_NORMAL)
 			return E_UNREACHABLE;
-		lcl_host = (lcl_host) ? lcl_host : aux_ip;
+		lcl_host = lcl_host ? lcl_host : aux_ip;
 		max_mss = mtu - sizeof(IP_HDR) - sizeof(TCP_HDR);
 	} else
 	{
@@ -355,7 +355,7 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	}
 
 	ttl = my_conf.def_ttl;
-	window = (buff_size > 0) ? buff_size : my_conf.rcv_window;
+	window = buff_size > 0 ? buff_size : my_conf.rcv_window;
 
 	if ((connect = (CONNEC *) KRmalloc(sizeof(CONNEC))) == NULL)
 		return E_NOMEM;
@@ -371,7 +371,7 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	connect->local_IP_address = lcl_host;
 	connect->local_port = lport;
 	connect->flags = 0;
-	connect->mss = (my_conf.mss < max_mss) ? my_conf.mss : max_mss;
+	connect->mss = my_conf.mss < max_mss ? my_conf.mss : max_mss;
 	connect->mtu = mtu;
 	connect->tos = tos;
 	connect->ttl = ttl;
@@ -722,7 +722,7 @@ static int16 install(void)
 	}
 	config = getvstr("TCP_ICMP");
 	my_conf.generic.flags &= 0xfffefffful;
-	my_conf.generic.flags |= (config[0] != '0') ? 0x10000ul : 0ul;
+	my_conf.generic.flags |= config[0] != '0' ? 0x10000ul : 0ul;
 
 	config = getvstr("MSS");
 	if (config[1])

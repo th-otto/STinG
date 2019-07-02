@@ -163,7 +163,7 @@ static int16 timer_work(CONNEC *connec)
 			{
 				connec->rtrn.backoff++;
 				backoff = (int16) connec->rtrn.backoff * connec->rtrn.backoff;
-				smooth = (connec->rtrp.smooth > 1) ? connec->rtrp.smooth : 1;
+				smooth = connec->rtrp.smooth > 1 ? connec->rtrp.smooth : 1;
 				connec->send.ptr = connec->send.unack;
 				connec->flags |= RETRAN;
 				connec->rtrn.start = TIMER_now();
@@ -377,7 +377,7 @@ void process_options(CONNEC *connec, IP_DGRAM *dgram)
 			break;
 		case 2:
 			new_mss = ((uint16) work[2] << 8) | ((uint16) work[3]);
-			connec->mss = (new_mss < connec->mss) ? new_mss : connec->mss;
+			connec->mss = new_mss < connec->mss ? new_mss : connec->mss;
 			work += work[1];
 			break;
 		default:
@@ -470,7 +470,7 @@ void close_self(CONNEC *connec, int16 reason)
 		if (connec->send.count == 0 && reason == E_NORMAL)
 			*connec->result = E_NORMAL;
 		else
-			*connec->result = (reason == E_NORMAL) ? E_EOF : reason;
+			*connec->result = reason == E_NORMAL ? E_EOF : reason;
 	}
 }
 
@@ -480,7 +480,7 @@ int16 halfdup_close(CONNEC *connec)
 	wait_flag(&connec->sema);
 
 	connec->send.count++;
-	connec->state = (connec->state == TCLOSE_WAIT) ? TLAST_ACK : TFIN_WAIT1;
+	connec->state = connec->state == TCLOSE_WAIT ? TLAST_ACK : TFIN_WAIT1;
 	do_output(connec);
 
 	rel_flag(&connec->sema);
@@ -497,7 +497,7 @@ int16 fuldup_close(CONNEC *connec, int32 time_out)
 	wait_flag(&connec->sema);
 
 	connec->send.count++;
-	connec->state = (connec->state == TCLOSE_WAIT) ? TLAST_ACK : TFIN_WAIT1;
+	connec->state = connec->state == TCLOSE_WAIT ? TLAST_ACK : TFIN_WAIT1;
 	do_output(connec);
 
 	connec->close.start = TIMER_now();

@@ -53,7 +53,7 @@ en_intrpt:
             move.w  srsave,sr                    /* Restore CPU status */
             rts
 
-srsave:     .dc.w    0                           /* CPU status */
+srsave:     .dc.w   0                            /* CPU status */
 
 /* ------------------------------------------------------------------------------------- */
 
