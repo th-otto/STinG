@@ -17,9 +17,6 @@ OBJS = $(SRCS:.c=.o) thread.o
 
 all:: sting.prg
 
-thread.o: thread.s
-	$(AS) -c -o $@ $<
-
 sting.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 

@@ -10,10 +10,13 @@ LIBS=
 HCP = hcp
 MKDIR = mkdir -p
 
+.s.o:
+	$(AS) $(CFLAGS) -c -o $@ $<
+
 all::
 
 
-clean::
+clean distclean::
 	$(RM) *.o *.prg *.pdb
 
 release::

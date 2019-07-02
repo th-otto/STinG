@@ -9,9 +9,6 @@ SRCS = \
 	$(empty)
 OBJS = cpxstart.o $(SRCS:.c=.o)
 
-cpxstart.o: cpxstart.s
-	$(AS) $(CFLAGS) -c -o $@ $<
-
 all:: stngport.cpx
 
 stngport.cpx: stngport.hdr stngport.bin

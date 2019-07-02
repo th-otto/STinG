@@ -5,9 +5,8 @@ LIBS += -lgem
 
 SRCS = \
 	shutdown.c \
-	shut.s \
 	$(empty)
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:.c=.o) shut.o
 
 all:: shutdown.prg
 

@@ -9,9 +9,6 @@ SRCS = \
 	$(empty)
 OBJS = ismentry.o $(SRCS:.c=.o)
 
-ismentry.o: ismentry.s
-	$(AS) $(CFLAGS) -c -o $@ $<
-
 all:: sample.ism
 
 sample.ism: $(OBJS)
