@@ -2,7 +2,7 @@
 
 centr.stx    0.02
 cen_plep.stx           1.00
-cen_plip.stx           1.19
+cen_plip.stx 1.07      1.19
 ether.stx    0.20      0.20
 lcltlk.stx   0.01      0.01
 masque.stx   1.10      1.15 (1.16)

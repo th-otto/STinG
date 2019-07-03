@@ -9,17 +9,25 @@
 ## --- !!! ---  Please read the full text below at least once.  --- !!! ---
 ## This will help you avoid some simple but otherwise inescapable problems.
 ##===========================================================================
+@if VERSION >= 6
+@os Atari
+@charset atarist
+@inputenc atarist
+@lang en
+@endif
 @database "Cen_PLIP STinG module documentation"
-@hostname CEN_PLIP
+@options "+i -z"
 @author "Ulf Ronald Andersson"
-@$VER: Cen_PLIP.Hyp 1.07  (@:"__DATE__")
-@subject Documentation/System
-@options -z
+@define Version "1.07"
+@$VER: Cen_PLIP.Hyp @:Version  (@:"__DATE__")
+@subject "Documentation/System"
 @width 78
 @help "The Cen_PLIP module"
-@define Version "1.07"
+
+
 ##---------------------------------------------------------------------------
-@node "The Cen_PLIP module"
+@node "Main" "The Cen_PLIP module"
+@alias "The Cen_PLIP module"
 ##---------------------------------------------------------------------------
 The Cen_PLIP module                                                  Cen_PLIP
 @line 1 77 0 0 7
@@ -27,7 +35,7 @@ The Cen_PLIP module                                                  Cen_PLIP
  Documentation for Cen_PLIP.Stx version @:Version
  Created by Ulf Ronald Andersson
 
- @{U}Contents@{0}
+ @{U}Contents@{u}
 
  @{"Introduction to Cen_PLIP" link "Introduction to Cen_PLIP"}
  @{"Installation of Cen_PLIP" link "Installation of Cen_PLIP"}
@@ -35,25 +43,28 @@ The Cen_PLIP module                                                  Cen_PLIP
  @{"Cen_PLIP Development History" link "Cen_PLIP Development History"}
  @{"Cen_PLIP Feedback" link "Cen_PLIP Feedback"}
 
-##---------------------------------------------------------------------------
-@endnode "The Cen_PLIP module"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Cen_PLIP Feedback" "How to send reports, questions & suggestions"
 ##---------------------------------------------------------------------------
+@next "Introduction to Cen_PLIP"
 How to send reports, questions & suggestions                         Cen_PLIP
 @line 1 77 0 0 7
 
  To contact me for questions/reports etc,
  the following means are available:
 
- @{"Ordinary \"Snail-mail\"" link URAn_Snail_Mail}
- @{"Ordinary phonecall" link URAn_Phone_Number}
- @{"Internet E-mail" link URAn_Internet_Email}
+ @{"Ordinary \"Snail-mail\"" LINK "URAn_Snail_Mail"}
+ @{"Ordinary phonecall" LINK "URAn_Phone_Number"}
+ @{"Internet E-mail" LINK "URAn_Internet_Email"}
+
+@endnode
+
 
 ##---------------------------------------------------------------------------
-@endnode "Cen_PLIP Feedback"
-##---------------------------------------------------------------------------
-@pnode URAn_Snail_Mail
+@pnode "URAn_Snail_Mail"
 ##---------------------------------------------------------------------------
  My "snail-mail" address is
 
@@ -65,10 +76,11 @@ How to send reports, questions & suggestions                         Cen_PLIP
 NB: The letters '”' and '„' in the street address
     are  swedish characters,  but may be replaced
     by 'o' and 'a' or even 'oe' and 'ae' instead.
+@endnode
+
+
 ##---------------------------------------------------------------------------
-@endnode URAn_Snail_Mail
-##---------------------------------------------------------------------------
-@pnode URAn_Phone_Number
+@pnode "URAn_Phone_Number"
 ##---------------------------------------------------------------------------
  Since a dialog by mail is very slow,  some users
  (at least those in Sweden) may prefer to call me
@@ -79,24 +91,27 @@ NB: The letters '”' and '„' in the street address
  The first two digits are the area code for Stockholm,
  so foreign callers must remove the leading zero.
  (And of course start by dialling Sweden.)
+@endnode
+
+
 ##---------------------------------------------------------------------------
-@endnode URAn_Phone_Number
-##---------------------------------------------------------------------------
-@pnode URAn_Internet_Email
+@pnode "URAn_Internet_Email"
 ##---------------------------------------------------------------------------
  I can also be reached on the Internet,
  where I have the following addresses:
  
-        mailto:dlanor@oden.se
+        mailto:dlanor@@oden.se
         http://www.oden.se/~dlanor/
 
 The web page includes mail and ftp links,
 so you can stay in the browser for that.
-##---------------------------------------------------------------------------
-@endnode URAn_Internet_Email
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Introduction to Cen_PLIP"
 ##---------------------------------------------------------------------------
+@prev "Cen_PLIP Feedback"
 Introduction to Cen_PLIP                                             Cen_PLIP
 @line 1 77 0 0 7
 
@@ -130,8 +145,9 @@ never quite be matched using Midi, which is what I had to use before.  The
 many  musicians that use  Ataris  should also welcome the ability to use a
 fast networking port which does not interfere with their  Midi  equipment.
 
-##---------------------------------------------------------------------------
-@endnode "Introduction to Cen_PLIP"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Making a PLIP cable"
 ##---------------------------------------------------------------------------
@@ -149,22 +165,22 @@ too, to minimize grounding problems, but that is up to you.
 The necessary connections are specified as one connecting line per character
 row in the diagram below:
 
-	    DB-25		    DB-25
-	    Unit A		    Unit B
-	---------------		---------------
-	  pin	name		  pin	name
-	  ---	----		  ---	----
-	   1	STROBE		   11	BUSY
-	   2	D0		    2	D0
-	   3	D1		    3	D1
-	   4	D2		    4	D2
-	   5	D3		    5	D3
-	   6	D4		    6	D4
-	   7	D5		    7	D5
-	   8	D6		    8	D6
-	   9	D7		    9	D7
-	  11	BUSY		    1	STROBE
-	  25	GROUND		   25	GROUND
+            DB-25                   DB-25
+            Unit A                  Unit B
+        ---------------         ---------------
+          pin   name              pin   name
+          ---   ----              ---   ----
+           1    STROBE             11   BUSY
+           2    D0                  2   D0
+           3    D1                  3   D1
+           4    D2                  4   D2
+           5    D3                  5   D3
+           6    D4                  6   D4
+           7    D5                  7   D5
+           8    D6                  8   D6
+           9    D7                  9   D7
+          11    BUSY                1   STROBE
+          25    GROUND             25   GROUND
 
 Pins 12-17 should be unconnected, and pins 18-24 are extra grounds.
 
@@ -176,7 +192,7 @@ completely and simply cut lines 1 and 11 so you can cross connect them.
 NB: Remember that DB-25 connectors do *NOT* number the pins in the same
     order that they appear on a flat cable. The numbers given are all DB-25!
     So pins 1 and 2 are not adjacent in the cable, but have pin 14 between.
-    
+
 Important !!!  The lines to cut away are thus *NOT* a block of adjacent ones.
 
 
@@ -206,8 +222,9 @@ is your own responsibility, and since the PSG fills many important functions
 I have myself let the cable remain connected  since I completed the adapter,
 but you must choose what to do for yourself.  I am not responsible for that.
 
-##---------------------------------------------------------------------------
-@endnode "Making a PLIP cable"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Installation of Cen_PLIP"
 ##---------------------------------------------------------------------------
@@ -231,12 +248,12 @@ get  indirect access to  internet (requires Masque.Stx), you do not need any
 other entries than the one for  PLIP, which should then have  0.0.0.0 in all
 the IP number/network fields.  Like this:
 
-0.0.0.0		0.0.0.0		Centr. PLIP	0.0.0.0
+0.0.0.0         0.0.0.0         Centr. PLIP     0.0.0.0
 
 For the master unit the "Centr. PLIP" entry needs to be a small subnet spec,
 and could look like this:
 
-1.0.255.0	255.255.255.0	Centr. PLIP	0.0.0.0
+1.0.255.0       255.255.255.0   Centr. PLIP     0.0.0.0
 
 Remember that this line must come before the default route, used for the
 internet connection, since the file may not be processed below that line.
@@ -252,79 +269,75 @@ There are two things which are noteworthy of the last example above:
     includes the "PLIP" port of the  'slave'  unit, and it is advisable
     to use a related number for that on the  'Master'  unit too.
 
-##---------------------------------------------------------------------------
-@endnode "Installation of Cen_PLIP"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Cen_PLIP Development History"
 ##---------------------------------------------------------------------------
 Cen_PLIP Development History                                         Cen_PLIP
 @line 1 77 0 0 7
 
- @{U}Version@{0}        @{U}Details@{0}
+ @{U}Version@{u}        @{U}Details@{u}
 
- 1.07		1998 February 12
-		After 48 hours nearly continuous work at speed optimization
-		this version has now achieved bulk transfer rates averaging
-		at 6100 cps (equivalent to serial 61000 bps), when browsing
-		from a 16 MHz Mega ST4 running CAB 2.7 + CAB.OVL 1.2805 to
-		access pages/files on a 16 MHz falcon running SHTTPD 2.2.
-		This is good enough to release, though I still expect more!
-
-
- 1.06		1998 February 10
-		After some necessary STinG Kernel improvements last November
-		the PLIP module lost all reliability.  It has been a long
-		struggle to get it back online, but here it is, the first
-		Cen_PLIP version running perfectly under the latest STinG.
-		This was achieved at cost of speed though, so this version
-		is not released.  Who wants PLIP at 1000 cps...?  :-(
-
- 1.05		1997 October 25
-		Added module basepage pointer to DRIVER structure.
-		This is a new standard defined to ease debugging.
+ 1.07           1998 February 12
+                After 48 hours nearly continuous work at speed optimization
+                this version has now achieved bulk transfer rates averaging
+                at 6100 cps (equivalent to serial 61000 bps), when browsing
+                from a 16 MHz Mega ST4 running CAB 2.7 + CAB.OVL 1.2805 to
+                access pages/files on a 16 MHz falcon running SHTTPD 2.2.
+                This is good enough to release, though I still expect more!
 
 
- 1.04		1997 October 13
-		Rewritten to use a new form of interupt masking, to improve
-		transfer rates and decrease errors due to kernel interrupts
-		interfering with PLIP timing.
+ 1.06           1998 February 10
+                After some necessary STinG Kernel improvements last November
+                the PLIP module lost all reliability.  It has been a long
+                struggle to get it back online, but here it is, the first
+                Cen_PLIP version running perfectly under the latest STinG.
+                This was achieved at cost of speed though, so this version
+                is not released.  Who wants PLIP at 1000 cps...?  :-(
 
-		Renamed to "Centr. PLIP" with filename "CEN_PLIP.STX", after
-		long discussions with Peter on naming conventions. This will
-		not collide with any future port.
+ 1.05           1997 October 25
+                Added module basepage pointer to DRIVER structure.
+                This is a new standard defined to ease debugging.
 
 
- 1.03		1997 September 13
-		Rewritten to take advantage of the new capabilities of the
-		latest STinG kernel to allow kernel routines to be called
-		from hardware interrupts.  This removes an unpleasant limit
-		on the number of packets tranferred per timeslice.  Even an
-		unspeeded ST can expect TCP rates in excess of 4500 cps now.
-		(Tested with MTU=576, MSS=536. Higher values = higher speed)
+ 1.04           1997 October 13
+                Rewritten to use a new form of interupt masking, to improve
+                transfer rates and decrease errors due to kernel interrupts
+                interfering with PLIP timing.
 
- 1.02		1997 August 25
-		A bug that sometimes locked up the system has been killed.
-		This is the first proper release version, and test runs on
-		it include bidirectional 'Pinging' of 4500 datagrams.
-	NB:	No tests have yet been made with 'partners' using MintNet,
-		so reports on results with such would be appreciated.
+                Renamed to "Centr. PLIP" with filename "CEN_PLIP.STX", after
+                long discussions with Peter on naming conventions. This will
+                not collide with any future port.
 
- 1.01		1997 August 22
- 		The fatal bug mentioned below has been exterminated.
- 		The statistics counter for dropped packets is corrected.
- 		Statistics counters for sent/received data are implemented.
- 		The document is now in ST-Guide hypertext format.
 
- 1.00		1997 August 22
-		First functional version, with one FATAL bug that could
-		kill unrelated MFP interrupts...
+ 1.03           1997 September 13
+                Rewritten to take advantage of the new capabilities of the
+                latest STinG kernel to allow kernel routines to be called
+                from hardware interrupts.  This removes an unpleasant limit
+                on the number of packets tranferred per timeslice.  Even an
+                unspeeded ST can expect TCP rates in excess of 4500 cps now.
+                (Tested with MTU=576, MSS=536. Higher values = higher speed)
 
- 0.xx		1997 August 18-21
- 		Project start and various experiments
+ 1.02           1997 August 25
+                A bug that sometimes locked up the system has been killed.
+                This is the first proper release version, and test runs on
+                it include bidirectional 'Pinging' of 4500 datagrams.
+        NB:     No tests have yet been made with 'partners' using MintNet,
+                so reports on results with such would be appreciated.
 
-##---------------------------------------------------------------------------
-@endnode "Cen_PLIP Development History"
-##---------------------------------------------------------------------------
-##===========================================================================
-##	End of file:	CEN_PLIP.STG
-##===========================================================================
+ 1.01           1997 August 22
+                The fatal bug mentioned below has been exterminated.
+                The statistics counter for dropped packets is corrected.
+                Statistics counters for sent/received data are implemented.
+                The document is now in ST-Guide hypertext format.
+
+ 1.00           1997 August 22
+                First functional version, with one FATAL bug that could
+                kill unrelated MFP interrupts...
+
+ 0.xx           1997 August 18-21
+                Project start and various experiments
+
+@endnode
