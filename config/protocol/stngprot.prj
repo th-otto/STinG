@@ -6,7 +6,7 @@ stngprot.bin
 .C[-P-]
 .C[-M]
 .C[-K]
-.C[-G]
+.C[-G-]
 .C[-2-]
 .C[-8-]
 .C[-C-]		; no nested comments please
