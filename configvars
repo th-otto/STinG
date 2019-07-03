@@ -9,6 +9,7 @@ LIBS=
 
 HCP = hcp
 MKDIR = mkdir -p
+PERL = perl
 
 .s.o:
 	$(AS) $(CFLAGS) -c -o $@ $<

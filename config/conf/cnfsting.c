@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     Konfiguration der STinG Low Level Ports                       */
@@ -15,9 +14,6 @@
 
 #include "transprt.h"
 #include "layer.h"
-
-
-void set_sting_data(void);
 
 
 TPL *tpl;
@@ -49,7 +45,7 @@ static int locate_sting(void)
 
 	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
-	if (sting_drivers == 0L)
+	if (sting_drivers == 0)
 		return FALSE;
 
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
@@ -157,7 +153,8 @@ static int read_config_file(void)
 }
 
 
-void set_sting_data(void)
+#if 0 /* unused */
+static void set_sting_data(void)
 {
 	PORT *src;
 	PORT *dest;
@@ -186,6 +183,7 @@ void set_sting_data(void)
 		dest->sub_mask = src->sub_mask;
 	}
 }
+#endif
 
 
 int main(void)

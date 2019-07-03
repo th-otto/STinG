@@ -14,11 +14,14 @@ all:: stngport.cpx
 stngport.cpx: stngport.hdr stngport.bin
 	cat $^ > $@
 
+stngport.hdr: stngport.cph
+	$(PERL) ../genhdr.pl -o $@ $<
+
 stngport.bin: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean::
-	$(RM) *.cpx *.bin
+	$(RM) *.cpx *.bin *.hdr
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/cpx

@@ -14,11 +14,14 @@ all:: serial.cpx
 serial.cpx: serial.hdr serial.bin
 	cat $^ > $@
 
+serial.hdr: serial.cph
+	$(PERL) ../genhdr.pl -o $@ $<
+
 serial.bin: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean::
-	$(RM) *.cpx *.bin
+	$(RM) *.cpx *.bin *.hdr
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/cpx

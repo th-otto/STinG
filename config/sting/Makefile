@@ -14,11 +14,14 @@ all:: sting.cpx
 sting.cpx: sting.hdr sting.bin
 	cat $^ > $@
 
+sting.hdr: sting.cph
+	$(PERL) ../genhdr.pl -o $@ $<
+
 sting.bin: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean::
-	$(RM) *.cpx *.bin
+	$(RM) *.cpx *.bin *.hdr
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/cpx
