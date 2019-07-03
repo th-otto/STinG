@@ -1,0 +1,36 @@
+dialer.app
+
+.C[-I..\..\include]
+
+.C[-A-]
+.C[-P]
+.C[-M-]
+.C[-K-]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=2048]
+
+=
+pcstart.s
+
+main.c
+window.c
+func.c
+config.c
+dial.c
+loggin.c
+tool.c
+
+c:\pc\orig\lib\pcgemlib.lib
+c:\pc\orig\lib\pcstdli2.lib
+c:\pc\orig\lib\pctoslib.lib
+
+;dev-lib\source\device.lib
+dev-lib\source\dev_lib.c [-K]
+dev-lib\source\port.s
+dev-lib\source\dev_misc.s
+
+

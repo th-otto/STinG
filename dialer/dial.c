@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <device.h>
+#include "dev-lib\source\device.h"
 
 #include "dial.h"
 #include "window.h"

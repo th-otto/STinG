@@ -3,3 +3,11 @@
 *.app
 *.o
 *.cpx
+aaa.cfg
+*.pdb
+*.hyp
+*.ref
+*.bin
+*.ism
+*.stx
+*.hdr

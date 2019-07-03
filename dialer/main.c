@@ -15,7 +15,7 @@
 #include <tos.h>
 #include <stdio.h>
 #include <string.h>
-#include <device.h>
+#include "dev-lib\source\device.h"
 
 #include "dial.h"
 #include "window.h"

@@ -17,6 +17,29 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifndef BACKDROP
+#define BACKDROP         0x2000         /* KAOS 1.4    */
+#endif
+#ifndef ICONIFIER
+#define ICONIFIER        0x4000
+#endif
+#ifndef WM_BOTTOMED
+#define WM_BOTTOMED		33   /* AES 4.1 */
+#endif
+#ifndef WM_ICONIFY
+#define WM_ICONIFY      34          /* AES 4.1 */
+#endif
+#ifndef WM_UNICONIFY
+#define WM_UNICONIFY    35          /* AES 4.1 */
+#endif
+#ifndef WF_ICONIFY
+#define WF_ICONIFY       26  /* G&S  AES 4.1 */
+#endif
+#ifndef WF_UNICONIFY
+#define WF_UNICONIFY     27  /* G&S  AES 4.1 */
+#endif
+
+
 
 #define  FALSE            0
 #define  TRUE             1
@@ -143,7 +166,7 @@ int  num_trees, icnfy_index;
    event_thread   = (int (*) ())         NULL;
 
    if (icnfy_index != -1) {
-        rsrc_gaddr (R_TREE, icnfy_index, &icnfy_tree);  window_kind |= ICONFIER;
+        rsrc_gaddr (R_TREE, icnfy_index, &icnfy_tree);  window_kind |= ICONIFIER;
       }
      else
         icnfy_tree = (OBJECT *) NULL;
