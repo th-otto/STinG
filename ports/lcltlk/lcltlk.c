@@ -19,163 +19,185 @@
 #define  M_YEAR    18
 #define  M_MONTH   6
 #define  M_DAY     18
+#define  VERSION   "00.01"
 
 
-int            get_cookie (long which, long *value);
-long           read_cookie (void);
-int16          install (void);
-void    cdecl  my_send (PORT *port);
-void    cdecl  my_receive (PORT *port);
-int16   cdecl  my_set_state (PORT *port, int16 state);
-int16   cdecl  my_cntrl (PORT *port, uint32 argument, int16 code);
+TPL *tpl;
+STX *stx;
+
+#ifndef UNUSED
+# define UNUSED(x) ((void)(x))
+#endif
+
+#ifdef __GNUC__
+#define _BasPag _base
+#endif
 
 
-DRV_LIST  *sting_drivers;
-TPL       *tpl;
-STX       *stx;
-PORT      my_port   = {  "LocalTalk", L_SER_BUS, FALSE, 0L, 0xffffffffUL, 0xffffffffUL,
-                         4096, 4096, 0L, NULL, 0L, NULL, 0, NULL, NULL  };
-DRIVER    my_driver = {  my_set_state, my_cntrl, my_send, my_receive, "LocalTalk", "00.01",
-                         (M_YEAR << 9) | (M_MONTH << 5) | M_DAY, "Unknown Programmer",
-                         NULL, NULL   };
-int       ck_flag;
-long      cookie;
-char      fault[] = "LCLTLK.STX : STinG extension module. Only to be started by STinG !\r\n";
+static PORT my_port = {
+	"LocalTalk",
+	L_SER_BUS,
+	FALSE,
+	0L,
+	0xffffffffUL,
+	0xffffffffUL,
+	4096,
+	4096,
+	0L,
+	NULL,
+	0L,
+	NULL,
+	0,
+	NULL,
+	NULL
+};
+
+static DRIVER my_driver;
+
+static int ck_flag;
+static long cookie;
+
+static char const fault[] = "LCLTLK.STX : STinG extension module. Only to be started by STinG !\r\n";
 
 
 
-void  main (argc, argv)
-
-int   argc;
-char  *argv[];
-
+static long read_cookie(void)
 {
-   if (argc != 2) {
-        Cconws (fault);   return;
-      }
-   if (strcmp (argv[1], "STinG_Load") != 0) {
-        Cconws (fault);   return;
-      }
+	long *work;
 
-   if (! get_cookie (STIK_COOKIE_MAGIC, (long *) & sting_drivers))
-        return;
+	ck_flag = FALSE;
 
-   if (sting_drivers == NULL)   return;
+	work = *(long **) 0x5a0L;
+	if (work == NULL)
+		return 0;
 
-   if (strcmp (sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
-        return;
+	for (; *work != 0L; work += 2)
+	{
+		if (*work == cookie)
+		{
+			ck_flag = TRUE;
+			return *++work;
+		}
+	}
 
-   tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
-   stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
-
-   if (tpl != (TPL *) NULL && stx != (STX *) NULL) {
-        if (install())
-             Ptermres (_PgmSize, 0);
-      }
- }
+	return -1;
+}
 
 
-int  get_cookie (which, value)
-
-long  which, *value;
-
+static int get_cookie(long which, long *value)
 {
-   cookie = which;
-   *value = Supexec (read_cookie);
+	cookie = which;
+	*value = Supexec(read_cookie);
 
-   return (ck_flag);
- }
+	return ck_flag;
+}
 
 
-long  read_cookie()
-
+static void cdecl my_send(PORT *port)
 {
-   long  *work;
-
-   ck_flag = FALSE;
-
-   if (* (long **) 0x5a0L == NULL)
-        return (0L);
-
-   for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == cookie) {
-             ck_flag = TRUE;   return (*++work);
-           }
-
-   return (-1L);
- }
+	if (port != &my_port)
+		return;
+}
 
 
-int16  install()
-
+static void cdecl my_receive(PORT *port)
 {
-   PORT    *ports;
-   DRIVER  *driver;
-   long    machine;
-
-   if (! get_cookie (0x5F4D4348L, & machine)) /* '_MCH' */
-        return (FALSE);
-
-   if ((machine >> 16) < 1 || 3 < (machine >> 16))
-        return (FALSE);
-
-   if ((machine >> 16) == 1 && (machine & 0xffffL) != 16)
-        return (FALSE);
-
-   query_chains (& ports, & driver, NULL);
-
-   (my_port.driver = & my_driver)->basepage = _BasPag;
-
-   while (ports->next)
-        ports = ports->next;
-
-   ports->next = & my_port;
-
-   while (driver->next)
-        driver = driver->next;
-
-   driver->next = & my_driver;
-
-   return (TRUE);
- }
+	if (port != &my_port)
+		return;
+}
 
 
-void  cdecl  my_send (port)
-
-PORT  *port;
-
+static int16 cdecl my_set_state(PORT *port, int16 state)
 {
-   if (port != & my_port)   return;
- }
+	UNUSED(state);
+	if (port != &my_port)
+		return FALSE;
+
+	return TRUE;
+}
 
 
-void  cdecl  my_receive (port)
-
-PORT  *port;
-
+static int16 cdecl my_cntrl(PORT *port, uint32 argument, int16 code)
 {
-   if (port != & my_port)   return;
- }
+	UNUSED(port);
+	UNUSED(argument);
+	UNUSED(code);
+	return E_FNAVAIL;
+}
 
 
-int16  cdecl  my_set_state (port, state)
+static DRIVER my_driver = {
+	my_set_state,
+	my_cntrl,
+	my_send,
+	my_receive,
+	"LocalTalk",
+	VERSION,
+	(M_YEAR << 9) | (M_MONTH << 5) | M_DAY, "Unknown Programmer",
+	NULL, NULL
+};
 
-PORT   *port;
-int16  state;
 
+static int16 install(void)
 {
-   if (port != & my_port)   return (FALSE);
+	PORT *ports;
+	DRIVER *driver;
+	long machine;
 
-   return (TRUE);
- }
+	if (!get_cookie(0x5F4D4348L, &machine))	/* '_MCH' */
+		return FALSE;
+
+	if ((machine >> 16) < 1 || 3 < (machine >> 16))
+		return FALSE;
+
+	if ((machine >> 16) == 1 && (machine & 0xffffL) != 16)
+		return FALSE;
+
+	query_chains(&ports, &driver, NULL);
+
+	(my_port.driver = &my_driver)->basepage = _BasPag;
+
+	while (ports->next)
+		ports = ports->next;
+
+	ports->next = &my_port;
+
+	while (driver->next)
+		driver = driver->next;
+
+	driver->next = &my_driver;
+
+	return TRUE;
+}
 
 
-int16  cdecl  my_cntrl (port, argument, code)
-
-PORT    *port;
-uint32  argument;
-int16   code;
-
+int main(int argc, char **argv)
 {
-   return (E_FNAVAIL);
- }
+	DRV_LIST *sting_drivers;
+
+	if (argc != 2 || strcmp(argv[1], "STinG_Load") != 0)
+	{
+		(void) Cconws(fault);
+		return 1;
+	}
+
+	if (!get_cookie(STIK_COOKIE_MAGIC, (long *) &sting_drivers))
+		return 1;
+
+	if (sting_drivers == NULL)
+		return 1;
+
+	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
+		return 1;
+
+	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
+	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
+
+	if (tpl != NULL && stx != NULL)
+	{
+		if (install())
+			Ptermres(_PgmSize, 0);
+	}
+	
+	return 1;
+}
