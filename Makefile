@@ -1,4 +1,4 @@
-SUBDIRS = include config sting tool loggin inetd docu proto
+SUBDIRS = include config sting tool loggin inetd docu proto ports
 
 all clean distclean::
 	@for i in $(SUBDIRS); do $(MAKE) -C $$i $@ || exit 1; done
