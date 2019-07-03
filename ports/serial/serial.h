@@ -17,6 +17,8 @@
  *   Non-blocking mode for opening device.
  */
 
+/* do not use Pure-C definitions, we need MiNT/HSMODEM flags */
+#undef O_NDELAY
 #define  O_NDELAY      0x0100
 
 
@@ -41,13 +43,14 @@
  *   RSVF entry describing a serial port.
  */
 
-typedef  struct rsvf_entry  {
-     void      *miscell;
-     uint8     flags;
-     uint8     resvd_a;
-     uint8     bios;
-     uint8     resvd_b;
- } RSVF_DEV;
+typedef struct rsvf_entry
+{
+	void *miscell;
+	uint8 flags;
+	uint8 resvd_a;
+	uint8 bios;
+	uint8 resvd_b;
+} RSVF_DEV;
 
 
 /*
@@ -68,10 +71,10 @@ typedef  struct rsvf_entry  {
  *   SLIP framing definitions
  */
 
-#define  SLIP_END       '\300'
-#define  SLIP_ESC       '\333'
-#define  SLIP_DATEND    '\334'
-#define  SLIP_DATESC    '\335'
+#define  SLIP_END       0xc0
+#define  SLIP_ESC       0xdb
+#define  SLIP_DATEND    0xdc
+#define  SLIP_DATESC    0xdd
 
 
 
@@ -82,10 +85,10 @@ typedef  struct rsvf_entry  {
  *   PPP framing definitions
  */
 
-#define  PPP_FLAG       '\x7e'
-#define  PPP_ADDR       '\xff'
-#define  PPP_CNTRL      '\x03'
-#define  PPP_ESC        '\x7d'
+#define  PPP_FLAG       0x7e
+#define  PPP_ADDR       0xff
+#define  PPP_CNTRL      0x03
+#define  PPP_ESC        0x7d
 
 #define  PPP_LCP        0xc021
 #define  PPP_PAP        0xc023
@@ -222,99 +225,131 @@ typedef  struct rsvf_entry  {
  *   TCP segment header.
  */
 
-typedef  struct tcp_header {
-    uint16    src_port;         /* Port number of sender                    */
-    uint16    dest_port;        /* Port number of receiver                  */
-    uint32    sequence;         /* Sequence number                          */
-    uint32    acknowledge;      /* Acknowledgement number                   */
-    unsigned  offset    : 4;    /* Data offset (header length)              */
-    unsigned  resvd     : 6;    /* Reserved                                 */
-    unsigned  urgent    : 1;    /* Flag for urgent data present             */
-    unsigned  ack       : 1;    /* Flag for acknowledgement segment         */
-    unsigned  push      : 1;    /* Flag for push function                   */
-    unsigned  reset     : 1;    /* Flag for resetting connection            */
-    unsigned  sync      : 1;    /* Flag for synchronizing sequence numbers  */
-    unsigned  fin       : 1;    /* Flag for no more data from sender        */
-    uint16    window;           /* Receive window                           */
-    uint16    chksum;           /* Checksum of all header, options and data */
-    uint16    urg_ptr;          /* First byte following urgent data         */
- } TCP_HDR;
+typedef struct tcp_header
+{
+	uint16 src_port;					/* Port number of sender                    */
+	uint16 dest_port;					/* Port number of receiver                  */
+	uint32 sequence;					/* Sequence number                          */
+	uint32 acknowledge;					/* Acknowledgement number                   */
+	unsigned offset:4;					/* Data offset (header length)              */
+	unsigned resvd:6;					/* Reserved                                 */
+	unsigned urgent:1;					/* Flag for urgent data present             */
+	unsigned ack:1;						/* Flag for acknowledgement segment         */
+	unsigned push:1;					/* Flag for push function                   */
+	unsigned reset:1;					/* Flag for resetting connection            */
+	unsigned sync:1;					/* Flag for synchronizing sequence numbers  */
+	unsigned fin:1;						/* Flag for no more data from sender        */
+	uint16 window;						/* Receive window                           */
+	uint16 chksum;						/* Checksum of all header, options and data */
+	uint16 urg_ptr;						/* First byte following urgent data         */
+} TCP_HDR;
 
 
 /*
  *   CSTATE for Van Jacobson compression
  */
 
-typedef  struct cstate  {
-     struct cstate  *next;
-     uint8          connec_id;
-     IP_HDR         cs_ip;
-     uint8          cs_ip_opt[44];
-     TCP_HDR        cs_tcp;
-     uint8          cs_tcp_opt[44];
- } CSTATE;
+typedef struct cstate
+{
+	struct cstate *next;
+	uint8 connec_id;
+	IP_HDR cs_ip;
+	uint8 cs_ip_opt[44];
+	TCP_HDR cs_tcp;
+	uint8 cs_tcp_opt[44];
+} CSTATE;
 
 
 /*
  *   Structure containing all VJHC data for one port
  */
-
-typedef  struct vjhc  {
-     struct cstate  *last_cstate;
-     uint8          last_recvd;
-     uint8          last_send;
-     uint16         flags;
-     int16          max_states;
-     CSTATE         rec_state[MAX_STATES];
-     CSTATE         send_state[MAX_STATES];
-     uint16         begin, length;
-     uint8          header[16];
- } VJHC;
+typedef struct vjhc
+{
+	struct cstate *last_cstate;
+	uint8 last_recvd;
+	uint8 last_send;
+	uint16 flags;
+	int16 max_states;
+	CSTATE rec_state[MAX_STATES];
+	CSTATE send_state[MAX_STATES];
+	uint16 begin;
+	uint16 length;
+	uint8 header[16];
+} VJHC;
 
 
 
 /*--------------------------------------------------------------------------*/
 
+typedef struct serial_port SERIAL_PORT;
+
 
 /*
  *   PPP state machine description.
  */
-
-typedef  struct machine  {
-     char    name[6];
-     int16   state;
-     uint16  protocol;
-     uint32  timer_start, timer_elapsed;
-     int16   timer_run, restart_cnt;
-     int16   block_len, conf_len, flags, identi, codes, essent, event;
-     uint8   offset, xtra;
-     uint8   *block, *conf;
-     void    (* up_down) (struct serial_port *port, int16 flag);
-     void    (* do_lower) (struct serial_port *port, int16 flag);
-     void    (* create) (struct serial_port *port);
-     int16   (* negotiate) (struct serial_port *port, uint8 *own, uint8 *src, uint8 *mod);
-     int16   (* implement) (struct serial_port *port, uint8 *option);
-     int16   (* process) (struct serial_port *port, uint8 *src, uint8 *mod);
-     void    (* accept) (struct serial_port *port, uint8 *option);
- } MACHINE;
+typedef struct machine
+{
+	char name[6];
+	int16 state;
+	uint16 protocol;
+	uint32 timer_start;
+	uint32 timer_elapsed;
+	int16 timer_run;
+	int16 restart_cnt;
+	int16 block_len;
+	int16 conf_len;
+	int16 flags;
+	int16 identi;
+	int16 codes;
+	int16 essent;
+	int16 event;
+	uint8 offset;
+	uint8 xtra;
+	uint8 *block;
+	uint8 *conf;
+	void (*up_down)(SERIAL_PORT *port, int16 flag);
+	void (*do_lower)(SERIAL_PORT *port, int16 flag);
+	void (*create)(SERIAL_PORT *port);
+	int16 (*negotiate) (SERIAL_PORT *port, uint8 *own, uint8 *src, uint8 *mod);
+	int16 (*implement) (SERIAL_PORT *port, uint8 *option);
+	int16 (*process) (SERIAL_PORT *port, uint8 *src, uint8 *mod);
+	void (*accept) (SERIAL_PORT *port, uint8 *option);
+} MACHINE;
 
 
 /*
  *   Structure for all PPP relevant information.
  */
 
-typedef  struct ppp_data  {
-     int16    peer_mru;
-     uint32   recve_accm, send_accm;
-     uint32   local_magic, remote_magic, offered;
-     char     pap_id[128], pap_passwd[128];
-     char     **pap_auth, *pap_ack, *pap_nak;
-     uint32   p_dns, s_dns;
-     uint8    *cp_send_data, *data;
-     int16    cp_send_len, length, mtu2, vjhc_max1, vjhc_max2;
-     char     *message;
-     MACHINE  lcp, ipcp, pap;
- } PPP_DATA;
+typedef struct ppp_data
+{
+	int16 peer_mru;
+	uint32 recve_accm;
+	uint32 send_accm;
+	uint32 local_magic;
+	uint32 remote_magic;
+	uint32 offered;
+	char pap_id[128];
+	char pap_passwd[128];
+	char **pap_auth;
+#if 0
+	char *pap_ack;
+	char *pap_nak;
+#endif
+	uint32 p_dns;
+	uint32 s_dns;
+	uint8 *cp_send_data;
+	uint8 *data;
+	int16 cp_send_len;
+	int16 length;
+	int16 mtu2;
+	int16 vjhc_max1;
+	int16 vjhc_max2;
+	char *message;
+	MACHINE lcp;
+	MACHINE ipcp;
+	MACHINE pap;
+} PPP_DATA;
 
 
 
@@ -325,22 +360,26 @@ typedef  struct ppp_data  {
  *   STX internal structure for all port relevant information.
  */
 
-typedef  struct serial_port  {
-     PORT      generic;
-     int16     bios_addr;
-     char      *gemdos;
-     int16     handle;
-     MAPTAB    *handler;
-     void      *iocntl;
-     VJHC      *vjhc;
-     PPP_DATA  ppp;
-     char      *log_buffer;
-     uint16    log_len, log_ptr;
-     uint8     *send_buffer;
-     int16     send_length, send_index;
-     uint8     *recve_buffer;
-     int16     recve_length, recve_index;
- } SERIAL_PORT;
+struct serial_port
+{
+	PORT generic;
+	int16 bios_addr;
+	const char *gemdos;
+	int16 handle;
+	MAPTAB *handler;
+	void *iocntl;
+	VJHC *vjhc;
+	PPP_DATA ppp;
+	char *log_buffer;
+	uint16 log_len;
+	uint16 log_ptr;
+	uint8 *send_buffer;
+	int16 send_length;
+	int16 send_index;
+	uint8 *recve_buffer;
+	int16 recve_length;
+	int16 recve_index;
+};
 
 
 
@@ -351,12 +390,13 @@ typedef  struct serial_port  {
  *   PPP state machine transition.
  */
 
-typedef  struct transition  {
-     void  (* first)  (SERIAL_PORT *port, MACHINE *which, int16 event);
-     void  (* second) (SERIAL_PORT *port, MACHINE *which, int16 event);
-     void  (* third)  (SERIAL_PORT *port, MACHINE *which, int16 event);
-     int16    new_state;
- } TRANSITION;
+typedef struct transition
+{
+	void (*first)(SERIAL_PORT *port, MACHINE *which, int16 event);
+	void (*second)(SERIAL_PORT *port, MACHINE *which, int16 event);
+	void (*third)(SERIAL_PORT *port, MACHINE *which, int16 event);
+	int16 new_state;
+} TRANSITION;
 
 
 
@@ -390,5 +430,92 @@ typedef  struct transition  {
 
 /*--------------------------------------------------------------------------*/
 
+#ifndef GNU_ASM_NAME
+#ifdef __GNUC__
+#define GNU_ASM_NAME(x) __asm__(x)
+#else
+#define GNU_ASM_NAME(x)
+#endif
+#endif
+
+#ifndef UNUSED
+# define UNUSED(x) ((void)(x))
+#endif
+
+#ifdef __GNUC__
+#define _BasPag _base
+#endif
+
+
+extern uint8 identifier;
+extern SERIAL_PORT *my_ports;
+extern int space;
+extern DRIVER my_driver;
+
+
+void make_IP_dgram(uint8 *buffer, int16 buff_len, IP_DGRAM ** dgram);
+
+void init_vjhc(VJHC *vjhc, int16 num_states);
+int vjhc_compress(IP_DGRAM *datagram, VJHC *vjhc);
+int vjhc_uncompress(uint8 *buff, int16 len, int16 type, VJHC *vjhc, IP_DGRAM ** dgram);
+
+int16 send_cp(SERIAL_PORT *port, uint16 protocol, uint8 code, uint8 ident, uint16 length, uint8 *options);
+void ppp_log_text(SERIAL_PORT *port, char *text);
+void ppp_log_it(SERIAL_PORT *port, MACHINE *machine, const char *action, const char *which, int ident);
+void ppp_log_options(SERIAL_PORT *port, uint8 *data, int16 len, uint8 offs, uint8 xtra);
+void number_to_string(uint32 number, char *string, int16 digits);
+
+void user_event(SERIAL_PORT *port, int event, MACHINE *machine);
+void timer_event(SERIAL_PORT *port, MACHINE *machine);
+void network_event(SERIAL_PORT *port, MACHINE *machine);
+
+void ppp_dummy(SERIAL_PORT *port, int16 flag);
+
+void lcp_up_down(SERIAL_PORT *port, int16 flag);
+void lcp_do_lower(SERIAL_PORT *port, int16 flag);
+void lcp_create(SERIAL_PORT *port);
+int16 lcp_nego(SERIAL_PORT *port, uint8 *own, uint8 *source, uint8 *modified);
+int16 lcp_imple(SERIAL_PORT *port, uint8 *option);
+int16 lcp_options(SERIAL_PORT *port, uint8 *source, uint8 *modified);
+void lcp_accept(SERIAL_PORT *port, uint8 *option);
+
+void ipcp_up_down(SERIAL_PORT *port, int16 flag);
+void ipcp_create(SERIAL_PORT *port);
+int16 ipcp_nego(SERIAL_PORT *port, uint8 *own, uint8 *source, uint8 *modified);
+int16 ipcp_imple(SERIAL_PORT *port, uint8 *option);
+int16 ipcp_options(SERIAL_PORT *port, uint8 *source, uint8 *modified);
+void ipcp_accept(SERIAL_PORT *port, uint8 *option);
+
+void pap_up_down(SERIAL_PORT *port, int16 flag);
+void pap_create(SERIAL_PORT *port);
+int16 pap_nego(SERIAL_PORT *port, uint8 *own, uint8 *source, uint8 *modified);
+int16 pap_imple(SERIAL_PORT *port, uint8 *option);
+int16 pap_options(SERIAL_PORT *port, uint8 *source, uint8 *modified);
+void pap_accept(SERIAL_PORT *port, uint8 *option);
+
+void init_ppp(SERIAL_PORT *port);
+int16 cdecl ppp_timer(IP_DGRAM *);
+int16 open_ppp(SERIAL_PORT *port);
+void close_ppp(SERIAL_PORT *port);
+void open_ipcp(SERIAL_PORT *port);
+void close_ipcp(SERIAL_PORT *port);
+void ppp_control(SERIAL_PORT *port, uint16 protocol, uint8 *data, int16 len);
+
+uint16 fetch_16bit(uint8 *dest, const uint8 *source);
+uint32 fetch_32bit(uint8 *dest, const uint8 *source);
+uint32 choose_a_magic(uint32 avoid);
+int16 add_ps_dns(char *buffer, uint32 dns_ip);
+int16 pap_check_auth(SERIAL_PORT *port, const char *secret);
+
+void cdecl my_send(PORT *port);
+void cdecl my_receive(PORT *port);
+
+
+void set_dtr(void *hsm_code, int new_dtr) GNU_ASM_NAME("set_dtr");
+int inq_cd(void *hsm_code) GNU_ASM_NAME("inq_cd");
+long choose_magic(void) GNU_ASM_NAME("choose_magic");
+int execute(short cdecl (*code)(short dev)) GNU_ASM_NAME("execute");
+int cdecl send(void cdecl (*out)(short, short), uint8 **walk, int16 *rem, short cdecl (*stat)(short)) GNU_ASM_NAME("send");
+int cdecl receive(long cdecl (*in)(short dev), uint8 **walk, int16 *rem, short cdecl (*stat)(short), uint16 mark) GNU_ASM_NAME("receive");
 
 #endif /* SERIAL_H */
