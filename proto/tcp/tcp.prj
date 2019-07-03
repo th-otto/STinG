@@ -21,7 +21,7 @@ arrive.c
 inout.c
 tool.c
 check.s [-S]
+applyld.c
 
-pcgemlib.lib
 pctoslib.lib
 pcstdlib.lib

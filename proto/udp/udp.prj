@@ -18,7 +18,7 @@ cstart0.o
 
 udp.c
 sema.s [-S]
+applyld.c
 
-pcgemlib.lib
 pctoslib.lib
 pcstdlib.lib

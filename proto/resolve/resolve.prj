@@ -21,7 +21,7 @@ query.c
 resolve.c
 reso_sub.s
 yield.s
+applyld.c
 
-pcgemlib.lib
 pctoslib.lib
 pcstdlib.lib
