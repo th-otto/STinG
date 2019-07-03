@@ -9,17 +9,26 @@
 ## --- !!! ---  Please read the full text below at least once.  --- !!! ---
 ## This will help you avoid some simple but otherwise inescapable problems.
 ##===========================================================================
+@if VERSION >= 6
+@os Atari
+@charset atarist
+@inputenc atarist
+@lang en
+@endif
 @database "Masque STinG module documentation"
 @hostname MASQUE
+@options "-z +i"
 @author "Ulf Ronald Andersson"
 @$VER: Masque.HYP 1.10  (@:"__DATE__")
-@subject Documentation/System
-@options -z
-@width 78
+@subject "Documentation/System"
 @help "The Masque module"
+@width 78
 @define Version "1.10"
+
+
 ##---------------------------------------------------------------------------
-@node "The Masque module"
+@node "Main" "The Masque module"
+@alias "The Masque module"
 ##---------------------------------------------------------------------------
 The Masque module                                                      Masque
 @line 1 77 0 0 7
@@ -27,32 +36,35 @@ The Masque module                                                      Masque
  Documentation for Masque.Stx version @:Version
  Created by Ulf Ronald Andersson
 
- @{U}Contents@{0}
+ @{U}Contents@{u}
 
  @{"Introduction to Masque" link "Introduction to Masque"}
  @{"Configuring Masque" link "Configuring Masque"}
  @{"Installation of Masque" link "Installation of Masque"}
  @{"Masque Development History" link "Masque Development History"}
  @{"Masque Feedback" link "Masque Feedback"}
-##---------------------------------------------------------------------------
-@endnode "The Masque module"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Masque Feedback" "How to send reports, questions & suggestions"
 ##---------------------------------------------------------------------------
+@next "Introduction to Masque"
 How to send reports, questions & suggestions                           Masque
 @line 1 77 0 0 7
 
  To contact me for questions/reports etc,
  the following means are available:
 
- @{"Ordinary \"Snail-mail\"" link Snail_Mail}
- @{"Ordinary phonecall" link Phone_Number}
- @{"Internet E-mail" link Internet_Email}
+ @{"Ordinary \"Snail-mail\"" LINK "Snail_Mail"}
+ @{"Ordinary phonecall" LINK "Phone_Number"}
+ @{"Internet E-mail" LINK "Internet_Email"}
+
+@endnode
+
 
 ##---------------------------------------------------------------------------
-@endnode "Masque Feedback"
-##---------------------------------------------------------------------------
-@pnode Snail_Mail
+@pnode "Snail_Mail"
 ##---------------------------------------------------------------------------
  My "snail-mail" address is
 
@@ -64,10 +76,11 @@ How to send reports, questions & suggestions                           Masque
 NB: The letters '”' and '„' in the street address
     are  swedish characters,  but may be replaced
     by 'o' and 'a' or even 'oe' and 'ae' instead.
+@endnode
+
+
 ##---------------------------------------------------------------------------
-@endnode Snail_Mail
-##---------------------------------------------------------------------------
-@pnode Phone_Number
+@pnode "Phone_Number"
 ##---------------------------------------------------------------------------
  Since a dialog by mail is very slow,  some users
  (at least those in Sweden) may prefer to call me
@@ -78,24 +91,27 @@ NB: The letters '”' and '„' in the street address
  The first two digits are the area code for Stockholm,
  so foreign callers must remove the leading zero.
  (And of course start by dialling Sweden.)
+@endnode
+
+
 ##---------------------------------------------------------------------------
-@endnode Phone_Number
-##---------------------------------------------------------------------------
-@pnode Internet_Email
+@pnode "Internet_Email"
 ##---------------------------------------------------------------------------
  I can also be reached on the Internet,
  where I have the following addresses:
  
-        mailto:dlanor@oden.se
+        mailto:dlanor@@oden.se
         http://www.oden.se/~dlanor/
 
 The web page includes mail and ftp links,
 so you can stay in the browser for that.
-##---------------------------------------------------------------------------
-@endnode Internet_Email
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Introduction to Masque"
 ##---------------------------------------------------------------------------
+@prev "Masque Feedback"
 Introduction to Masque                                                 Masque
 @line 1 77 0 0 7
 
@@ -119,8 +135,9 @@ From version 1.10 of Masque the machine which is doing the masking is now
 treated a little differently from other machines on the local net.  This
 means it can receive connections from clients on Internet to any servers
 running on this local machine.
-##---------------------------------------------------------------------------
-@endnode "Introduction to Masque"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Configuring Masque"
 ##---------------------------------------------------------------------------
@@ -141,7 +158,7 @@ Here are some examples and important rules concerning this:
 
 I use the Midi and Plip drivers for local networks and my subnet route
 (on a line above the default route) for Midi looks like this:
-1.1.2.0		255.255.255.0	Midi		0.0.0.0
+1.1.2.0         255.255.255.0   Midi            0.0.0.0
 
 On each of the computers using this subnet I have set up the Midi ports
 to use the IP addresses 1.1.2.x, with 'x' standing for an arbitrary
@@ -155,7 +172,7 @@ connected to Internet, since STinG's router will use the local ones.
 On a very simple network the machines not connected to the dial-up modem
 can manage with a single default route allowing them to reach the modem-
 connected machine, and such a route should then look like this:
-0.0.0.0		0.0.0.0		Midi		0.0.0.0 
+0.0.0.0         0.0.0.0         Midi            0.0.0.0 
 
 But the modem-connected machine _must_ have the local route defined as a
 subnet  (see further above)  since its default route after  dial-up will
@@ -246,8 +263,9 @@ NB: An error simple to make is to use STNGPORT.CPX to manually activate
     all times the dialer that should activate any port used for dial-up
     conection to an ISP.
 
-##---------------------------------------------------------------------------
-@endnode "Configuring Masque"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Installation of Masque"
 ##---------------------------------------------------------------------------
@@ -264,111 +282,111 @@ With this background I can now describe complete installation very simply:
 2:  Configure masquerading as described in the section  @{"Configuring Masque" link "Configuring Masque"}
 
 That's it...
-##---------------------------------------------------------------------------
-@endnode "Installation of Masque"
+@endnode
+
+
 ##---------------------------------------------------------------------------
 @node "Masque Development History"
 ##---------------------------------------------------------------------------
 Masque Development History                                             Masque
 @line 1 77 0 0 7
 
-@{U} Version 1.10	1998 January 13 @{0}
+@{U} Version 1.10   1998 January 13 @{u}
 
-	Masking methods modified to allow local servers to be contacted
-	by clients on the Internet.
+        Masking methods modified to allow local servers to be contacted
+        by clients on the Internet.
 
-	Hypertext was amended to describe usage with latest STinG.
-
-
-@{U} Version 1.09	1997 October 25 @{0}
-
-	Added module basepage pointer to DRIVER structure.
-	This is a new standard defined to ease debugging.
+        Hypertext was amended to describe usage with latest STinG.
 
 
-@{U} Version 1.08	1997 September 7 @{0}
+@{U} Version 1.09   1997 October 25 @{u}
 
-	Partial ICMP support added for 3 (of 6) message classes:
-
-		Incoming error messages for UDP and TCP connections
-		Outgoing ICMP requests (echo, timestamp, etc)
-		Incoming ICMP replies (echo, timestamp, etc)
-
-	The types now supported are sufficient for the normal PING
-	and TRACEROUTE implementations, and tests with those tools
-	as implemented both in the dialer and in separate programs
-	in the  STinG  release verify this.  All these now work in
-	the same way with Masquerade as they do without it.
-
-	The following three message classes are not yet supported,
-	and such packets will still merely be dropped and ignored:
-
-		Outgoing error messages for UDP and TCP connections
-		Incoming ICMP requests (echo, timestamp, etc)
-		Outgoing ICMP replies (echo, timestamp, etc)
-
-	Of those only the first is of any real interest, since the
-	others will never occur on a normal ISP connection.
-
-	Undefined/Future ICMP message types are also ignored, which
-	is the recommended treatment of such enhancements when they
-	can not be properly supported.
-
-	The hypertext was reworked a bit for improved readability,
-	and extended with some clues on how to set up a functional
-	LAN, for those who are not yet familiar with this aspect
-	of STinG.  (Suggested by beta tester Eabe Kuik.)
+        Added module basepage pointer to DRIVER structure.
+        This is a new standard defined to ease debugging.
 
 
-@{U} Version 1.07	1997 August 21 @{0}
+@{U} Version 1.08   1997 September 7 @{u}
 
-	Port illegality test added, as suggested by Peter
+        Partial ICMP support added for 3 (of 6) message classes:
 
+                Incoming error messages for UDP and TCP connections
+                Outgoing ICMP requests (echo, timestamp, etc)
+                Incoming ICMP replies (echo, timestamp, etc)
 
-@{U} Version 1.06	1997 August 21 @{0}
+        The types now supported are sufficient for the normal PING
+        and TRACEROUTE implementations, and tests with those tools
+        as implemented both in the dialer and in separate programs
+        in the  STinG  release verify this.  All these now work in
+        the same way with Masquerade as they do without it.
 
-	Change of default IP numbers, as suggested by Peter
+        The following three message classes are not yet supported,
+        and such packets will still merely be dropped and ignored:
 
+                Outgoing error messages for UDP and TCP connections
+                Incoming ICMP requests (echo, timestamp, etc)
+                Outgoing ICMP replies (echo, timestamp, etc)
 
-@{U} Version 1.05	1997 August 20 @{0}
+        Of those only the first is of any real interest, since the
+        others will never occur on a normal ISP connection.
 
-	Bug correction of mislinked masquerade queues
+        Undefined/Future ICMP message types are also ignored, which
+        is the recommended treatment of such enhancements when they
+        can not be properly supported.
 
-
-@{U} Version 1.04	1997 August 19 @{0}
-
-	Update for longer port name "Masquerade" requested by Peter
-
-
-@{U} Version 1.03	1997 August 18 @{0}
-
-	Update for new STinG port type implemented by Peter in
-	STNGPORT.CPX and Dialer.
-
-
-@{U} Version 1.02	1997 August 18 @{0}
-
-	Update for new configuration method suggested by Peter.
-	Documentation converted to hypertext.
-
-
-@{U} Version 1.01	1997 August 14 @{0}
-
-	Update for unblocking time limitation on mask/unmask work
+        The hypertext was reworked a bit for improved readability,
+        and extended with some clues on how to set up a functional
+        LAN, for those who are not yet familiar with this aspect
+        of STinG.  (Suggested by beta tester Eabe Kuik.)
 
 
-@{U} Version 1.00	1997 August 12 @{0}
+@{U} Version 1.07   1997 August 21 @{u}
 
-	First functional release (to me and Peter only)
+        Port illegality test added, as suggested by Peter
 
 
-@{U} Version 0.xx	1997 August 10-12 @{0}
+@{U} Version 1.06   1997 August 21 @{u}
 
-	Project start and various pre-release experiments
+        Change of default IP numbers, as suggested by Peter
 
-##---------------------------------------------------------------------------
-@endnode "Masque Development History"
-##---------------------------------------------------------------------------
+
+@{U} Version 1.05   1997 August 20 @{u}
+
+        Bug correction of mislinked masquerade queues
+
+
+@{U} Version 1.04   1997 August 19 @{u}
+
+        Update for longer port name "Masquerade" requested by Peter
+
+
+@{U} Version 1.03   1997 August 18 @{u}
+
+        Update for new STinG port type implemented by Peter in
+        STNGPORT.CPX and Dialer.
+
+
+@{U} Version 1.02   1997 August 18 @{u}
+
+        Update for new configuration method suggested by Peter.
+        Documentation converted to hypertext.
+
+
+@{U} Version 1.01   1997 August 14 @{u}
+
+        Update for unblocking time limitation on mask/unmask work
+
+
+@{U} Version 1.00   1997 August 12 @{u}
+
+        First functional release (to me and Peter only)
+
+
+@{U} Version 0.xx   1997 August 10-12 @{u}
+
+        Project start and various pre-release experiments
+
+@endnode
+
 ##===========================================================================
-##	End of file:	MASQUE.STG
+##      End of file:    MASQUE.STG
 ##===========================================================================

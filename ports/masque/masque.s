@@ -5,47 +5,47 @@
 ;Feedback to:	dlanor@oden.se			Released as FREEWARE
 ;----------------------------------------------------------------------------
 ;Required header declarations:
-;
-	.include	"uran\STRUCT.SH"	;PASM adapted structures
-	.include	"uran\URAn_SYS.SH"	;Main system definitions
-	.include	"uran\URAn_LA.SH"	;Line A variables etc
-	.include	"uran\URAn_DOS.SH"	;GEMDOS, BIOS, XBIOS
-	.include	"uran\URAn_JAR.SH"	;Cookie jar handling
-;
-	.include	"sting\PORT.SH"		;only used by modules
-	.include	"sting\LAYER.SH"	;only used by servers
-	.include	"sting\TRANSPRT.SH"	;used by servers/clients
-	.include	"sting\TCP.SH"
-	.include	"sting\UDP.SH"
-	.include	"sting\NET_TCON.SH"	;handles network time conv.
-	.include	"sting\DOMAIN.SH"	;handles domain name/ip conv.
-;
+
+	.include	"uran\struct.sh"	;PASM adapted structures
+	.include	"uran\uran_sys.sh"	;Main system definitions
+	.include	"uran\uran_la.sh"	;Line A variables etc
+	.include	"uran\uran_dos.sh"	;GEMDOS, BIOS, XBIOS
+	.include	"uran\uran_jar.sh"	;Cookie jar handling
+
+	.include	"sting\port.sh"		;only used by modules
+	.include	"sting\layer.sh"	;only used by servers
+	.include	"sting\transprt.sh"	;used by servers/clients
+	.include	"sting\tcp.sh"
+	.include	"sting\udp.sh"
+	.include	"sting\net_tcon.sh"	;handles network time conv.
+	.include	"sting\domain.sh"	;handles domain name/ip conv.
+
 ;----------------------------------------------------------------------------
-;
+
 M_YEAR	equ	1998
 M_MONTH	equ	1
 M_DAY	equ	13
-;
+
 .MACRO	M_TITLE
 	dc.b	'Masquerade'
 .ENDM	M_TITLE
-;
+
 .MACRO	M_VERSION
 	dc.b	'01.10'
 .ENDM	M_VERSION
-;
+
 .MACRO	M_AUTHOR
 	dc.b	'Ronald Andersson'
 .ENDM	M_AUTHOR
-;
+
 ;----------------------------------------------------------------------------
-;
+
 struct	masq_port
 	d_s	masq_port_main,sizeof_prt_des	;as defined in PORT.SH
 	struc_p	masq_port_ptr			;-> port to be masked
 	uint32	masq_port_ip			;ip number for masking it
 d_end	masq_port
-;
+
 struct	masq_entry
 	struc_p	masq_next
 	d_alias	masq_proto_port
@@ -54,12 +54,12 @@ struct	masq_entry
 	uint32	masq_local_ip
 	uint16	masq_index
 d_end	masq_entry
-;
+
 MASQ_POWER	equ	12		;bits in masq index (port offsets)
 MASQ_TOTAL	equ	1<<MASQ_POWER	;same as LINUX (but different method)
 MASQ_START	equ	61000		;same as LINUX
 MASQ_LIMIT	equ	MASQ_START+MASQ_TOTAL
-;
+
 ;----------------------------------------------------------------------------
 struct	ICMP_HD
 	uint8		ICMP_HD_type
@@ -76,20 +76,20 @@ d_end	ICMP_HD
 ;----------------------------------------------------------------------------
 ;Start of:	STX program
 ;----------------------------------------------------------------------------
-;
+
 	.text
-;
+
 ;----------------------------------------------------------------------------
 text_start:
 ;----------------------------------------------------------------------------
-;
+
 start:
 	bra	start_1
-;
+
 ;----------------------------------------------------------------------------
 ;Start of:	Resident STX data
 ;----------------------------------------------------------------------------
-;
+
 my_port:
 	dc.l	port_name_s	;prt_des_name
 	dc.w	L_MASQUE	;prt_des_type
@@ -106,15 +106,15 @@ my_port:
 	dc.w	0		;prt_des_stat_dropped
 	dc.l	my_driver	;prt_des_driver		->driver struct
 	dc.l	0		;prt_des_next		->next port
-;
+
 ;the port data is extended with 'Masque' specific data below
-;
+
 masq_port_p:
 	dc.l	0		;masq_port_ptr	;port to be masked
 dummy_IP:
 	dc.l	$0A00FF00	;masq_port_ip	;ip number for masking it
-;
-;
+
+
 my_driver:
 	dc.l	my_set_state	;drv_des_set_state
 	dc.l	my_send		;drv_des_send
@@ -126,59 +126,59 @@ my_driver:
 	dc.l	0		;drv_des_next		->next driver
 basepage_p:
 	dc.l	start-$100	;drv_des_basepage	->basepage of self
-;
+
 port_name_s:
 driver_name_s:
 	M_TITLE
 	dc.b	NUL
 	even
-;
+
 version_s:
 	M_VERSION
 	dc.b	NUL
 	even
-;
+
 author_s:
 	M_AUTHOR
 	dc.b	NUL
 	even
-;
+
 MASQ_PORT_vn_s:
 	dc.b	'MASQ_PORT',NUL
 	even
-;
-masq_port_name_p:		;char *masq_port_name_p;
+
+masq_port_name_p:		;char *masq_port_name_p
 	dc.l	0
-;
-masked_IP:			;uint32 masked_IP;
+
+masked_IP:			;uint32 masked_IP
 	dc.l	0
-;
-masq_root_p:			;struct masq_entry *masq_root_p;
+
+masq_root_p:			;struct masq_entry *masq_root_p
 	dc.l	0
-masq_count:			;uint16	masq_count;
+masq_count:			;uint16	masq_count
 	dc.w	0
-masq_time:			;uint32 masq_time;
+masq_time:			;uint32 masq_time
 	dc.l	0
-;
+
 masq_temp_2L:
 masq_temp_0:
 	dc.l	0
 masq_temp_1:
 	dc.l	0
-;
-active_f:			;uint16	active_f;
+
+active_f:			;uint16	active_f
 	dc.w	0
-;
-sting_drivers:	ds.l	1	;DRV_LIST	*sting_drivers;
-tpl:		ds.l	1	;TPL		*tpl;
-stx:		ds.l	1	;STX		*stx;
-;
+
+sting_drivers:	ds.l	1	;DRV_LIST	*sting_drivers
+tpl:		ds.l	1	;TPL		*tpl
+stx:		ds.l	1	;STX		*stx
+
 ;----------------------------------------------------------------------------
 ;End of:	Resident STX data
 ;----------------------------------------------------------------------------
 ;Start of:	Resident functions and subroutines
 ;----------------------------------------------------------------------------
-;
+
 my_send:
 	link	a6,#0
 	movem.l	d3-d5/a2-a5,-(sp)
@@ -199,21 +199,21 @@ my_send:
 	TIMER_now				;find work start time
 	move.l	d0,masq_time			;store start time for future
 	move.l	masked_IP(pc),d5		;d5 = masked_IP  (masqueing)
-;
+
 ;The loop below is the main loop inside which all masking and unmasking
 ;of datagrams is made. The detail work is performed by some subroutines.
-;
+
 .send_loop:
 	move.l	prt_des_send(a5),d3		;Tx queue empty ?
 	ble	.exit				;if empty, just exit
-;
+
 	TIMER_elapsed	masq_time(pc)		;how long have we worked ?
 	cmp.l	#50,d0				;50 ms or more ?
 	bhs.s	.exit				;if so, exit
-;
+
 ;The TIMER calls above ensures that we will not lock up the rest of
 ;the system even when traffic is intense on some high speed channel.
-;
+
 	move.l	d3,a3				;a3 -> Tx dgram of my_port
 	move.l	IPDG_next(a3),prt_des_send(a5)	;unlink it from the chain
 	clr.l	IPDG_next(a3)			;and cut link from it
@@ -222,21 +222,21 @@ my_send:
 	bpl.s	.send_it
 	addq	#1,prt_des_stat_dropped(a5)
 	bra.s	.send_loop
-;
+
 .send_it:
 	cmp.l	IPDG_hdr+IPHD_ip_dest(a3),d5	;packet from Internet ?
 	bne.s	.not_masked			;if not, go mask it and send
-;
+
 ;We come here for each incoming packet from Internet
-;
+
 	bsr	unmask_datagram			;unmask the datagram
 	move.l	a0,d0				;dgram ok or dropped
 	ble.s	.send_loop			;try another if this dropped
 	lea	prt_des_receive(a5),a2		;a2 -> Rx queue of my_port
 	bra.s	.recvgram_test			;go pass it to receiver
-;
+
 ;The inner loop below adds datagram (a0) to reception queue of my_port
-;
+
 .recvgram_loop:
 	lea	IPDG_next(a1),a2		;(a2) -> next dgram or is NULL
 .recvgram_test:
@@ -248,19 +248,19 @@ my_send:
 	move	IPDG_pkt_length(a0),d0
 	add.l	d0,prt_des_stat_rcv_data(a5)	;count sent data
 	bra.s	.send_loop			;loop back for more new stuff
-;
+
 ;-------------------------------------
 ;We come here for each outgoing packet to the Internet
-;
+
 .not_masked:
 	bsr	mask_datagram
 	move.l	a0,d0				;dgram ok or dropped
 	ble.s	.send_loop			;try another if this dropped
 	lea	prt_des_send(a4),a2		;a2 -> Tx queue of masq_port
 	bra.s	.sendgram_test
-;
+
 ;The inner loop below adds datagram (a0) to transmission queue of masq_port
-;
+
 .sendgram_loop:
 	lea	IPDG_next(a1),a2		;(a2) -> next dgram or is NULL
 .sendgram_test:
@@ -272,21 +272,21 @@ my_send:
 	move	IPDG_pkt_length(a0),d0
 	add.l	d0,prt_des_stat_sd_data(a5)	;count sent data
 	bra	.send_loop			;loop back for more new stuff
-;
+
 .exit:
 	movem.l	(sp)+,d3-d5/a2-a5
 	unlk	a6
 	rts
-;
+
 ;end of my_send
 ;----------------------------------------------------------------------------
-;
+
 my_receive:
 	rts
-;
+
 ;end of my_receive  (That was easy...  :-)
 ;----------------------------------------------------------------------------
-;
+
 my_set_state:
 	link	a6,#0
 	movem.l	a2-a3,-(sp)
@@ -314,7 +314,7 @@ my_set_state:
 .illegal_port:
 	clr.l	d0
 	bra.s	.exit
-;
+
 .legal_port:
 	move.l	dummy_IP(pc),d0
 	cmp.l	prt_des_ip_addr(a0),d0
@@ -324,7 +324,7 @@ my_set_state:
 .port_IP_ok:
 	st	active_f			;flag activation success
 	bra.s	.done
-;
+
 .passivate:
 	tst	active_f
 	beq.s	.done
@@ -350,17 +350,17 @@ my_set_state:
 	movem.l	(sp)+,a2-a3
 	unlk	a6
 	rts
-;
+
 ;end of my_set_state
 ;----------------------------------------------------------------------------
 ;IP_DGRAM *mask_datagram(IP_DGRAM dgram);	/* returns NULL if dropped */
-;
+
 ;NB: non-standard register assumptions:
-;
+
 ;a5 -> my_port  a4 -> masq_port  a3 -> dgram  d5 = masking_IP
-;
+
 ;This code is called for each outgoing packet (normally to Internet)
-;
+
 mask_datagram:
 	move.l	a3,a0				;prep to return same dgram if ok
 	cmp.l	IPDG_hdr+IPHD_ip_src(a3),d5	;already masked ?
@@ -381,7 +381,7 @@ mask_ICMP_reply:	;PATCH move label to implement outgoing ICMP replies
 	addq		#1,prt_des_stat_dropped(a5)
 	suba.l		a0,a0
 	bra		mask_exit
-;
+
 mask_TCP:
 	swap	d3				;d3 = protocol<<16
 	move	tcph_src_port(a2),d3		;d3 = protocol.src_port
@@ -396,7 +396,7 @@ post_fix_TCP:
 	bsr	make_TCP_checksum		;calculate TCP checksum
 	move	d0,tcph_chksum(a2)		;patch TCP checksum
 	bra.s	post_mask_IP			;go calc & patch IP checksum
-;
+
 mask_UDP:
 	swap	d3				;d3 = protocol<<16
 	move	UDP_hdr_source_port(a2),d3	;d3 = protocol.src_port
@@ -413,7 +413,7 @@ post_mask_IP:
 	bsr	make_IP_check			;calculate IP checksum
 	move	d0,IPDG_hdr+IPHD_hdr_chksum(a0)	;patch IP checksum
 	rts
-;
+
 mask_ICMP:
 	clr	d0				;preclear high bits
 	move.b	ICMP_HD_type(a2),d0		;d0 = ICMP message type
@@ -422,34 +422,34 @@ mask_ICMP:
 	add	d0,d0				;make it a word index
 	move	icmp_mask_t(pc,d0.w),d0		;get offset to function code
 	jmp	icmp_mask_t(pc,d0.w)		;go mask dependent on ICMP type
-;
+
 icmp_mask_t:
 	dc.w	mask_ICMP_reply-icmp_mask_t	;ICMP type  0
 	dc.w	mask_failed-icmp_mask_t		;ICMP type  1
 	dc.w	mask_failed-icmp_mask_t		;ICMP type  2
 	dc.w	mask_ICMP_errmsg-icmp_mask_t	;ICMP type  3
-;
+
 	dc.w	mask_ICMP_errmsg-icmp_mask_t	;ICMP type  4
 	dc.w	mask_ICMP_errmsg-icmp_mask_t	;ICMP type  5
 	dc.w	mask_failed-icmp_mask_t		;ICMP type  6
 	dc.w	mask_failed-icmp_mask_t		;ICMP type  7
-;
+
 	dc.w	mask_ICMP_request-icmp_mask_t	;ICMP type  8
 	dc.w	mask_failed-icmp_mask_t		;ICMP type  9
 	dc.w	mask_failed-icmp_mask_t		;ICMP type 10
 	dc.w	mask_ICMP_errmsg-icmp_mask_t	;ICMP type 11
-;
+
 	dc.w	mask_ICMP_errmsg-icmp_mask_t	;ICMP type 12
 	dc.w	mask_ICMP_request-icmp_mask_t	;ICMP type 13
 	dc.w	mask_ICMP_reply-icmp_mask_t	;ICMP type 14
 	dc.w	mask_ICMP_request-icmp_mask_t	;ICMP type 15
-;
+
 	dc.w	mask_ICMP_reply-icmp_mask_t	;ICMP type 16
 	dc.w	mask_ICMP_request-icmp_mask_t	;ICMP type 17
 	dc.w	mask_ICMP_reply-icmp_mask_t	;ICMP type 18
 icmp_mask_t_end:
 max_ICMP_type	equ	((icmp_mask_t_end-icmp_mask_t)/2)-1
-;
+
 mask_ICMP_request:
 	tst.b	ICMP_HD_code(a2)		;Code non_zero ?  (abnormal)
 	bne	mask_failed			;weird code => error exit
@@ -463,20 +463,20 @@ mask_ICMP_request:
 	bsr	make_ICMP_checksum		;calculate ICMP checksum
 	move	d0,ICMP_HD_checksum(a2)		;patch ICMP checksum
 	bra.s	post_mask_IP			;go calc & patch IP checksum
-;
+
 mask_exit:
 	rts
-;
+
 ;end of mask_datagram
 ;----------------------------------------------------------------------------
 ;IP_DGRAM *unmask_datagram(IP_DGRAM dgram);	/* returns NULL if dropped */
-;
+
 ;NB: non-standard register assumptions:
-;
+
 ;a5 -> my_port  a4 -> masq_port  a3 -> dgram  d5 = masking_IP
-;
+
 ;This code is called for each incoming packet (normally from Internet)
-;
+
 unmask_datagram:
 	move.l	IPDG_pkt_data(a3),a2		;a2 -> protocol packet
 	clr	d3				;preclear bits 8-15 of d3
@@ -493,7 +493,7 @@ unmask_ICMP_request:	;PATCH move label to implement incoming ICMP requests
 	addq		#1,prt_des_stat_dropped(a5)
 	suba.l		a0,a0			;null a0 to flag error
 	bra		unmask_exit		;go return NULL
-;
+
 unmask_TCP:
 	swap	d3				;d3 = protocol<<16
 	move	tcph_dest_port(a2),d3		;d3 = protocol.dest_port
@@ -507,7 +507,7 @@ unmask_TCP:
 	bsr	make_TCP_checksum		;calculate TCP checksum
 	move	d0,tcph_chksum(a2)		;patch TCP checksum
 	bra.s	post_unmask_IP			;go calc & patch IP checksum
-;
+
 unmask_UDP:
 	swap	d3				;d3 = protocol<<16
 	move	UDP_hdr_dest_port(a2),d3	;d3 = protocol.dest_port
@@ -524,7 +524,7 @@ post_unmask_IP:
 	bsr	make_IP_check			;calculate IP checksum
 	move	d0,IPDG_hdr+IPHD_hdr_chksum(a0)	;patch IP checksum
 	rts
-;
+
 unmask_ICMP:
 	clr	d0				;preclear high bits
 	move.b	ICMP_HD_type(a2),d0		;d0 = ICMP message type
@@ -533,38 +533,38 @@ unmask_ICMP:
 	add	d0,d0				;make it a word index
 	move	icmp_unmask_t(pc,d0.w),d0	;get offset to function code
 	jmp	icmp_unmask_t(pc,d0.w)		;go unmask dependent on ICMP type
-;
+
 icmp_unmask_t:
 	dc.w	unmask_ICMP_reply-icmp_unmask_t	;ICMP type  0
 	dc.w	unmask_failed-icmp_unmask_t		;ICMP type  1
 	dc.w	unmask_failed-icmp_unmask_t		;ICMP type  2
 	dc.w	unmask_ICMP_errmsg-icmp_unmask_t	;ICMP type  3
-;
+
 	dc.w	unmask_ICMP_errmsg-icmp_unmask_t	;ICMP type  4
 	dc.w	unmask_ICMP_errmsg-icmp_unmask_t	;ICMP type  5
 	dc.w	unmask_failed-icmp_unmask_t		;ICMP type  6
 	dc.w	unmask_failed-icmp_unmask_t		;ICMP type  7
-;
+
 	dc.w	unmask_ICMP_request-icmp_unmask_t	;ICMP type  8
 	dc.w	unmask_failed-icmp_unmask_t		;ICMP type  9
 	dc.w	unmask_failed-icmp_unmask_t		;ICMP type 10
 	dc.w	unmask_ICMP_errmsg-icmp_unmask_t	;ICMP type 11
-;
+
 	dc.w	unmask_ICMP_errmsg-icmp_unmask_t	;ICMP type 12
 	dc.w	unmask_ICMP_request-icmp_unmask_t	;ICMP type 13
 	dc.w	unmask_ICMP_reply-icmp_unmask_t		;ICMP type 14
 	dc.w	unmask_ICMP_request-icmp_unmask_t	;ICMP type 15
-;
+
 	dc.w	unmask_ICMP_reply-icmp_unmask_t		;ICMP type 16
 	dc.w	unmask_ICMP_request-icmp_unmask_t	;ICMP type 17
 	dc.w	unmask_ICMP_reply-icmp_unmask_t		;ICMP type 18
 icmp_unmask_t_end:
 tst_max_ICMP_type	equ	((icmp_unmask_t_end-icmp_unmask_t)/2)-1
-;
+
 	.IF	(tst_max_ICMP_type-max_ICMP_type)
 	.ERROR	"ICMP mask & unmask tables differ in size !!!"
 	.ENDIF
-;
+
 unmask_ICMP_errmsg:
 	lea	ICMP_data(a2),a1	;a1-> IP header of erring packet
 	move.b	IPHD_verlen_f(a1),d0	;d0 = IP header byte with header length
@@ -577,7 +577,7 @@ unmask_ICMP_errmsg:
 	cmp	#P_UDP,d3
 	beq.s	unmask_UDP_errmsg
 	bra	unmask_failed		;return with error on strange protocols
-;
+
 unmask_TCP_errmsg:
 	swap	d3			;d3 = protocol<<16
 	move	tcph_src_port(a0),d3	;d3 = protocol.local_port
@@ -590,7 +590,7 @@ unmask_TCP_errmsg:
 	lea	(a1,d1.w),a0		;a0-> high level header of erring packet
 	move	d0,tcph_src_port(a0)	;unmask local port of erring packet
 	bra	post_unmask_errmsg	;fix err IP, ICMP, main IP checksums
-;
+
 unmask_UDP_errmsg:
 	swap	d3				;d3 = protocol<<16
 	move	UDP_hdr_source_port(a0),d3	;d3 = protocol.local_port
@@ -609,14 +609,14 @@ post_unmask_errmsg:
 	clr.l	d0			;d0=0 as start_value
 	bsr	calc_checksum		;calc checksum of erring IP header
 	move	d0,IPHD_hdr_chksum(a0)	;patch IP checksum of erring packet
-;
+
 	move.l	a2,a0			;a0 -> protocol packet
 	move	IPDG_pkt_length(a3),d0	;d0 -> protocol packet length
 	bsr	make_ICMP_checksum	;calculate ICMP checksum
 	move	d0,ICMP_HD_checksum(a2)	;patch ICMP checksum
-;
+
 	bra	post_unmask_IP		;go calc & patch main IP checksum
-;
+
 unmask_ICMP_reply:
 	tst.b	ICMP_HD_code(a2)		;Code non_zero ?  (abnormal)
 	bne	mask_failed			;weird code => error exit
@@ -630,19 +630,19 @@ unmask_ICMP_reply:
 	bsr	make_ICMP_checksum		;calculate ICMP checksum
 	move	d0,ICMP_HD_checksum(a2)		;patch ICMP checksum
 	bra	post_unmask_IP			;go calc & patch IP checksum
-;
+
 unmask_exit:
 	rts					;return result to caller
-;
+
 ;end of unmask_datagram
 ;----------------------------------------------------------------------------
 ;uint16	mask_common();
-;
+
 ;NB: non-standard register assumptions:
-;
+
 ;a5 -> my_port  a4 -> masq_port  a3 -> dgram
 ;d5 = masked_IP  d4 = dummy_IP  d3 = protocol.source_port
-;
+
 mask_common:
 	move.l		IPDG_hdr+IPHD_ip_src(a3),d2	;d2 =  src  IP
 	cmp.l		d2,d4				;'outer' machine ?
@@ -652,7 +652,7 @@ mask_local:
 	move		d3,d0				;keep port number
 	and.l		#$FFFF,d0		;return positive on success
 	rts
-;
+
 mask_nonlocal:
 	move.l		masq_root_p(pc),a0		;a0 -> root
 	lea		masq_root_p-masq_next(pc),a1	;trick !
@@ -672,7 +672,7 @@ mask_linkup:
 	move.l		d3,masq_proto_port(a0)
 	move.l		IPDG_hdr+IPHD_ip_src(a3),masq_local_ip(a0)
 	bra.s		mask_ok
-;
+
 mask_emergency:					;reached at allocation error
 	cmp		#1,masq_count		;has it worked some times ?
 	blo.s		mask_error		;abort if it just doesn't work
@@ -694,7 +694,7 @@ mask_found:
 	move.l		masq_root_p(pc),masq_next(a0)	;link it to queue root
 	move.l		a0,masq_root_p		;make this entry new root
 	bra.s		mask_ok
-;
+
 mask_not_found:
 	movem.l		a0-a1,masq_temp_2L	;save regs from search end
 	cmp		#(1<<MASQ_POWER),masq_count	;room for more entries ?
@@ -702,27 +702,27 @@ mask_not_found:
 mask_reallocate:
 	clr.l		masq_next(a1)		;unlink oldest entry from queue
 	bra.s		mask_linkup		;go reuse it for new entry
-;
+
 mask_ok:
 	move.l		d5,IPDG_hdr+IPHD_ip_src(a3)	;mask src IP
 	move		masq_index(a0),d0
 	add		#MASQ_START,d0		;d0 = masked source port
 	and.l		#$FFFF,d0		;return positive on success
 	rts
-;
+
 mask_error:
-	moveq		#E_ERROR,d0		;return negative on failure
+	moveq		#-1,d0		;return negative on failure
 	rts
-;
+
 ;end of mask_common
 ;----------------------------------------------------------------------------
 ;uint16	unmask_common();
-;
+
 ;NB: non-standard register assumptions:
-;
+
 ;a5 -> my_port  a4 -> masq_port  a3 -> dgram
 ;d5 = masking_IP  d4 = dummy_IP  d3 = protocol.dest_port
-;
+
 unmask_common:
 	cmp	#MASQ_START,d3		;port below mask range ?
 	blo.s	unmask_local		;then go unmask for 'outer' machine ?
@@ -733,7 +733,7 @@ unmask_local:
 	move	d3,d0				;keep port number
 	and.l	#$FFFF,d0		;return positive on success
 	rts
-;
+
 unmask_nonlocal:
 	tst	masq_count
 	beq.s	unmask_error
@@ -754,47 +754,47 @@ unmask_ok:
 	move	masq_local_port(a0),d0
 	and.l	#$FFFF,d0		;return positive on success
 	rts
-;
+
 unmask_error:
-	moveq	#E_ERROR,d0		;return negative on failure
+	moveq	#-1,d0		;return negative on failure
 	rts
-;
+
 ;end of unmask_common
 ;----------------------------------------------------------------------------
 ;Here follows eight checksum functions that share most of their code.
 ;All of these smash d1/d2/a0 and preserve all other regs except d0 (result).
-;
+
 ;uint16	make_TCP_checksum (uint32 src, uint32 dest, uint16 *blk, uint16 len);
 ;uint16 make_UDP_checksum (uint32 src, uint32 dest, UDP_HDR *udp_packet);
 ;uint16	make_ICMP_checksum (uint16 *blk, uint16 len);
 ;	make_*_checksum calls preclear original checksum before calculation
-;
+
 ;uint16	calc_TCP_checksum (uint32 src, uint32 dest, uint16 *blk, uint16 len);
 ;uint16 calc_UDP_checksum (uint32 src, uint32 dest, UDP_HDR *udp_packet);
 ;uint16	calc_ICMP_checksum (uint16 *blk, uint16 len);
 ;	calc_*_checksum calls do the same calculations without preclearing
-;
+
 ;uint16	calc_proto_checksum (uint32 src, uint32 dest, uint16 *blk, uint32 proto_len);
 ;	calc_proto_checksum is used for UDP and TCP in the above functions
-;
+
 ;uint16	calc_checksum(uint16 start_value, uint16 *blk, uint16 len);
 ;	calc_checksum calculates a block checksum regardless of protocol
 ;	it is used for the data block summing of the other seven functions
-;
+
 make_ICMP_checksum:
 	clr	ICMP_HD_checksum(a0)	;clear checksum in block
 calc_ICMP_checksum:
 	move	d0,d1			;d1 = length	(for top bits)
 	clr.l	d0			;preclear checksum accumulator
 	bra.s	calc_checksum		;add this checksum to block checksum
-;
+
 make_UDP_checksum:
 	clr	UDP_hdr_checksum(a0)	;clear checksum in packet
 calc_UDP_checksum:
 	move.l	#P_UDP<<16,d2		;d2 = protocol.zero
 	move	UDP_hdr_length(a0),d2	;d2 = protocol.length
 	bra.s	calc_proto_checksum
-;
+
 make_TCP_checksum:
 	clr	tcph_chksum(a0)	;clear checksum in block
 calc_TCP_checksum:
@@ -809,18 +809,18 @@ calc_proto_checksum:
 	clr	d1		;d1 = dest_ip & 0xFFFF0000
 	swap	d1		;d1.lo = dest_ip.hi, d1.hi = 0
 	addx.l	d1,d0		;d0 = checksum of both IPs
-;
+
 	clr.l	d1		;preclear top bits of d1
 	move	d2,d1		;d1 = length
 	add.l	d1,d0		;add length word to checksum
 	clr	d2		;d2 = protocol.zero
 	swap	d2		;d2 = protocol
 	add.l	d2,d0		;add protocol word to checksum
-;
+
 calc_checksum:
 	and.l	#$FFFF,d1		;clear top bits of length count
 	clr.l	d2			;clear top bits of temp reg
-;
+
 	ror.l	#1,d1			;d1 = length/2 + (length & 1)<<31
 	beq.s	.summed_words		;skip if no full words to sum
 	subq	#1,d1			;d1.lo is adapted for dbra counting
@@ -835,7 +835,7 @@ calc_checksum:
 	asl	#8,d2			;d0 = final byte << 8
 	add.l	d2,d0			;add padded final byte to checksum
 .summed_all:
-;
+
 	move	d0,d2			;d2 = prel_checksum.lo
 	clr	d0
 	swap	d0			;d0 = prel_checksum.hi
@@ -844,17 +844,17 @@ calc_checksum:
 	addx	d2,d0			;d0 = final checksum folded to 16 bits
 	not	d0			;invert these bits for return value
 	rts				;return to caller
-;
+
 ;end of calc_checksum and seven other related checksum functions
 ;----------------------------------------------------------------------------
 ;uint16 make_IP_check (IP_DGRAM *datagram);
 ;uint16 calc_IP_check (IP_DGRAM *datagram);
-;
+
 ;make_IP_check clears the checksum in the IP header before calculation
 ;calc_IP_check just calculates a checksum including the old one in IP header
 ;	neither stores the new sum anywhere, they just return it to caller.
 ;	both smash d1/d2/a1 and preserve all other regs except d0 (result).
-;
+
 make_IP_check:
 	clr	IPDG_hdr+IPHD_hdr_chksum(a0)
 calc_IP_check:
@@ -868,7 +868,7 @@ calc_IP_check:
 	addx.l	d1,d0				;check header bytes 12-15
 	move.l	(a1)+,d1			;fetch header bytes 16-19
 	addx.l	d1,d0				;check header bytes 16-19
-;
+
 	move	IPDG_opt_length(a0),d2		;d2 = option bytes
 	beq.s	.options_checked		;skip options if absent
 	roxr	#1,d1				;save X bit in d1
@@ -881,7 +881,7 @@ calc_IP_check:
 	move.l	(a1)+,d1				;fetch a long	
 	addx.l	d1,d0					;check a long
 	dbra	d2,.option_loop			;loop back for all option longs
-;
+
 .options_checked:
 	move	d0,d1				;d1.lo = sum & 0xFFFF
 	clr	d0				;d0.lo = 0  (X bit unaffected)
@@ -892,11 +892,11 @@ calc_IP_check:
 	addx	d1,d0				;do it again (no carry possible)
 	not	d0				;invert the 16 bit checksum
 	rts
-;
+
 ;end of make_IP_check & calc_IP_check
 ;----------------------------------------------------------------------------
 ;char *find_masq_port();
-;
+
 find_masq_port:
 	getvstr		MASQ_PORT_vn_s(pc)
 	move.l		d0,a0
@@ -907,7 +907,7 @@ find_masq_port:
 	move.l		-4(a6),a0		;a0->ports
 	unlk		a6
 	bra.s		.test_port
-;
+
 .test_name:
 	move.l		prt_des_name(a0),a1
 	move.l		masq_port_name_p(pc),a2
@@ -920,24 +920,24 @@ find_masq_port:
 .exit:
 	tst.l		d0
 	rts
-;
+
 ;end of find_masq_port
 ;----------------------------------------------------------------------------
 ;End of:	Resident functions and subroutines
 ;----------------------------------------------------------------------------
 ;	Resident library function code will be expanded here
-;
+
 	make	JAR_links
 	make	TCON_links
 	make	DOMAIN_links
-;
+
 ;----------------------------------------------------------------------------
 resident_end:	;all beyond this point will be released in going resident
 resident_size	equ	resident_end-text_start+$100
 ;----------------------------------------------------------------------------
 ;Start of:	STX Non-resident initialization code with tests
 ;----------------------------------------------------------------------------
-;
+
 start_1:
 	move.l		a0,d0
 	sne		d7
@@ -954,13 +954,13 @@ start_1:
 	lea		STinG_Load_s(pc),a1
 	str_comp	a0,a1
 	bne		.bad_launch
-;
+
 	gemdos		Super,0.w
 	move.l		d0,d4
 	eval_cookie	#"STiK"
 	move.l		d0,d3				;d3 = d0 -> DRV_LIST structure
 	gemdos		Super|_ind,d4
-;
+
 	move.l		d3,sting_drivers		;sting_drivers -> DRV_LIST structure
 	ble		.STiK_not_found
 	move.l		d3,a3				;a3 -> DRV_LIST structure
@@ -971,14 +971,14 @@ start_1:
 	cmpm.b		(a0)+,(a1)+
 	dbne		d0,.strcmp_loop
 	bne		.STiK_not_valid
-;
+
 	move.l		DRV_LIST_get_dftab(a3),a0	;a0 -> get_dftab function
 	pea		TRANSPORT_DRIVER_s		;-(sp) = "TRANSPORT_TCPIP"
 	jsr		(a0)				;call get_dftab
 	addq		#4,sp
 	move.l		d0,tpl				;store pointer in 'tpl'
 	ble		.driver_not_valid
-;
+
 	move.l		DRV_LIST_get_dftab(a3),a0	;a0 -> get_dftab function
 	pea		MODULE_DRIVER_s			;-(sp) = "MODULE_LAYER"
 	jsr		(a0)				;call get_dftab
@@ -990,80 +990,87 @@ start_1:
 	query_chains	-8(a6),-4(a6),0.w
 	movem.l		-8(a6),a3/a4			;a3->ports  a4->drivers
 	unlk		a6
-;
+
 	move.l		a3,d0
 	beq		.bad_port_list
 .port_loop:
 	move.l		d0,a3
 	move.l		prt_des_next(a3),d0
 	bne.s		.port_loop
-;
+
 	move.l		a4,d0
 	beq		.bad_driver_list
 .driver_loop:
 	move.l		d0,a4
 	move.l		drv_des_next(a4),d0
 	bne.s		.driver_loop
-;
+
 .final_install:
 	move.l		#my_port,prt_des_next(a3)
 	move.l		#my_driver,drv_des_next(a4)
-;
-	gemdos		Ptermres,#resident_size,#0
-;
+
+	; gemdos		Ptermres,#resident_size,#0
+	move.w #0,-(a7)
+	move.l #resident_size,-(a7)
+	move.w #0x31,-(a7)
+	trap #1
+
 ;-------------------------------------
-;
+
 .ACC_launch:
 	lea		ACC_launch_s(pc),a0
 	bsr.s		report_error
 .loop:
 	bra.s		.loop
-;
+
 ;-------------------------------------
-;
+
 .bad_launch:
 	lea		bad_launch_s(pc),a0
 	bra.s		.error_exit
-;
+
 ;-------------------------------------
-;
+
 .bad_port_list:
 	lea		bad_port_list_s(pc),a0
 	bra.s		.error_exit
-;
+
 ;-------------------------------------
-;
+
 .bad_driver_list:
 	lea		bad_driver_list_s(pc),a0
 	bra.s		.error_exit
-;
+
 ;-------------------------------------
-;
+
 .STiK_not_found:
 	lea		STiK_not_found_s,a0
 	bra.s		.error_exit
-;
+
 ;-------------------------------------
-;
+
 .STiK_not_valid:
 	lea		STiK_not_valid_s,a0
 	bra.s		.error_exit
-;
+
 ;-------------------------------------
-;
+
 .driver_not_valid:
 	lea		driver_not_valid_s,a0
 	bra.s		.error_exit
-;
+
 ;-------------------------------------
 .layer_not_valid:
 	lea		layer_not_valid_s(pc),a0
 .error_exit:
 	bsr.s		report_error
-	gemdos		Pterm,#E_ERROR
-;
+	;gemdos		Pterm,#-1
+	move.w #-1,-(a7)
+	move.w #0x4c,-(a7)
+	trap #1
+
 ;-------------------------------------
-;
+
 report_error:
 	move.l		a0,-(sp)
 	lea		error_title_s(pc),a0
@@ -1074,25 +1081,25 @@ report_error:
 Cconws_sub:
 	gemdos		Cconws,(a0)
 	rts
-;
+
 ;----------------------------------------------------------------------------
 ;End of:	STX Non-resident initialization code with tests
 ;----------------------------------------------------------------------------
 ;	Non-resident library function code will be expanded here
-;
+
 	make	JAR_links
 	make	TCON_links
 	make	DOMAIN_links
-;
+
 ;----------------------------------------------------------------------------
-;
+
 text_limit:
 text_size	= text_limit-text_start
 	.data
 data_start:
-;
+
 ;----------------------------------------------------------------------------
-;
+
 STinG_Load_s:
 	dc.b	10,'STinG_Load',NUL
 STiKmagic_s:
@@ -1101,46 +1108,46 @@ TRANSPORT_DRIVER_s:
 	dc.b	'TRANSPORT_TCPIP',NUL
 MODULE_DRIVER_s:
 	dc.b	'MODULE_LAYER',NUL
-;
+
 ACC_launch_s:
 	dc.b	'This non-ACC, was launched as an ACC,',CR,LF
 	dc.b	'so now you must reset the computer !',CR,LF
 	dc.b	'I am looping forever to avoid damage',CR,LF
 	dc.b	'that could occur if I try to exit !',CR,LF
 	dc.b	NUL
-;
+
 bad_launch_s:	
 	dc.b	'This STX should only be launched by',CR,LF
 	dc.b	'STinG, or another TCP/IP stack with',CR,LF
 	dc.b	'a compatible module interface !',CR,LF
 	dc.b	NUL
-;
+
 bad_port_list_s:
 	dc.b	'The list chain of STinG ports was',CR,LF
 	dc.b	'not found...!',CR,LF
 	dc.b	NUL
-;
+
 bad_driver_list_s:
 	dc.b	'The list chain of STinG drivers was',CR,LF
 	dc.b	'not found...!',CR,LF
 	dc.b	NUL
-;
+
 STiK_not_found_s:
 	dc.b	'There is no STiK cookie in the jar !',CR,LF
 	dc.b	NUL
-;
+
 STiK_not_valid_s:
 	dc.b	'The STiK cookie data is corrupt !',CR,LF
 	dc.b	NUL
-;
+
 driver_not_valid_s:
 	dc.b	'The main STinG driver is not valid !',CR,LF
 	dc.b	NUL
-;
+
 layer_not_valid_s:
 	dc.b	'The STinG module layer is not valid !',CR,LF
 	dc.b	NUL
-;
+
 error_title_s:
 	dc.b	BEL,CR,LF
 	dc.b	'------------'
@@ -1150,20 +1157,20 @@ error_title_s:
 	M_VERSION
 	dc.b	'------------',CR,LF
 	dc.b	NUL
-;
+
 error_tail_s:
 	dc.b	BEL,CR,LF,NUL
-;
+
 ;----------------------------------------------------------------------------
 data_limit:
 data_size	equ	data_limit-data_start
 	.bss
 bss_start:
 ;----------------------------------------------------------------------------
-;
+
 		ds.l	200		;subroutine stack >= 100 longs
 mystack:	ds.l	1		;top of subroutine stack
-;
+
 ;----------------------------------------------------------------------------
 bss_limit:
 bss_size	equ	bss_limit-bss_start
