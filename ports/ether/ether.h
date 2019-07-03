@@ -244,5 +244,18 @@ typedef  struct bab {
 
 /*--------------------------------------------------------------------------*/
 
+extern PORT my_port;
+extern BAB *this_xmit;
+extern uint8 address[6];
+
+int16 xmit_dgram(IP_DGRAM *dgram, BAB *txbab);
+int16 send_dgram(IP_DGRAM *dgram, uint8 ether[6], BAB *txbab);
+int16 launch_arp(uint32 ip_address, BAB *txbab);
+int16 fetch_dgram(IP_DGRAM ** dgram);
+void recve_dgram(BAB *rxbab);
+void retrieve_dgram(uint8 *buffer, int16 length);
+void deplete_queue(IP_DGRAM **queue);
+void arp_init(void);
+
 
 #endif /* ETHER_H */
