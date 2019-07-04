@@ -1,0 +1,23 @@
+call_it.prg
+
+.C[-I..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M-]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=2048]
+
+=
+cstart0.o
+
+call_it.c
+
+pcgemlib.lib
+pcstdlib.lib
+pctoslib.lib

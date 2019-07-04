@@ -102,8 +102,10 @@ static void do_slider(_WORD position, _WORD offset)
 		if (disp_offset > num_modules - 4)
 			disp_offset = num_modules - 4;
 	} else
+	{
 		disp_offset = position;
-
+	}
+	
 	difference = tree[ST_S_GND].ob_height - tree[ST_S_BTN].ob_height;
 	tree[ST_S_BTN].ob_y = difference * disp_offset / (num_modules - 4);
 	insert_modules(TRUE);

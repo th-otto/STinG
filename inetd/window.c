@@ -37,16 +37,16 @@ typedef struct
 } WIN_DESC;
 
 
-WIN_DESC win_array[MAX_WIN];
-OBJECT *icnfy_tree;
-GRECT desk;
-MFDB screen = { NULL, 0, 0, 0, 0, 1, 0, 0, 0 };
-MFDB popup = { NULL, 0, 0, 0, 0, 1, 0, 0, 0 };
+static WIN_DESC win_array[MAX_WIN];
+static OBJECT *icnfy_tree;
+static GRECT desk;
+static MFDB screen;
+static MFDB popup;
 
 static long delay;
 static long more_time;
 static int (*timer_thread)(void);
-static int (*message_thread) (_WORD *message);
+static int (*message_thread)(_WORD *message);
 static int (*menu_thread)(_WORD title, _WORD entry);
 static int (*event_thread)(void);
 static int window_count;
@@ -115,6 +115,24 @@ static _WORD __CDECL my_button_handler(PARMBLK *parameter)
 
 static USERBLK my_user_block = { my_button_handler, 0 };
 
+
+void rsc_ext_objects(OBJECT *tree)
+{
+	for (;;)
+	{
+		if ((tree->ob_type & 0x7f00) && (tree->ob_state & (OS_CROSSED | OS_CHECKED)))
+		{
+			tree->ob_state &= ~(OS_CROSSED | OS_CHECKED);
+			tree->ob_type = G_USERDEF;
+			tree->ob_spec.userblk = &my_user_block;
+		}
+		if (tree->ob_flags & OF_LASTOB)
+			break;
+		tree++;
+	}
+}
+
+
 int initialise_windows(_WORD num_trees, _WORD icnfy_index)
 {
 	OBJECT *tree;
@@ -168,7 +186,7 @@ int initialise_windows(_WORD num_trees, _WORD icnfy_index)
 }
 
 
-int leave_windows(void)
+void leave_windows(void)
 {
 	_WORD count;
 
@@ -181,8 +199,6 @@ int leave_windows(void)
 
 	if (vdi_handle)
 		v_clsvwk(vdi_handle);
-
-	return TRUE;
 }
 
 
@@ -204,31 +220,43 @@ static void set_slider(_WORD index)
 	if (window->kind & HSLIDE)
 	{
 		_WORD w = msg[6];
-		size = (_WORD) (w * 1000L / window->width);
-		wind_set_int(window->window_handle, WF_HSLSIZE, size);
-		pos = (_WORD) (window->x_pos * 1000L / (window->width - w));
-		if (pos > 1000)
+		if (window->width <= w)
 		{
-			window->x_pos = window->width - w;
-			pos = 1000;
-			appl_write(gl_apid, 16, msg);
+			pos = 0;
+		} else
+		{
+			pos = (_WORD) (window->x_pos * 1000L / (window->width - w));
+			if (pos > 1000)
+			{
+				window->x_pos = window->width - w;
+				pos = 1000;
+				appl_write(gl_apid, 16, msg);
+			}
 		}
 		wind_set_int(window->window_handle, WF_HSLIDE, pos);
+		size = (_WORD) (w * 1000L / window->width);
+		wind_set_int(window->window_handle, WF_HSLSIZE, size);
 	}
 
 	if (window->kind & VSLIDE)
 	{
 		_WORD h = msg[7];
-		size = (_WORD) (h * 1000L / window->height);
-		wind_set_int(window->window_handle, WF_VSLSIZE, size);
-		pos = (_WORD) (window->y_pos * 1000L / (window->height - h));
-		if (pos > 1000)
+		if (window->height <= h)
 		{
-			window->y_pos = window->height - h;
-			pos = 1000;
-			appl_write(gl_apid, 16, msg);
+			pos = 0;
+		} else
+		{
+			pos = (_WORD) (window->y_pos * 1000L / (window->height - h));
+			if (pos > 1000)
+			{
+				window->y_pos = window->height - h;
+				pos = 1000;
+				appl_write(gl_apid, 16, msg);
+			}
 		}
 		wind_set_int(window->window_handle, WF_VSLIDE, pos);
+		size = (_WORD) (h * 1000L / window->height);
+		wind_set_int(window->window_handle, WF_VSLSIZE, size);
 	}
 }
 
@@ -355,6 +383,27 @@ static _WORD search_window(_WORD window_handle)
 }
 
 
+static int finish(_WORD index, _WORD reason)
+{
+	WIN_DESC *window;
+
+	window = &win_array[index];
+
+	if (window->edit != 0)
+		objc_edit(window->tree, window->edit, 0, &window->ed_char, ED_END);
+
+	if (window->object_click != NULL)
+		window->object_click(reason);
+
+	wind_close(win_array[index].window_handle);
+	wind_delete(win_array[index].window_handle);
+
+	win_array[index].tree_index = -1;
+
+	return --window_count > 0 ? 0 : 1;
+}
+
+
 int close_rsc_window(_WORD rsc_tree, _WORD window_handle)
 {
 	_WORD pre_index = -1;
@@ -377,17 +426,13 @@ int close_rsc_window(_WORD rsc_tree, _WORD window_handle)
 			return -1;
 	}
 
-	wind_close(win_array[index].window_handle);
-	wind_delete(win_array[index].window_handle);
-
-	win_array[index].tree_index = -1;
-	--window_count;
+	finish(index, CLOSER_CLICKED);
 
 	return 0;
 }
 
 
-void set_callbacks(_WORD rsc_tree, int (*object_click) (_WORD  object), int (*key_typed) (unsigned short scan))
+void set_callbacks(_WORD rsc_tree, int (*object_click) (_WORD obj), int (*key_typed) (unsigned short scan))
 {
 	_WORD index;
 
@@ -430,27 +475,6 @@ void set_event_callback(int (*event_func)(void))
 static long read_timer(void)
 {
 	return *_HZ_200 * 5;
-}
-
-
-static int finish(_WORD index, _WORD reason)
-{
-	WIN_DESC *window;
-
-	window = &win_array[index];
-
-	if (window->edit != 0)
-		objc_edit(window->tree, window->edit, 0, &window->ed_char, ED_END);
-
-	if (window->object_click != NULL)
-		window->object_click(reason);
-
-	wind_close(win_array[index].window_handle);
-	wind_delete(win_array[index].window_handle);
-
-	win_array[index].tree_index = -1;
-
-	return --window_count > 0 ? 0 : 1;
 }
 
 
@@ -503,11 +527,12 @@ static void do_redraw(_WORD handle, GRECT *rect, _WORD sub)
 }
 
 
-static int do_message_event(_WORD mesag[])
+static int do_message_event(_WORD *mesag)
 {
 	WIN_DESC *window;
 	GRECT act;
 	_WORD index;
+	_WORD pos;
 
 	switch (mesag[0])
 	{
@@ -583,10 +608,24 @@ static int do_message_event(_WORD mesag[])
 				window->x_pos += act.g_w / 10;
 				break;
 			}
-			window->x_pos = MAX(0, MIN(window->x_pos, window->width - act.g_w));
-			window->y_pos = MAX(0, MIN(window->y_pos, window->height - act.g_h));
-			wind_set_int(mesag[3], WF_HSLIDE, (_WORD) (window->x_pos * 1000L / (window->width - act.g_w)));
-			wind_set_int(mesag[3], WF_VSLIDE, (_WORD) (window->y_pos * 1000L / (window->height - act.g_h)));
+			if (window->width > act.g_w)
+			{
+				window->x_pos = MAX(0, MIN(window->x_pos, window->width - act.g_w));
+				pos = (int) (window->x_pos * 1000L / (window->width - act.g_w));
+			} else
+			{
+				window->x_pos = pos = 0;
+			}
+			wind_set_int(mesag[3], WF_HSLIDE, pos);
+			if (window->height > act.g_h)
+			{
+				window->y_pos = MAX(0, MIN(window->y_pos, window->height - act.g_h));
+				pos = (_WORD) (window->y_pos * 1000L / (window->height - act.g_h));
+			} else
+			{
+				window->y_pos = pos = 0;
+			}
+			wind_set_int(mesag[3], WF_VSLIDE, pos);
 			do_redraw(mesag[3], &desk, ROOT);
 			break;
 		case WM_HSLID:
@@ -632,7 +671,7 @@ static int do_message_event(_WORD mesag[])
 }
 
 
-int operate_events(void)
+_WORD operate_events(void)
 {
 	WIN_DESC *win;
 	_WORD index;
@@ -695,35 +734,42 @@ int operate_events(void)
 		wind_get_int(0, WF_TOP, &index);
 		if ((index = search_window(index)) >= 0)
 			win = &win_array[index];
+		else
+			win = NULL;
 
 		if (event & MU_KEYBD)
 		{
-			if (form_keybd(win->tree, win->edit, win->next, scan, &win->next, &scan) == 0)
+			if (win)
 			{
-				if (win->object_click != NULL)
+				if (form_keybd(win->tree, win->edit, win->next, scan, &win->next, &scan) == 0)
 				{
-					if (win->object_click(win->next))
-						if (finish(index, 0))
-							return -1;
-				} else
-				{
+					if (win->object_click != NULL)
+					{
+						if (win->object_click(win->next))
+							if (finish(index, 0))
+								return -1;
+					} else
+					{
+						win->next = 0;
+						return 1;
+					}
 					win->next = 0;
-					return 1;
 				}
-				win->next = 0;
-			}
-			if (scan != 0)
-			{
-				if (win->key_typed != NULL)
+				if (scan != 0)
 				{
-					tmp = win->key_typed(scan);
-					if (tmp > 0)
+					if (win->key_typed != NULL)
+					{
+						tmp = win->key_typed(scan);
+						if (tmp > 0)
+							objc_edit(win->tree, win->edit, scan, &win->ed_char, ED_CHAR);
+						if (tmp < 0)
+							if (finish(index, 0))
+								return -1;
+					} else
+					{
 						objc_edit(win->tree, win->edit, scan, &win->ed_char, ED_CHAR);
-					if (tmp < 0)
-						if (finish(index, 0))
-							return -1;
-				} else
-					objc_edit(win->tree, win->edit, scan, &win->ed_char, ED_CHAR);
+					}
+				}
 			}
 		}
 
@@ -874,30 +920,13 @@ void change_rsc_size(_WORD rsc_tree, _WORD new_width, _WORD new_height, _WORD pa
 }
 
 
-void rsc_ext_objects(OBJECT *tree)
-{
-	for (;;)
-	{
-		if ((tree->ob_type & 0x7f00) && (tree->ob_state & (OS_CROSSED | OS_CHECKED)))
-		{
-			tree->ob_state &= ~(OS_CROSSED | OS_CHECKED);
-			tree->ob_type = G_USERDEF;
-			tree->ob_spec.userblk = &my_user_block;
-		}
-		if (tree->ob_flags & OF_LASTOB)
-			break;
-		tree++;
-	}
-}
-
-
-void change_freestring(_WORD rsc_tree, _WORD object, _WORD parent, const char *text, _WORD number)
+void change_freestring(_WORD rsc_tree, _WORD object, _WORD parent, const char *text, _WORD length)
 {
 	OBJECT *tree;
 	_WORD index;
 
 	rsrc_gaddr(R_TREE, rsc_tree, &tree);
-	strncpy(tree[object].ob_spec.free_string, text, number);
+	strncpy(tree[object].ob_spec.free_string, text, length);
 
 	if ((index = search_tree(rsc_tree)) < 0)
 		return;
@@ -1017,8 +1046,16 @@ void pop_up(_WORD popup_ind, _WORD *object, _WORD dial_ind, _WORD str_obj, _WORD
 	box.g_y = pu->ob_y - 1;
 	box.g_h = pu->ob_height + 4;
 
-	for (wrk = pu; !(wrk->ob_flags & OF_LASTOB); (++wrk)->ob_state &= ~OS_CHECKED) ;
-	pu[button = *object].ob_state |= OS_CHECKED | OS_SELECTED;
+	wrk = pu;
+	for (;;)
+	{
+		wrk->ob_state &= ~OS_CHECKED;
+		if (wrk->ob_flags & OF_LASTOB)
+			break;
+		wrk++;
+	}
+	button = *object;
+	pu[button].ob_state |= OS_CHECKED | OS_SELECTED;
 
 	popup.fd_w = box.g_w;
 	popup.fd_h = box.g_h;
@@ -1096,8 +1133,10 @@ void pop_up(_WORD popup_ind, _WORD *object, _WORD dial_ind, _WORD str_obj, _WORD
 		graf_mouse(M_ON, NULL);
 		Mfree(popup.fd_addr);
 	} else
+	{
 		form_dial(FMD_FINISH, 0, 0, 0, 0, box.g_x, box.g_y, box.g_w, box.g_h);
-
+	}
+	
 	wind_update(END_MCTRL);
 	wind_update(END_UPDATE);
 

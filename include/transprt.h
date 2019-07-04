@@ -10,6 +10,16 @@
 #define STING_TRANSPRT_H
 
 
+#if defined	__TURBOC__		/* NB: This is set both for TurboC and for PureC */
+	#include	<tos.h>
+#elif defined __GNUC__
+	#include	<mint/basepage.h>
+	#include	<compiler.h>
+	#define		BASPAG BASEPAGE
+#elif defined LATTICE
+	#include	<basepage.h>
+	#define		BASPAG BASEPAGE
+#endif
 
 /*--------------------------------------------------------------------------*/
 

@@ -1,0 +1,24 @@
+;
+; Project    :		Device Library
+; Author     :		Jan Kriesten
+; Date       :		29.03.1994
+;
+
+device.lib
+
+.C[-A-]
+.C[-P]
+.C[-M-]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-J]						; Neues Objektformat
+
+=
+
+dev_lib.c
+dev_misc.c
+port.c

@@ -1,0 +1,31 @@
+;
+; Project    :		Device TEST Routines
+; Author     :		Jan Kriesten
+; Date       :		15.01.1994
+;
+
+dev_test.tos
+.C[-A-]
+.C[-P]
+.C[-M-]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=4096]
+
+=
+
+cstart0.o
+
+dev_test.c
+
+dev_lib.c
+dev_misc.c
+port.c
+
+pcstdlib.lib
+pctoslib.lib
+

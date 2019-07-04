@@ -20,7 +20,7 @@ extern char *strings;
 
 
 int initialise_windows(_WORD number_trees, _WORD icnfy_index);
-int leave_windows(void);
+void leave_windows(void);
 _WORD open_rsc_window(_WORD rsc_tree, _WORD edit_object, const char *window_name, const char *short_name, _WORD parent_tree);
 int close_rsc_window(_WORD rsc_tree, _WORD wind_handle);
 void set_callbacks(_WORD rsc_tree, int click_func(_WORD obj), int key_func(unsigned short scan));
@@ -28,7 +28,7 @@ void set_timer_callback(int (*timer_func)(void), long timer_delay);
 void set_message_callback(int (*message_func)(_WORD *message));
 void set_menu_callback(int (*menu_func)(_WORD title, _WORD item));
 void set_event_callback(int (*event_func)(void));
-int operate_events(void);
+_WORD operate_events(void);
 void interupt_editing(_WORD rsc_tree, _WORD what, _WORD new_edit);
 void change_rsc_size(_WORD rsc_tree, _WORD new_width, _WORD new_height, _WORD parent_obj);
 void change_freestring(_WORD rsc_tree, _WORD object, _WORD parent_obj, const char *text, _WORD length);

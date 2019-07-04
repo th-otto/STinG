@@ -169,6 +169,17 @@ static void parse_tree(OBJECT *tree, _WORD object, _WORD mode)
 }
 
 
+#if defined(__PUREC__)
+static void *push_a2(void *, short) 0x2f0a;
+static long pop_a2(long) 0x245f;
+static long addq2_a7(long) 0x544f;
+static long addq4_a7(long) 0x584f;
+static void *push_d0(void *) 0x3f00;
+static long jsr_a0(void *fun) 0x4e90;
+#define callout(func, dev) pop_a2(addq2_a7(jsr_a0(push_d0(push_a2(func, dev)))))
+#endif
+
+
 static void __CDECL flush(_MAPTAB *entry, short dev)
 {
 	if (entry->Bconin && entry->Bconstat)
@@ -200,25 +211,19 @@ static void __CDECL flush(_MAPTAB *entry, short dev)
 			: [dev]"g"(dev), [callout]"a"(callout) /* inputs  */
 			: "d1", "d2", "a1", "a2", "cc" AND_MEMORY); /* clobbered regs */
 		}
-				
-#else
+#endif
+#ifdef __PUREC__
 		/*
 		 * Both calls are allowed to (and actual do) clobber d2 and a2.
 		 * Pure-C does not use D2 in this function, and the cdecl
 		 * modifier ensures that it is preserved when the function returns.
 		 * A2 would be used however to load the function pointer,
-		 * so we must make sure that this does not happen.
+		 * so we must preserve it.
 		 */
-		_WORD *a2 = &act_speed;
-		_WORD speed = *a2;
-		short __CDECL (*bconstat)(short) = entry->Bconstat;
-		long __CDECL (*bconin)(short) = entry->Bconin;
-		while (bconstat(dev))
+		while ((short)callout(entry->Bconstat, dev))
 		{
-			bconin(dev);
+			callout(entry->Bconin, dev);
 		}
-		(void)a2;
-		(void)speed;
 #endif
 	}
 }

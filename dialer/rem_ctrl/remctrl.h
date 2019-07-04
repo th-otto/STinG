@@ -1,12 +1,9 @@
-
-/**/
 /*     These are the codes for communication with the Dialer   */
 /*        (c) 1996  Peter Rottengatter                         */
-/**/
 
-#define  IP_DIALER_PORT     'IP'
+#define  IP_DIALER_PORT     0x4950 /* 'IP' */
 
-#define  BASE_NUM           'IP'
+#define  BASE_NUM           0x4950 /* 'IP' */
 #define  IP_DIAL_REQUEST    (BASE_NUM + 0)
 #define  IP_DIAL_HANGUP     (BASE_NUM + 1)
 #define  IP_DIAL_DONE       (BASE_NUM + 2)
