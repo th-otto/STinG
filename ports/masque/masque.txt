@@ -1,6 +1,12 @@
 ------------------------------------------------------------------------------
-File name:	MASQUE.TXT			Revision date:	1997.09.04
+File name:	MASQUE.TXT			Revision date:	1998.10.18
 Created by:	Ulf Ronald Andersson		Creation date:	1997.09.04
+------------------------------------------------------------------------------
+Introduction:
+
+MASQUE.STX is a module for STinG, which allows any number of local machines
+in a STinG LAN to access Internet simultaneously through a single connection
+to an ISP.
 ------------------------------------------------------------------------------
 
 This small text file is NOT the real 'Masque' document...!
