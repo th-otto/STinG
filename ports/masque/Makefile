@@ -6,7 +6,7 @@ SRCS = \
 	$(empty)
 OBJS = masque.o
 
-# current not compilable by gas
+# currently not compilable by gas
 #all:: masque.stx
 
 all:: masque.hyp
