@@ -17,16 +17,17 @@
 #include "globdefs.h"
 
 
-#define  M_YEAR    16
+#define  M_YEAR    1996
 #define  M_MONTH   11
 #define  M_DAY     23
+#define  M_VERSION "01.00"
 
 
 LAYER icmp_desc = {
 	"ICMP",
-	"01.00",
+	M_VERSION,
 	0L,
-	(M_YEAR << 9) | (M_MONTH << 5) | M_DAY,
+	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
 	"Peter Rottengatter",
 	0,
 	NULL,
@@ -152,7 +153,8 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 
 	status = lock_exec(0);
 
-	for (walk = *(previous = &my_port.receive); walk; walk = *(previous = &walk->next)) ;
+	for (walk = *(previous = &my_port.receive); walk; walk = *(previous = &walk->next))
+		;
 	*previous = dgram;
 
 	lock_exec(status);

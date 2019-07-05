@@ -21,9 +21,10 @@
 #endif
 
 
-#define  M_YEAR     18
+#define  M_YEAR     1998
 #define  M_MONTH    3
 #define  M_DAY      6
+#define  M_VERSION  "01.42"
 
 
 TPL *tpl;
@@ -31,9 +32,9 @@ STX *stx;
 
 static LAYER my_conf = {
 	"UDP",
-	"01.42",
+	M_VERSION,
 	0x10400L,
-	(M_YEAR << 9) | (M_MONTH << 5) | M_DAY,
+	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
 	"Peter Rottengatter",
 	0,
 	NULL,

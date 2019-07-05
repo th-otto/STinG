@@ -20,9 +20,10 @@
 #include "tcp.h"
 
 
-#define  M_YEAR    19
+#define  M_YEAR    1999
 #define  M_MONTH   1
 #define  M_DAY     2
+#define  M_VERSION "01.15"
 
 #ifdef __GNUC__
 # define _BasPag _base
@@ -40,9 +41,9 @@ static char const fault[] = "TCP.STX : STinG extension module. Only to be starte
 TCP_CONF my_conf = {
 	{
 		"TCP",
-		"01.15",
+		M_VERSION,
 		0x10400L,
-		(M_YEAR << 9) | (M_MONTH << 5) | M_DAY,
+		((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
 		"Peter Rottengatter",
 		0,
 		NULL,

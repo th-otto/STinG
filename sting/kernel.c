@@ -177,7 +177,8 @@ static int16 process_dgram(IP_DGRAM *dgram)
 		dgram->next = NULL;
 	}
 
-	for (walk = *(previous = &port->send); walk; walk = *(previous = &walk->next)) ;
+	for (walk = *(previous = &port->send); walk; walk = *(previous = &walk->next))
+		;
 	*previous = dgram;
 
 	return E_NORMAL;

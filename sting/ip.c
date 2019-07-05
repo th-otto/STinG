@@ -55,11 +55,13 @@ PORT *route_it(uint32 ip_destination, uint32 *gateway)
 		return &my_port;
 
 	for (walk = conf.ports; walk != NULL; walk = walk->next)
+	{
 		if (walk->active)
 		{
 			if (ip_destination == walk->ip_addr)
 				return &my_port;
 		}
+	}
 
 	if (route_number == 0)
 		return NO_NETWORK;

@@ -23,7 +23,7 @@
 
 #define	M_TITLE		"Resolver"
 #define	M_VERSION	"01.08"
-#define	M_YEAR		18
+#define	M_YEAR		1998
 #define	M_MONTH		1
 #define	M_DAY		7
 #define	M_AUTHOR	"Ronald Andersson"
@@ -45,7 +45,7 @@ static LAYER my_layer = {
 	M_TITLE,
 	M_VERSION,
 	0L,
-	(M_YEAR << 9) | (M_MONTH << 5) | M_DAY,
+	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
 	M_AUTHOR,
 	0,
 	NULL,

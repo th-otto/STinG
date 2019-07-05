@@ -17,13 +17,15 @@
 #include "globdefs.h"
 
 
-#define  M_YEAR    16
+#define  M_YEAR    1996
 #define  M_MONTH   12
 #define  M_DAY     2
+#define  M_VERSION "01.00"
 
+static char const internal[] = "Internal";
 
 PORT my_port = {
-	"Internal",
+	internal,
 	L_INTERNAL,
 	TRUE,
 	0L,
@@ -31,9 +33,9 @@ PORT my_port = {
 	0xffffffffUL,
 	32768U,
 	32768U,
-	0L,
+	0,
 	NULL,
-	0L,
+	0,
 	NULL,
 	0,
 	NULL,
@@ -210,9 +212,9 @@ static DRIVER my_driver = {
 	my_cntrl,
 	my_send,
 	my_receive,
-	"Internal",
-	"01.00",
-	(M_YEAR << 9) | (M_MONTH << 5) | M_DAY,
+	internal,
+	M_VERSION,
+	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
 	"Peter Rottengatter",
 	NULL,
 	NULL

@@ -16,10 +16,10 @@
 #include "port.h"
 
 
-#define  M_YEAR    18
+#define  M_YEAR    1998
 #define  M_MONTH   6
 #define  M_DAY     18
-#define  VERSION   "00.01"
+#define  M_VERSION "00.01"
 
 
 TPL *tpl;
@@ -132,8 +132,8 @@ static DRIVER my_driver = {
 	my_send,
 	my_receive,
 	"LocalTalk",
-	VERSION,
-	(M_YEAR << 9) | (M_MONTH << 5) | M_DAY, "Unknown Programmer",
+	M_VERSION,
+	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY, "Unknown Programmer",
 	NULL, NULL
 };
 
