@@ -18,7 +18,6 @@
 
 TPL *tpl;
 STX *stx;
-static DRV_LIST *sting_drivers;
 static PORT *ports[12];
 static int port_num;
 
@@ -42,6 +41,7 @@ static long get_sting_cookie(void)
 static int locate_sting(void)
 {
 	PORT *port_ptr;
+	DRV_LIST *sting_drivers;
 
 	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
@@ -54,7 +54,7 @@ static int locate_sting(void)
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
 	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
 
-	if (tpl == (TPL *) NULL || stx == (STX *) NULL)
+	if (tpl == NULL || stx == NULL)
 		return FALSE;
 
 	if ((long) (port_ptr = (PORT *) (long)query_port("")) < 1024) /* WTF? query_port returns flag only */

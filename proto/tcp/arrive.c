@@ -320,11 +320,13 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 				KRfree(net_data);
 				return;
 			}
+			/* fall through */
 		case TTIME_WAIT:
 			conn->flags |= FORCE;
 			conn->rtrn.mode = TRUE;
 			conn->rtrn.start = TIMER_now();
 			conn->rtrn.timeout = 2 * my_conf.max_slt;
+			break;
 		}
 
 		if (net_data->data_len != 0)
@@ -354,6 +356,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 				conn->recve.window -= ndb->len;
 				conn->flags |= FORCE;
 				stored = TRUE;
+				break;
 			}
 		}
 
@@ -374,6 +377,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 					conn->state = TCLOSING;
 					break;
 				}
+				/* fall through */
 			case TFIN_WAIT2:
 				conn->recve.next++;
 				conn->state = TTIME_WAIT;

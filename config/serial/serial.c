@@ -984,6 +984,7 @@ static void bconmap_init(void)
 			if (array[port].bios_no == 6)
 			{
 #ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 				array[port].port_driver.Rsconf = (unsigned long __CDECL (*)(short, short, short, short, short, short))my_Rsconf;
 #else
 				array[port].port_driver.Rsconf = my_Rsconf;

@@ -687,7 +687,7 @@ static int16 cdecl my_resolve(const char *domain, char **real_domain, uint32 *ip
 {
 	int16 ret_val;
 	int16 count;
-	char num[8];
+	char num[20];
 
 	offset++;
 

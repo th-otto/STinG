@@ -227,7 +227,7 @@ int16 cdecl setvstr(const char *name, const char *value);
 const char *cdecl getvstr(const char *name);
 
 int32 cdecl set_sysvars(int16 new_act, int16 new_frac);
-void cdecl query_chains(PORT ** port, DRIVER ** drv, LAYER ** layer);
+void cdecl query_chains(PORT **port, DRIVER **drv, LAYER **layer);
 const char *cdecl get_error_text(int16 error_code);
 
 int16 cdecl set_flag(int16 flag) GNU_ASM_NAME("set_flag");
@@ -239,27 +239,27 @@ void cdecl off_port(const char *port);
 int16 cdecl query_port(const char *port);
 int16 cdecl cntrl_port(const char *port, uint32 argument, int16 code);
 
-void cdecl set_dgram_ttl(IP_DGRAM * datagram);
-int16 cdecl check_dgram_ttl(IP_DGRAM * datagram);
+void cdecl set_dgram_ttl(IP_DGRAM *datagram);
+int16 cdecl check_dgram_ttl(IP_DGRAM *datagram);
 
-int16 cdecl get_route_entry(int16 no, uint32 * tmplt, uint32 * mask, PORT ** port, uint32 * gway);
-int16 cdecl set_route_entry(int16 no, uint32 tmplt, uint32 mask, PORT * port, uint32 gway);
+int16 cdecl get_route_entry(int16 no, uint32 *tmplt, uint32 *mask, PORT **port, uint32 *gway);
+int16 cdecl set_route_entry(int16 no, uint32 tmplt, uint32 mask, PORT *port, uint32 gway);
 int16 cdecl routing_table(void);
 int16 cdecl IP_send(uint32 source, uint32 dest, uint8 tos, uint16 fragm_flg, uint8 ttl, uint8 protocol, uint16 ident, void *data, uint16 data_len, void *options, uint16 opt_len);
 IP_DGRAM *cdecl IP_fetch(int16 prtcl);
 int16 cdecl IP_handler(int16 prtcl, int16 cdecl(*hndlr) (IP_DGRAM *), int16 flag);
-void cdecl IP_discard(IP_DGRAM * datagram, int16 all_flag);
+void cdecl IP_discard(IP_DGRAM *datagram, int16 all_flag);
 
 extern LAYER icmp_desc;
 
 int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, const void *data, uint16 len);
 int16 cdecl ICMP_handler(int16 cdecl(*hndlr) (IP_DGRAM *), int16 flag);
-void cdecl ICMP_discard(IP_DGRAM * datagram);
+void cdecl ICMP_discard(IP_DGRAM *datagram);
 
 long init_cookie(void);
 void install(void);
 
-uint16 check_sum(IP_HDR * header, void *options, int16 length) GNU_ASM_NAME("check_sum");
+uint16 check_sum(IP_HDR *header, void *options, int16 length) GNU_ASM_NAME("check_sum");
 uint16 lock_exec(uint16 status) GNU_ASM_NAME("lock_exec");
 int16 check_sequence(uint32 first, uint32 second, int32 *diff);
 
@@ -273,9 +273,9 @@ void *cdecl KRrealloc(void *mem_block, int32 new_size);
 int16 handle_lookup(int16 connec, void **anonymous, CN_FUNCS **entry);
 int16 cdecl PRTCL_announce(int16 protocol);
 int16 cdecl PRTCL_get_parameters(uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu);
-int16 cdecl PRTCL_request(void *anonymous, CN_FUNCS * cn_functions);
+int16 cdecl PRTCL_request(void *anonymous, CN_FUNCS *cn_functions);
 void cdecl PRTCL_release(int16 handle);
-void *cdecl PRTCL_lookup(int16 handle, CN_FUNCS * cn_functions);
+void *cdecl PRTCL_lookup(int16 handle, CN_FUNCS *cn_functions);
 
 int16 cdecl TIMER_call(int16 cdecl (*handler)(IP_DGRAM *), int16 flag);
 int32 cdecl TIMER_now(void);

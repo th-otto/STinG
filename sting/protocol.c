@@ -143,8 +143,6 @@ void cdecl PRTCL_release(int16 handle)
 	}
 
 	lock_exec(status);
-
-	return;
 }
 
 

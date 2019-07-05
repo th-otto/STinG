@@ -239,7 +239,9 @@ void clean_up(void)
 						IP_discard(ip_walk, TRUE);
 					ip_walk = *ip_previous;
 				} else
+				{
 					ip_walk = *(ip_previous = &ip_walk->next);
+				}
 			}
 			lock_exec(status);
 		}
@@ -258,7 +260,9 @@ void clean_up(void)
 					KRfree(df_walk);
 					df_walk = *df_previous;
 				} else
+				{
 					df_walk = *(df_previous = &df_walk->next);
+				}
 			}
 			lock_exec(status);
 		}

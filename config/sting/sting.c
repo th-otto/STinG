@@ -57,7 +57,6 @@ struct mem
 	long alt_lblk;
 } blk;
 
-static DRV_LIST *sting_drivers;
 TPL *tpl;
 STX *stx;
 static DRIVER **drivs;
@@ -204,7 +203,7 @@ static int collect_protocols(void)
 	for (walk = my_layers; walk != NULL; walk = walk->next)
 	{
 		*array++ = walk;
-		strncpy(*cptr++ + 1, walk->name, strlen(walk->name));
+		memcpy(*cptr++ + 1, walk->name, strlen(walk->name));
 	}
 
 	prots = (LAYER **) wrk + number;
@@ -258,7 +257,7 @@ static int collect_drivers(void)
 	for (walk = my_drivers; walk != NULL; walk = walk->next)
 	{
 		*array++ = walk;
-		strncpy(*cptr++ + 1, walk->name, strlen(walk->name));
+		memcpy(*cptr++ + 1, walk->name, strlen(walk->name));
 	}
 
 	drivs = (DRIVER **) wrk + number;
@@ -316,6 +315,8 @@ static _WORD cdecl cpx_call(GRECT *wind)
 		case SET:
 			sting[VAR_ACTIVE] = (box[ACTIVE].ob_state & OS_SELECTED) ? 1 : 0;
 			set_sysvars(sting[VAR_ACTIVE], sting[VAR_DELAY]);
+			abort_flg = TRUE;
+			break;
 		case CANCEL:
 			abort_flg = TRUE;
 			break;
@@ -467,13 +468,14 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 {
 	int count;
 	long total;
+	DRV_LIST *sting_drivers;
 
 	parameters = para;
 
 	if ((*parameters->getcookie) (STIK_COOKIE_MAGIC, (long *) &sting_drivers) == 0)
 		return NULL;
 
-	if (sting_drivers == 0L)
+	if (sting_drivers == 0)
 		return NULL;
 
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)

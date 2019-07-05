@@ -303,6 +303,8 @@ static void deplete_queue(IP_DGRAM **queue)
 }
 
 
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+
 static long flush(void)
 {
 	while (execute((short cdecl(*)(short)) do_flush->Bconstat) != 0)

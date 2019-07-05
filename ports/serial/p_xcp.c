@@ -514,6 +514,7 @@ void pap_up_down(SERIAL_PORT *port, int16 flag)
 	}
 }
 
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 
 void pap_create(SERIAL_PORT *port)
 {

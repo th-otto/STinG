@@ -88,8 +88,9 @@ int16 cdecl get_route_entry(int16 no, uint32 *tmplt, uint32 *mask, PORT **port, 
 	status = lock_exec(0);
 
 	if (no < 0 || route_number <= no)
+	{
 		no = -1;
-	else
+	} else
 	{
 		*tmplt = route_tab[no].template;
 		*port = route_tab[no].port;
@@ -188,15 +189,18 @@ static int16 fetch_line(char **location, ROUTE_ENTRY *route)
 	if ((mask = strchr(net, '\t')) == NULL)
 		return 0;
 	*mask = '\0';
-	while (*++mask == '\t') ;
+	while (*++mask == '\t')
+		;
 	if ((port = strchr(mask, '\t')) == NULL)
 		return 0;
 	*port = '\0';
-	while (*++port == '\t') ;
+	while (*++port == '\t')
+		;
 	if ((gate = strchr(port, '\t')) == NULL)
 		return 0;
 	*gate = '\0';
-	while (*++gate == '\t') ;
+	while (*++gate == '\t')
+		;
 
 	if (get_ip_addr(net, &route->template) == 0)
 		return 0;
@@ -290,7 +294,7 @@ int16 cdecl IP_send(uint32 source, uint32 dest, uint8 tos, uint16 fragm_flg, uin
 	uint16 my_ttl;
 	uint8 *new_options;
 
-	if (source == 0L)
+	if (source == 0)
 	{
 		if ((long) (port = route_it(dest, NULL)) <= 0)
 			return E_UNREACHABLE;
@@ -355,7 +359,8 @@ int16 cdecl IP_send(uint32 source, uint32 dest, uint8 tos, uint16 fragm_flg, uin
 
 	status = lock_exec(0);
 
-	for (walk = *(previous = &my_port.receive); walk; walk = *(previous = &walk->next)) ;
+	for (walk = *(previous = &my_port.receive); walk; walk = *(previous = &walk->next))
+		;
 	*previous = dgram;
 
 	lock_exec(status);
@@ -377,10 +382,12 @@ IP_DGRAM *cdecl IP_fetch(int16 protocol)
 	status = lock_exec(0);
 
 	if ((walk = ip[protocol].queue) == NULL)
-		datagram = NULL;
-	else
 	{
-		for (previous = &ip[protocol].queue; walk->next; walk = *(previous = &walk->next)) ;
+		datagram = NULL;
+	} else
+	{
+		for (previous = &ip[protocol].queue; walk->next; walk = *(previous = &walk->next))
+			;
 		datagram = walk;
 		*previous = NULL;
 	}

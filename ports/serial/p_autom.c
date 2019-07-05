@@ -460,6 +460,8 @@ void network_event(SERIAL_PORT *port, MACHINE *machine)
 		case PPP_VJHC_UNC:
 			ppp_log_it(port, machine, receiving, "reject VJHC.", -1);
 			port->generic.flags &= ~FLG_VJHC;
+			flag = PPP_REJOK;
+			break;
 		default:
 			flag = PPP_REJOK;
 			break;

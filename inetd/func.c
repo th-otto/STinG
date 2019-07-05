@@ -18,8 +18,8 @@ OBJECT **my_tree_index;
 
 _WORD const mdle_box[] = { ST_MBX1, ST_MBX2, ST_MBX3, ST_MBX4 };
 _WORD const click_box[] = { ST_MCK1, ST_MCK2, ST_MCK3, ST_MCK4 };
-_WORD const mdle_icon[] = { ST_MIC1, ST_MIC2, ST_MIC3, ST_MIC4 };
-_WORD const mdle_name[] = { ST_MNAM1, ST_MNAM2, ST_MNAM3, ST_MNAM4 };
+static _WORD const mdle_icon[] = { ST_MIC1, ST_MIC2, ST_MIC3, ST_MIC4 };
+static _WORD const mdle_name[] = { ST_MNAM1, ST_MNAM2, ST_MNAM3, ST_MNAM4 };
 
 static DRV_LIST *stik_drivers;
 static OBJECT **old_tree_index;
@@ -116,6 +116,7 @@ int init_modules(void)
 	int index;
 	char *ptr = ism_path;
 	static char const search[] = "*.ISM";
+	OBJECT ***ptrindex;
 
 	if (ism_path[1] == ':')
 	{
@@ -176,12 +177,12 @@ int init_modules(void)
 	while (!error)
 	{
 		ism = &ism_data[count];
-		strncpy(ism->file, my_dta->d_fname, 12);
+		strcpy(ism->file, my_dta->d_fname);
 		parameter.module_resident = (void *) ism->resident;
 		parameter.index = count;
 		load_overlay(parameter.index);
 		values = (*ism->ism_init) (&parameter);
-		strncpy(ism->ism_name, values->ism_name, 16);
+		strcpy(ism->ism_name, values->ism_name);
 		strncpy(ism->ism_ictxt, values->ism_icon->ib_ptext, 12);
 		memcpy(ism->ism_icon, values->ism_icon->ib_pdata, 96);
 		ism->protocol = values->ism_protocol;
@@ -204,8 +205,9 @@ int init_modules(void)
 		return FALSE;
 	}
 
-	old_tree_index = *(OBJECT ***) &aes_global[5];
-	*(OBJECT ***) &aes_global[5] = my_tree_index;
+	ptrindex = (OBJECT ***) &aes_global[5];
+	old_tree_index = *ptrindex;
+	*ptrindex = my_tree_index;
 
 	memcpy(my_tree_index, old_tree_index, NUM_TREE * sizeof(OBJECT *));
 
@@ -244,7 +246,10 @@ void terminate_modules(void)
 		Mfree(my_tree_index);
 
 	if (old_tree_index)
-		*(OBJECT ***) & aes_global[5] = old_tree_index;
+	{
+		OBJECT ***ptrindex = (OBJECT ***) &aes_global[5];
+		*ptrindex = old_tree_index;
+	}
 }
 
 
@@ -300,8 +305,8 @@ void insert_modules(int draw_it)
 	{
 		ism = &ism_data[disp_offset + count];
 		memcpy(tree[mdle_icon[count]].ob_spec.iconblk->ib_pdata, ism->ism_icon, 96);
-		strncpy(tree[mdle_icon[count]].ob_spec.iconblk->ib_ptext, ism->ism_ictxt, 12);
-		strncpy(tree[mdle_name[count]].ob_spec.free_string, ism->ism_name, 16);
+		strcpy(tree[mdle_icon[count]].ob_spec.iconblk->ib_ptext, ism->ism_ictxt);
+		strcpy(tree[mdle_name[count]].ob_spec.free_string, ism->ism_name);
 		if (draw_it)
 			change_flags(START, mdle_box[count], 0, 0, 0);
 	}

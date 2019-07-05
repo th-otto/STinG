@@ -54,8 +54,6 @@ extern OBJECT **my_tree_index;
 extern char const version[];
 extern _WORD const mdle_box[];
 extern _WORD const click_box[];
-extern _WORD const mdle_icon[];
-extern _WORD const mdle_name[];
 extern _WORD const edit[];
 
 int get_version(char stik[]);

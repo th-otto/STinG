@@ -165,7 +165,7 @@ static void modify_fname(void)
 	if (strrchr(path, '\\'))
 		strncpy(strrchr(path, '\\') + 1, f_file, 32);
 	else
-		strcat(strrchr(path, '\\'), f_file);
+		strcat(path, f_file);
 
 	create_path();
 }

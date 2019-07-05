@@ -57,7 +57,6 @@ CPXINFO *cdecl cpx_init(XCPB *para_ptr);
 
 
 
-static DRV_LIST *sting_drivers;
 TPL *tpl;
 STX *stx;
 int errno;
@@ -725,7 +724,7 @@ static void set_rsc_data(int act_port)
 		if (addr == 0L || addr == 0xffffffffUL)
 			buffer[0] = '\0';
 	}
-	strncpy(box[IP_ADDR].ob_spec.tedinfo->te_ptext, buffer, 12);
+	strncpy(box[IP_ADDR].ob_spec.tedinfo->te_ptext, buffer, box[IP_ADDR].ob_spec.tedinfo->te_txtlen - 1);
 
 	if ((posi = get_value(&ports[act_port], "SUBMASK")) == NULL)
 	{
@@ -738,7 +737,7 @@ static void set_rsc_data(int act_port)
 		if (addr == 0L || addr == 0xffffffffUL)
 			buffer[0] = '\0';
 	}
-	strncpy(box[SUBNET].ob_spec.tedinfo->te_ptext, buffer, 12);
+	strncpy(box[SUBNET].ob_spec.tedinfo->te_ptext, buffer, box[SUBNET].ob_spec.tedinfo->te_txtlen - 1);
 
 	if ((posi = get_value(&ports[act_port], "MTU")) == NULL)
 	{
@@ -748,7 +747,7 @@ static void set_rsc_data(int act_port)
 		addr = atol(posi);
 		sprintf(buffer, "%u", (unsigned int) addr);
 	}
-	strncpy(box[MTU].ob_spec.tedinfo->te_ptext, buffer, 5);
+	strncpy(box[MTU].ob_spec.tedinfo->te_ptext, buffer, box[MTU].ob_spec.tedinfo->te_txtlen - 1);
 
 	if (ports[act_port].type == L_SER_PTP || ports[act_port].type == L_PAR_PTP)
 	{
@@ -813,7 +812,7 @@ static void set_rsc_data(int act_port)
 				hard[count] = &hard_buff[count * (max + 4)];
 				memset(hard[count], ' ', max + 3);
 				hard[count][max + 3] = '\0';
-				strncpy(&hard[count][2], ware[count], strlen(ware[count]));
+				memcpy(&hard[count][2], ware[count], strlen(ware[count]));
 			}
 			hard_num = count;
 			if ((posi = get_value(&ports[act_port], "TYPE")) == NULL)
@@ -880,7 +879,7 @@ static void set_rsc_data(int act_port)
 			if (addr == 0L || addr == 0xffffffffUL)
 				buffer[0] = '\0';
 		}
-		strncpy(box[M_IP].ob_spec.tedinfo->te_ptext, buffer, 12);
+		strncpy(box[M_IP].ob_spec.tedinfo->te_ptext, buffer, box[M_IP].ob_spec.tedinfo->te_txtlen - 1);
 		break;
 	}
 }
@@ -949,6 +948,8 @@ static _WORD cdecl cpx_call(GRECT *wind)
 							   "[1][ Error :| |   Out of internal memory !   ][ Hmmm ]");
 				}
 			}
+			abort_flg = TRUE;
+			break;
 		case CANCEL:
 			abort_flg = TRUE;
 			break;
@@ -1112,13 +1113,14 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 	int count;
 	int len;
 	int max_len = 0;
+	DRV_LIST *sting_drivers;
 
 	params = para;
 
 	if ((*params->getcookie) (STIK_COOKIE_MAGIC, (long *) &sting_drivers) == 0)
 		return NULL;
 
-	if (sting_drivers == 0L)
+	if (sting_drivers == 0)
 		return NULL;
 
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)

@@ -281,6 +281,7 @@ void cdecl my_send(PORT *port)
 	walk = serial->send_buffer + serial->send_index;
 	remain = serial->send_length - serial->send_index;
 
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 	co_stat = (short cdecl (*) (short))serial->handler->Bcostat;
 	if (execute(co_stat) != 0)
 	{

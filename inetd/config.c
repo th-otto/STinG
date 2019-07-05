@@ -216,7 +216,7 @@ void init_configs(void)
 		if (ism_data[count].protocol & ISM_TCP)
 		{
 			tcp_entry[walk] = count;
-			strncpy(popup[walk++].ob_spec.free_string + 2, ism_data[count].ism_name, 16);
+			strcpy(popup[walk++].ob_spec.free_string + 2, ism_data[count].ism_name);
 		}
 	}
 	popup->ob_height = (walk - 1) * popup[1].ob_height;
@@ -229,7 +229,7 @@ void init_configs(void)
 		if (ism_data[count].protocol & ISM_UDP)
 		{
 			udp_entry[walk] = count;
-			strncpy(popup[walk++].ob_spec.free_string + 2, ism_data[count].ism_name, 16);
+			strcpy(popup[walk++].ob_spec.free_string + 2, ism_data[count].ism_name);
 		}
 	}
 	popup->ob_height = (walk - 1) * popup[1].ob_height;
@@ -252,15 +252,14 @@ static void set_standard_info(void)
 	int count;
 	short port;
 	short protocol;
-	static char const space_str[] = "                                        ";
 
 	rsrc_gaddr(R_TREE, CONF, &tree);
 
 	port = atoi(TEDTEXT(CE_PORT));
 	protocol = (tree[CE_TCP].ob_state & OS_SELECTED) ? ISM_TCP : ISM_UDP;
 
-	strncpy(tree[CE_SS_A].ob_spec.free_string, space_str, 12);
-	strncpy(tree[CE_SS_B].ob_spec.free_string, space_str, 36);
+	memset(tree[CE_SS_A].ob_spec.free_string, ' ', 12);
+	memset(tree[CE_SS_B].ob_spec.free_string, ' ', 36);
 
 	for (count = 0; count < num_services; count++)
 		if (standard[count].port == port && standard[count].protocol == protocol)
@@ -282,7 +281,7 @@ void fill_in_config_box(void)
 	set_tedinfo_number(CONF, CIC_LEN, chargen_len);
 	DESELECT(CIC_ALPH);
 	DESELECT(CIC_RNDM);
-	SELECT((chargen_random) ? CIC_RNDM : CIC_ALPH);
+	SELECT(chargen_random ? CIC_RNDM : CIC_ALPH);
 
 	if (num_setup_entries == 1)
 		DISABLE(CE_DEL);
@@ -293,13 +292,13 @@ void fill_in_config_box(void)
 	else
 		ENABLE(CE_INS);
 	sprintf(temp, "%2d", which_setup);
-	strncpy(&tree[CE_NO].ob_spec.free_string[7], temp, 2);
+	memcpy(&tree[CE_NO].ob_spec.free_string[7], temp, 2);
 	set_tedinfo_number(CONF, CE_PORT, setup[which_setup].port);
 	DESELECT(CE_TCP);
 	DESELECT(CE_UDP);
-	SELECT((setup[which_setup].flags.tcp) ? CE_TCP : CE_UDP);
+	SELECT(setup[which_setup].flags.tcp ? CE_TCP : CE_UDP);
 	set_standard_info();
-	rsrc_gaddr(R_TREE, (setup[which_setup].flags.tcp) ? PU_C_TCP : PU_C_UDP, &popup);
+	rsrc_gaddr(R_TREE, setup[which_setup].flags.tcp ? PU_C_TCP : PU_C_UDP, &popup);
 	strcpy(tree[CE_SERV].ob_spec.free_string, popup[setup[which_setup].server].ob_spec.free_string + 2);
 	if (setup[which_setup].flags.open)
 		SELECT(CE_OPEN);

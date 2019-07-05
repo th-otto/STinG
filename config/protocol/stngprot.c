@@ -88,7 +88,6 @@ TPL *tpl;
 STX *stx;
 int errno;
 
-static DRV_LIST *sting_drivers;
 static LAYER *layers[MAX_PRTCL];
 static XCPB *params;
 static OBJECT *box;
@@ -484,6 +483,8 @@ static _WORD cdecl cpx_call(GRECT *wind)
 		case SET:
 			get_rsc_data();
 			set_sting_data();
+			abort_flg = TRUE;
+			break;
 		case CANCEL:
 			abort_flg = TRUE;
 			break;
@@ -557,13 +558,14 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 	int count;
 	int len;
 	int max_len = 0;
+	DRV_LIST *sting_drivers;
 
 	params = para;
 
 	if ((*params->getcookie) (STIK_COOKIE_MAGIC, (long *) &sting_drivers) == 0)
 		return NULL;
 
-	if (sting_drivers == 0L)
+	if (sting_drivers == 0)
 		return NULL;
 
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
@@ -572,7 +574,7 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
 	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
 
-	if (tpl == (TPL *) NULL || stx == (STX *) NULL)
+	if (tpl == NULL || stx == NULL)
 		return NULL;
 
 	query_chains(NULL, NULL, &my_layers);
@@ -583,15 +585,18 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 	for (walk = my_layers, num_prtcl = 0; walk != NULL; walk = walk->next)
 	{
 		for (count = 0; count < MAX_PRTCL; count++)
+		{
 			if (strcmp(walk->name, prtcl_name[count]) == 0)
 			{
 				layers[count] = walk;
 				which[num_prtcl] = count;
 				memset(popup[num_prtcl], ' ', 15);
-				strncpy(popup[num_prtcl++] + 2, walk->name, len = (int) strlen(walk->name));
+				len = (int) strlen(walk->name);
+				memcpy(popup[num_prtcl++] + 2, walk->name, len);
 				if (max_len < len)
 					max_len = len;
 			}
+		}
 	}
 
 	for (count = 0; count < num_prtcl; count++)

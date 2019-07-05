@@ -110,10 +110,12 @@ static void send_echo(void)
 {
 	uint16 buffer[16];
 	static uint16 sequence = 0;
-
+	long *pl;
+	
 	buffer[0] = 0xaffeu;
 	buffer[1] = sequence++;
-	*(long *) &buffer[2] = Supexec(fetch_clock);
+	pl = (long *)&buffer[2];
+	*pl = Supexec(fetch_clock);
 
 	buffer[4] = 0xa5a5u;
 	buffer[5] = 0x5a5au;

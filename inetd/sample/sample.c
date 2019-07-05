@@ -56,7 +56,7 @@ static void set_data(void)
 	popup = rs_trindex[PU_TEST];
 
 	sprintf(temp, "%3d", my_data_ptr->port);
-	strncpy(tree[PORT].ob_spec.tedinfo->te_ptext, temp, 3);
+	strncpy(tree[PORT].ob_spec.tedinfo->te_ptext, temp, tree[PORT].ob_spec.tedinfo->te_txtlen - 1);
 
 	continent = my_data_ptr->continent;
 	strcpy(tree[CONTIN].ob_spec.free_string, popup[continent].ob_spec.free_string + 2);

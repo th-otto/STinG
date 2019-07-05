@@ -89,13 +89,13 @@ void install(void)
 	if (*var != '0' || strlen(var) != 1)
 	{
 		number = atoi(var) / 5;
-		conf.thread_rate = fraction = (number < 2) ? 2 : ((number > 199) ? 199 : number);
+		conf.thread_rate = fraction = number < 2 ? 2 : number > 199 ? 199 : number;
 	}
 	var = getvstr("FRAG_TTL");
 	if (*var != '0' || strlen(var) != 1)
 	{
 		number = atoi(var);
-		conf.frag_ttl = (number < 5) ? 5 : number;
+		conf.frag_ttl = number < 5 ? 5 : number;
 	}
 
 	var = getvstr("ICMP_GMT");
@@ -201,15 +201,16 @@ void *cdecl KRmalloc(int32 size)
 		if (run->size >= n_units)
 		{
 			if (run->size == n_units)
+			{
 				prev->mem_ptr = run->mem_ptr;
-			else
+			} else
 			{
 				run->size -= n_units;
 				run += run->size;
 				run->size = n_units;
 			}
 			run->mem_ptr = (MEM_HDR *) MEM_MAGIC;
-			mem_free = (prev != run) ? prev : NULL;
+			mem_free = prev != run ? prev : NULL;
 			lock_exec(status);
 			return (void *) (run + 1);
 		}
@@ -255,15 +256,19 @@ void cdecl KRfree(void *mem_block)
 		blk->size += run->mem_ptr->size;
 		blk->mem_ptr = run->mem_ptr->mem_ptr;
 	} else
+	{
 		blk->mem_ptr = run->mem_ptr;
-
+	}
+	
 	if (run + run->size == blk)
 	{
 		run->size += blk->size;
 		run->mem_ptr = blk->mem_ptr;
 	} else
+	{
 		run->mem_ptr = blk;
-
+	}
+	
 	mem_free = run;
 
 	lock_exec(status);

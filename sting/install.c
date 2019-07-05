@@ -347,19 +347,25 @@ int16 cdecl setvstr(const char *name, const char *value)
 	status = lock_exec(0);
 
 	for (count = 0; count < length; count++)
+	{
 		if (!isalpha(name[count]) && name[count] != '_')
 		{
 			lock_exec(status);
 			return FALSE;
 		}
+	}
 
 	for (count = 0; count < STIK_CFG_NUM; count++)
+	{
 		if (conf.cv[count])
 		{
 			if (compare(name, conf.cv[count], length))
 				break;
 		} else
+		{
 			break;
+		}
+	}
 
 	if (count >= STIK_CFG_NUM || (length = length + strlen(value) + 3) > 253)
 	{
@@ -370,8 +376,9 @@ int16 cdecl setvstr(const char *name, const char *value)
 	if (conf.cv[count])
 	{
 		if (length <= (int) *(conf.cv[count] - 1))
+		{
 			work = conf.cv[count];
-		else
+		} else
 		{
 			if ((work = KRmalloc(length)) == NULL)
 			{
@@ -414,13 +421,17 @@ const char *cdecl getvstr(const char *name)
 	status = lock_exec(0);
 
 	for (count = 0; count < STIK_CFG_NUM; count++)
+	{
 		if (conf.cv[count])
 		{
 			if (compare(name, conf.cv[count], length))
 				break;
 		} else
+		{
 			break;
-
+		}
+	}
+		
 	result = conf.cv[count] + length + 1;
 
 	if (count == STIK_CFG_NUM || conf.cv[count] == NULL)
@@ -430,4 +441,3 @@ const char *cdecl getvstr(const char *name)
 
 	return result;
 }
-
