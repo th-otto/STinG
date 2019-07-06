@@ -65,7 +65,8 @@ char  *error_array[] = {
               "No address records found for hostname.", "Routine is unavailable.", 
               "Locked by another application.", "Error during fragmentation.", 
               "Time To Live exceeded, discarded.", "Problem with a parameter.", 
-              "Input buffer is too small for data."
+              "Input buffer is too small for data." /* BUG: missing comma, causing it to be concatenated with next entry */
+              "Function is not available."
      };
 
 MEM_HDR  *memory = NULL, *mem_free;

@@ -1,3 +1,31 @@
+Version 01.26 01.06
+--------2000.06.14
+	Added some STiK2 TPL vectors after discussion with Dan Ackerman, so
+	STinG and STiK2 now have identical TPL structure for compatibility.
+	The STiK2 functions are not needed with STinG, so most of them are
+	just dummies for now, but CNfree_NDB has been implemented, and later
+	some others may be fully implemented as well.
+Version 01.25 01.05
+--------2000.06.11
+	Recoded some setup routines so that variable names with numerical
+	digits may be used also in DEFAULT.CFG, as well as in direct calls
+	to 'setvstr' (which was fixed in the previous version).
+Version 01.24 01.05
+--------2000.01.04
+	Recoded 'setvstr' to allow numerical digits in STinG variable names,
+	as long as they do not occur in the first character of such a name.
+	That character must still be a letter, or the character '_'.
+Version 01.23 01.05
+--------1999.12.01
+	Added structure padding for up to four extra TPL and STX functions
+	Added interpretation of DEFAULT.CFG variables ACTIVATE and THREADING
+	to allow activation of STinG without STING.CPX .
+Version 01.22 01.05
+--------1999.10.17
+	Added missing error message string for E_FNAVAIL
+Version 01.21 01.05
+	First version released by RA.
+	UDP_info function added.
 
 Version 01.20 01.05
      Many internal improvements. New driver configuration scheme.

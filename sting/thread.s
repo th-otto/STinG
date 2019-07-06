@@ -29,6 +29,10 @@
              .export   sting_clock               ;" STinG internal clock
 
 
+illg:
+			 dc.w 0x4afc
+			 rts
+
 ;-------------------------------------------------------------------------------------)
 
 set_flag:
@@ -39,7 +43,7 @@ set_flag:
              bne     denied                      ;" Was set ? Return TRUE
              or.b    #$ff, (a0, d1.w)            ;" Now the lock is ours
              clr.l   d0                          ;" And return FALSE
-denied:      nop
+denied:
              rts
 
 clear_flag:

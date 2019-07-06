@@ -36,6 +36,8 @@ void    cdecl  KRfree (void *mem_block);
 
 int16   cdecl  routing_table (void);
 
+int32   cdecl  set_sysvars (int16 new_act, int16 new_frac);
+
 void           get_path (void);
 long           get_boot_drv (void);
 int16          compare (char string_1[], char string_2[], int16 number);
@@ -103,6 +105,24 @@ void  main()
    strcat (def_conf, ") installed ...");
    puts (def_conf);
 
+   {
+   char *config;
+   int active;
+   config = getvstr("ACTIVATE");
+   if (*config != '0' && *config != 'F')
+   {
+	   active = atoi(getvstr("THREADING"));
+	   if (active == 0)
+	      active = 50;
+	   if (active < 10)
+	      active = 10;
+	   if (active > 1000)
+	      active = 1000;
+	   set_sysvars(1, active / 5);
+   }
+   (void)config;
+   }
+   
    Ptermres (_PgmSize, 0);
  }
 
@@ -263,7 +283,7 @@ char  fname[];
    while (*work && work < &cfg_ptr[length] && count > 0) {
         if (isalpha (*work)) {
              name = work;
-             while (isalpha (*work) || *work == '_')
+             while (isalnum (*work) || *work == '_')
                   work++;
              tmp = work;
              switch (search_value (&work)) {
@@ -308,8 +328,13 @@ char  *name, value[];
 
    status = lock_exec (0);
 
-   for (count = 0; count < length; count++)
-        if (! isalpha (name[count]) && name[count] != '_') {
+        if (! isalpha (name[0]) && name[0] != '_') {
+             lock_exec (status);
+             return (FALSE);
+           }
+
+   for (count = 1; count < length; count++)
+        if (! isalnum (name[count]) && name[count] != '_') {
              lock_exec (status);
              return (FALSE);
            }

@@ -34,6 +34,17 @@ typedef  struct driver {
            DRV_HDR  *layer[NUM_LAYER];
      } GENERIC;
 
+/*--------------------------------------------------------------------------*/
+/*	UDP information block.													*/
+/*--------------------------------------------------------------------------*/
+typedef struct udpib
+{	uint32	request;	/* 32 bit flags requesting various info (following)	*/
+	uint16	state;		/* current UDP pseudo state 						*/
+	uint32	reserve1;	/* reserved */
+	uint32	reserve2;	/* reserved */
+}	UDPIB;
+
+
 typedef  struct client_layer {
     char *     module;      /* Specific string that can be searched for     */
     char *     author;      /* Any string                                   */
@@ -75,6 +86,17 @@ typedef  struct client_layer {
     void       cdecl  (* ICMP_discard) (IP_DGRAM *);
     int16      cdecl  (* TCP_info) (int16, void *);
     int16      cdecl  (* cntrl_port) (char *, uint32, int16);
+	int16	cdecl	(* UDP_info) (int16, UDPIB *);
+	int16	cdecl	(* RAW_open)(uint32);
+	int16	cdecl	(* RAW_close)(int16);
+	int16	cdecl	(* RAW_out)(int16, void *, int16, uint32);
+	int16 	cdecl	(* CN_setopt)(int16, int16, const void *, int16);
+	int16 	cdecl	(* CN_getopt)(int16, int16, void *, int16 *);
+	void	cdecl	(* CNfree_NDB)(int16, NDB *);
+	void *reserved1;
+	void *reserved2;
+	void *reserved3;
+	void *reserved4;
  } CLIENT_API;
 
 typedef  struct stx_layer {
@@ -102,6 +124,10 @@ typedef  struct stx_layer {
     int32      cdecl  (* protect_exec) (void *, int32 cdecl (*) (void *));
     int16      cdecl  (* get_route_entry) (int16, uint32 *, uint32 *, PORT **, uint32 *);
     int16      cdecl  (* set_route_entry) (int16, uint32, uint32, PORT *, uint32);
+	void *reserved1;
+	void *reserved2;
+	void *reserved3;
+	void *reserved4;
  } STX_API;
 
 
@@ -124,6 +150,14 @@ int16      cdecl  on_port (char *port);
 void       cdecl  off_port (char *port);
 int16      cdecl  query_port (char *port);
 int16      cdecl  cntrl_port (char *port, uint32 argument, int16 code);
+
+int16	cdecl	UDP_info(int16, UDPIB *);
+int16	cdecl	RAW_open(uint32);
+int16	cdecl	RAW_close(int16);
+int16	cdecl	RAW_out(int16, void *, int16, uint32);
+int16 	cdecl	CN_setopt(int16, int16, const void *, int16);
+int16 	cdecl	CN_getopt(int16, int16, void *, int16 *);
+void	cdecl	CNfree_NDB(int16, NDB *);
 
 void       cdecl  set_dgram_ttl (IP_DGRAM *datagram);
 int16      cdecl  check_dgram_ttl (IP_DGRAM *datagram);
@@ -186,14 +220,16 @@ CLIENT_API  tpl  = { "TRANSPORT_TCPIP", "Peter Rottengatter", TCP_DRIVER_VERSION
                       house_keep, resolve, serial_dummy, serial_dummy, 
                       set_flag, clear_flag, CNgetinfo, 
                       on_port, off_port, setvstr, query_port, CNgets, 
-                      ICMP_send, ICMP_handler, ICMP_discard, TCP_info, cntrl_port
+                      ICMP_send, ICMP_handler, ICMP_discard, TCP_info, cntrl_port,
+                      UDP_info, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                };
 STX_API     stxl = { "MODULE_LAYER", "Peter Rottengatter", STX_LAYER_VERSION, 
                       set_dgram_ttl, check_dgram_ttl, routing_table, set_sysvars, query_chains, 
                       IP_send, IP_fetch, IP_handler, IP_discard, 
                       PRTCL_announce, PRTCL_get_parameters, PRTCL_request, PRTCL_release, 
                       PRTCL_lookup, TIMER_call, TIMER_now, TIMER_elapsed,
-                      protect_exec, get_route_entry, set_route_entry
+                      protect_exec, get_route_entry, set_route_entry,
+                      0, 0, 0, 0
                };
 GENERIC     cookie = { "STiKmagic", get_drv_func, ETM_exec,
                        & conf, NULL, (DRV_HDR *) & tpl, (DRV_HDR *) & stxl  };
@@ -349,6 +385,10 @@ void   *buffer;
    return (E_BADHANDLE);
  }
 
+int16	cdecl	UDP_info(int16 connect, UDPIB *info)
+{
+   return (E_BADHANDLE);
+}
 
 int16  cdecl  CNkick (connec)
 

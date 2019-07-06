@@ -10,8 +10,8 @@
 #define  FALSE       0
 #define  TRUE        1
 
-#define  TCP_DRIVER_VERSION    "01.20"
-#define  STX_LAYER_VERSION     "01.05"
+#define  TCP_DRIVER_VERSION    "01.26"
+#define  STX_LAYER_VERSION     "01.06"
 #define  CFG_NUM               100
 #define  MAX_HANDLE            32
 #define  LOOPBACK              0x7f000001L
