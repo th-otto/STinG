@@ -1,7 +1,7 @@
 ##===========================================================================
-## File name:   MASQUE.STG                      Revised:        1999.11.03
+## File name:   MASQUE.STG                      Revised:        2000.08.01
 ## Author:      Ulf Ronald Andersson            Created:        1997.08.10
-## Project:     Masque                          Version:        1.15
+## Project:     Masque                          Version:        1.16
 ##---------------------------------------------------------------------------
 ## (c)1997 by:  Ulf Ronald Andersson            All rights reserved.
 ## Feedback to: dlanor@ettnet.se                Released as FREEWARE
@@ -12,12 +12,12 @@
 @database "Masque STinG module documentation"
 @hostname MASQUE
 @author "Ulf Ronald Andersson"
-@$VER: Masque.HYP 1.15  (@:"__DATE__")
+@$VER: Masque.HYP 1.16  (@:"__DATE__")
 @subject Documentation/System
 @options -z
 @width 78
 @help "The Masque module"
-@define Version "1.15"
+@define Version "1.16"
 ##---------------------------------------------------------------------------
 @node "The Masque module"
 ##---------------------------------------------------------------------------
@@ -384,6 +384,17 @@ you want someone on Internet to access local servers on your LAN machines.
 ##---------------------------------------------------------------------------
 Masque Development History                                             Masque
 @line 1 77 0 0 7
+
+@{U} Version 1.16       2000.08.01 @{0}
+
+        This version fixes a bug that prevented ICMP (eg: PING) from
+        working correctly through a masqueraded port in recent versions.
+        The fix has been tested with Ping and Tracerout tools, both of
+        which rely on ICMP messages for success.
+        In addition to that bugfix ICMP operation is now improved such
+        that incoming ICMP requests (eg: Ping) and outgoing ICMP replies
+        (eg: Ping reply) will be serviced, but only for the current
+        'Master' machine in the local network.
 
 @{U} Version 1.15       1999.11.03 @{0} Public release: 2000.07.05
 

@@ -1,8 +1,8 @@
 ;----------------------------------------------------------------------------
-;File name:	MASQUE.S			Revision date:	1999.11.03
-;Creator:	Ulf Ronald Andersson		Creation date:	1997.08.10
-;(c)1997 by:	Ulf Ronald Andersson		All rights reserved
-;Feedback to:	dlanor@oden.se			Released as FREEWARE
+;File name:     MASQUE.S                        Revision date:  2000.08.01
+;Creator:       Ulf Ronald Andersson            Creation date:  1997.08.10
+;(c)1997 by:    Ulf Ronald Andersson            All rights reserved
+;Feedback to:   dlanor@oden.se                  Released as FREEWARE
 ;----------------------------------------------------------------------------
 ;Required header declarations:
 
@@ -22,16 +22,16 @@
 
 ;----------------------------------------------------------------------------
 
-M_YEAR	equ	1999
-M_MONTH	equ	11
-M_DAY	equ	3
+M_YEAR	equ	2000
+M_MONTH	equ	8
+M_DAY	equ	1
 
 .MACRO	M_TITLE
 	dc.b	'Masquerade'
 .ENDM	M_TITLE
 
 .MACRO	M_VERSION
-	dc.b	'01.15'
+	dc.b	'01.16'
 .ENDM	M_VERSION
 
 .MACRO	M_AUTHOR
@@ -546,7 +546,6 @@ mask_datagram:
 	beq.s	mask_UDP
 mask_failed:
 mask_ICMP_errmsg:	;PATCH move label to implement outgoing error messages
-mask_ICMP_reply:	;PATCH move label to implement outgoing ICMP replies
 	IP_discard	(a3),#1
 	addq		#1,prt_des_stat_dropped(a5)
 	suba.l		a0,a0
@@ -652,11 +651,12 @@ icmp_mask_t_end:
 max_ICMP_type	equ	((icmp_mask_t_end-icmp_mask_t)/2)-1
 
 mask_ICMP_request:
+mask_ICMP_reply:	;PATCH move label to implement outgoing ICMP replies
 	tst.b	ICMP_HD_code(a2)		;Code non_zero ?  (abnormal)
 	bne	mask_failed			;weird code => error exit
 	swap	d3				;d3 = protocol<<16
 	move	ICMP_HD_id(a2),d3		;d3 = protocol.identifier
-    move.w  d3,d0
+    clr.w   d0
 	bsr		mask_common			;try to mask the packet
 	bmi		mask_failed			;exit with failure on error
 	move	d0,ICMP_HD_id(a2)		;mask ICMP identifier
@@ -690,7 +690,6 @@ unmask_datagram:
 	cmp	#P_UDP,d3
 	beq.s	unmask_UDP
 unmask_failed:
-unmask_ICMP_request:	;PATCH move label to implement incoming ICMP requests
 	IP_discard	(a3),#1
 	addq		#1,prt_des_stat_dropped(a5)
 	suba.l		a0,a0			;null a0 to flag error
@@ -699,6 +698,7 @@ unmask_ICMP_request:	;PATCH move label to implement incoming ICMP requests
 unmask_TCP:
 	swap	d3				;d3 = protocol<<16
 	move	tcph_dest_port(a2),d3		;d3 = protocol.dest_port
+	move.l	IPDG_hdr+IPHD_ip_src(a3),d1	;arg d1 =  src IP
 	move	tcph_src_port(a2),d0		;d0 = protocol.src_port
 	bsr		unmask_common
 	bmi.s	unmask_failed			;exit with failure on error
@@ -714,6 +714,7 @@ unmask_TCP:
 unmask_UDP:
 	swap	d3				;d3 = protocol<<16
 	move	UDP_hdr_dest_port(a2),d3	;d3 = protocol.dest_port
+	move.l	IPDG_hdr+IPHD_ip_src(a3),d1	;arg d1 =  src IP
 	move	UDP_hdr_source_port(a2),d0	;d0 = protocol.source_port
 	bsr		unmask_common
 	bmi.s	unmask_failed			;exit with failure on error
@@ -785,6 +786,7 @@ unmask_ICMP_errmsg:
 unmask_TCP_errmsg:
 	swap	d3			;d3 = protocol<<16
 	move	tcph_src_port(a0),d3	;d3 = protocol.local_port
+	move.l	IPDG_hdr+IPHD_ip_dest(a1),d1	;arg d1 =  dest IP
 	move	tcph_dest_port(a0),d0	;d0 = protocol.dest_port
 	bsr		unmask_common		;try to unmask the packet
 	bmi		unmask_failed		;exit with failure on error
@@ -799,6 +801,7 @@ unmask_TCP_errmsg:
 unmask_UDP_errmsg:
 	swap	d3				;d3 = protocol<<16
 	move	UDP_hdr_source_port(a0),d3	;d3 = protocol.local_port
+	move.l	IPDG_hdr+IPHD_ip_dest(a1),d1	;arg d1 =  dest IP
 	move	UDP_hdr_dest_port(a0),d0	;d0 = protocol.dest_port
 	bsr	unmask_common			;try to unmask the packet
 	bmi	unmask_failed		;exit with failure on error
@@ -824,11 +827,13 @@ post_unmask_errmsg:
 	bra	post_unmask_IP		;go calc & patch main IP checksum
 
 unmask_ICMP_reply:
+unmask_ICMP_request:	;PATCH move label to implement incoming ICMP requests
 	tst.b	ICMP_HD_code(a2)		;Code non_zero ?  (abnormal)
 	bne	mask_failed			;weird code => error exit
 	swap	d3				;d3 = protocol<<16
 	move	ICMP_HD_id(a2),d3		;d3 = protocol.identifier
-    move.w     d3,d0
+	move.l	IPDG_hdr+IPHD_ip_src(a3),d1	;arg d1 =  src IP
+    clr.w     d0
 	bsr	unmask_common			;try to unmask the packet
 	bmi	unmask_failed			;exit with failure on error
 	move	d0,ICMP_HD_id(a2)		;unmask ICMP identifier
@@ -954,7 +959,7 @@ unmask_common:
     ; suba.w      #6,a7 XXX
     .dc.w 0x9efc,6
     move.w      d0,4(a7)
-    move.l      IPHD_ip_src(a3),(a7)
+    move.l      d1,(a7)
 	tst	masq_count
 	beq.s	unmask_allocate
     move.l     (a7),d2
