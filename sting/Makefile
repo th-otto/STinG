@@ -25,5 +25,4 @@ release::
 	$(MKDIR) $(RELEASE_DIR)/sting
 	cp -a sting.prg $(RELEASE_DIR)/auto
 	echo "C:\\STING\\" > $(RELEASE_DIR)/auto/sting.inf
-	cp -a default.cfg $(RELEASE_DIR)/sting
-	cp -a route.tab $(RELEASE_DIR)/sting
+	cp -a default.cfg route.tab update.txt $(RELEASE_DIR)/sting

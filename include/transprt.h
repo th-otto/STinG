@@ -165,17 +165,78 @@ extern DRV_LIST *drivers;
 #define  TLAST_ACK     9    /* Await ack of terminate request sent          */
 #define  TTIME_WAIT   10    /* Delay, ensures remote has received term' ack */
 
+/*----------------------------------*/
+/*	UDP connection pseudo states.	*/
+/*----------------------------------*/
+#define	UCLOSED		0	/* No connection.  Null, void, absent, ...		*/
+#define	ULISTEN		1	/* Wait for remote request						*/
+#define	UESTABLISH	4	/* Connection established, packet received/sent	*/
 
-/*
- *   TCP information block.
- */
+/*--------------------------------------------------------------------------*/
+/*	TCP information block.													*/
+/*--------------------------------------------------------------------------*/
+typedef struct tcpib
+{
+	uint32	request;	/* 32 bit flags requesting various info (following)	*/
+	uint16	state;		/* current TCP state 								*/
+	uint32	unacked;	/* unacked outgoing sequence length (incl SYN/FIN)	*/
+	uint32	srtt;		/* smoothed round trip time of this connection		*/
+} TCPIB;
 
-typedef struct tcpib {      /* TCP Information Block                        */
-    int16  state;           /* Connection state                             */
- } TCPIB;
+#define	TCPI_state		0x00000001L	/* request current TCP state			*/
+#define	TCPI_unacked	0x00000002L	/* request length of unacked sequence	*/
+#define	TCPI_srtt		0x00000004L	/* request smoothed round trip time		*/
+#define	TCPI_defer		0x00000008L	/* request switch to DEFER mode			*/
 
+#define TCPI_bits		4			/* The number of bits which are defined	*/
+#define	TCPI_mask		0x0000000FL	/* current sum of defined request bits	*/
 
+/*--------------------------------------------------------------------------*/
+/* NB: A TCP_info request using undefined bits will result in E_PARAMETER.	*/
+/*     else the return value will be TCPI_bits, so user knows what we have.	*/
+/*     Future additions will use rising bits in sequence, and additions to	*/
+/*     the TCPIB struct will always be made at its previous end.			*/
+/*--------------------------------------------------------------------------*/
+/* !!! By TCP_info with TCPI_defer, connection is switched to 'DEFER' mode.	*/
+/*     This means that all situations where internal looping would occur	*/
+/*     will instead lead to exit to the caller with return value E_LOCKED.	*/
+/*     Using this mode constitutes agreement to always check for that error	*/
+/*     code, which is mainly used for connections using DEFER mode. It may	*/
+/*     also be used in some other instances, where a function is blocked in	*/
+/*     such a way that internal looping is not possible.					*/
+/*--------------------------------------------------------------------------*/
 
+/*--------------------------------------------------------------------------*/
+/*	UDP information block.													*/
+/*--------------------------------------------------------------------------*/
+typedef struct udpib
+{
+    uint32  request;    /* 32 bit flags requesting various info (following) */
+    uint16  state;      /* current UDP pseudo state                         */
+    uint32  reserve1;   /* reserved */
+    uint32  reserve2;   /* reserved */
+} UDPIB;
+
+#define	UDPI_state		0x00000001L	/* request current UDP pseudo state		*/
+#define	UDPI_reserve1	0x00000002L	/* reserved	*/
+#define	UDPI_reserve2	0x00000004L	/* reserved */
+#define	UDPI_defer		0x00000008L	/* request switch to DEFER mode			*/
+
+#define UDPI_bits		4			/* The number of bits which are defined	*/
+#define	UDPI_mask		0x0000000FL	/* current sum of defined request bits	*/
+/*--------------------------------------------------------------------------*/
+/* NB: A UDP_info request using undefined bits will result in E_PARAMETER.	*/
+/*     else the return value will be UDPI_bits, so user knows what we have.	*/
+/*     Future additions will use rising bits in sequence, and additions to	*/
+/*     the UDPIB struct will always be made at its previous end.			*/
+/*--------------------------------------------------------------------------*/
+/* !!! By UDP_info with UDPI_defer, connection is switched to 'DEFER' mode.	*/
+/*     This means that all situations where internal looping would occur	*/
+/*     will instead lead to exit to the caller with return value E_LOCKED.	*/
+/*     Using this mode constitutes agreement to always check for that error	*/
+/*     code, which is mainly used for connections using DEFER mode.	It may	*/
+/*     also be used in some other instances, where a function is blocked in	*/
+/*     such a way that internal looping is not possible.					*/
 /*--------------------------------------------------------------------------*/
 
 
@@ -347,44 +408,59 @@ typedef  struct tpl  {
     const char *     module;      /* Specific string that can be searched for     */
     const char *     author;      /* Any string                                   */
     const char *     version;     /* Format `00.00' Version:Revision              */
-    void *     cdecl  (* KRmalloc) (int32);
-    void       cdecl  (* KRfree) (void *);
-    int32      cdecl  (* KRgetfree) (int16);
-    void *     cdecl  (* KRrealloc) (void *, int32);
-    const char *     cdecl  (* get_err_text) (int16);
-    const char *     cdecl  (* getvstr) (const char *);
+    void *     cdecl  (* KRmalloc) (int32 length);
+    void       cdecl  (* KRfree) (void * block);
+    int32      cdecl  (* KRgetfree) (int16 which);
+    void *     cdecl  (* KRrealloc) (void *block, int32 new_length);
+    const char *     cdecl  (* get_err_text) (int16 error_code);
+    const char *     cdecl  (* getvstr) (const char *name);
     int16      cdecl  (* carrier_detect) (void);
-    int16      cdecl  (* TCP_open) (uint32, uint16, uint16, uint16);
-    int16      cdecl  (* TCP_close) (int16, int16, int16 *);
-    int16      cdecl  (* TCP_send) (int16, const void *, int16);
-    int16      cdecl  (* TCP_wait_state) (int16, int16, int16);
-    int16      cdecl  (* TCP_ack_wait) (int16, int16);
-    int16      cdecl  (* UDP_open) (uint32, uint16);
-    int16      cdecl  (* UDP_close) (int16);
-    int16      cdecl  (* UDP_send) (int16, const void *, int16);
-    int16      cdecl  (* CNkick) (int16);
-    int16      cdecl  (* CNbyte_count) (int16);
-    int16      cdecl  (* CNget_char) (int16);
-    NDB *      cdecl  (* CNget_NDB) (int16);
-    int16      cdecl  (* CNget_block) (int16, void *, int16);
+    int16      cdecl  (* TCP_open) (uint32 rem_host, uint16 rem_port, uint16 tos, uint16 buffer_size);
+    int16      cdecl  (* TCP_close) (int16 handle, int16 timemode, int16 *result);
+    int16      cdecl  (* TCP_send) (int16 handle, const void *buffer, int16 length);
+    int16      cdecl  (* TCP_wait_state) (int16 handle, int16 state, int16 timeout);
+    int16      cdecl  (* TCP_ack_wait) (int16 handle, int16 timeout);
+    int16      cdecl  (* UDP_open) (uint32 rem_host, uint16 rem_port);
+    int16      cdecl  (* UDP_close) (int16 handle);
+    int16      cdecl  (* UDP_send) (int16 handle, const void *buffer, int16 length);
+    int16      cdecl  (* CNkick) (int16 handle);
+    int16      cdecl  (* CNbyte_count) (int16 handle);
+    int16      cdecl  (* CNget_char) (int16 handle);
+    NDB *      cdecl  (* CNget_NDB) (int16 handle);
+    int16      cdecl  (* CNget_block) (int16 handle, void *buffer, int16 length);
     void       cdecl  (* housekeep) (void);
-    int16      cdecl  (* resolve) (const char *, char **, uint32 *, int16);
+    int16      cdecl  (* resolve) (const char *domain, char **real, uint32 *list, int16 listlen);
     void       cdecl  (* ser_disable) (void);
     void       cdecl  (* ser_enable) (void);
-    int16      cdecl  (* set_flag) (int16);
-    void       cdecl  (* clear_flag) (int16);
-    CIB *      cdecl  (* CNgetinfo) (int16);
-    int16      cdecl  (* on_port) (const char *);
-    void       cdecl  (* off_port) (const char *);
-    int16      cdecl  (* setvstr) (const char *, const char *);
-    int16      cdecl  (* query_port) (const char *);
-    int16      cdecl  (* CNgets) (int16, char *, int16, char);
-    int16      cdecl  (* ICMP_send) (uint32, uint8, uint8, const void *, uint16);
-    int16      cdecl  (* ICMP_handler) (int16 cdecl (*) (IP_DGRAM *), int16);
-    void       cdecl  (* ICMP_discard) (IP_DGRAM *);
-    int16      cdecl  (* TCP_info) (int16, TCPIB *);
-    int16      cdecl  (* cntrl_port) (const char *, uint32, int16);
- } TPL;
+    int16      cdecl  (* set_flag) (int16 flag_number);
+    void       cdecl  (* clear_flag) (int16 flag_number);
+    CIB *      cdecl  (* CNgetinfo) (int16 handle);
+    int16      cdecl  (* on_port) (const char *portname);
+    void       cdecl  (* off_port) (const char *portname);
+    int16      cdecl  (* setvstr) (const char *name, const char *value);
+    int16      cdecl  (* query_port) (const char *portname);
+    int16      cdecl  (* CNgets) (int16 handle, char *buffer, int16 length, char delim);
+    int16      cdecl  (* ICMP_send) (uint32 dest_host, uint8 type, uint8 code, const void *data, uint16 length);
+    int16      cdecl  (* ICMP_handler) (int16 cdecl (*handler) (IP_DGRAM *), int16 install_code);
+    void       cdecl  (* ICMP_discard) (IP_DGRAM *datagram);
+    /* STinG extensions mid-1998 */
+    int16      cdecl  (* TCP_info) (int16 handle, TCPIB *buffer);
+    int16      cdecl  (* cntrl_port) (const char *name, uint32 arg, int16 code);
+    /* STinG extension 1999.10.01 (DRIVER_VERSION >= 1.21) */
+    int16      cdecl  (* UDP_info) (int16 handle, UDPIB *buffer);
+    /* STinG extension 2000.06.14 STiK2 compatibility funcs; since DRIVER_VERSION >= 1.26 */
+    int16      cdecl  (* RAW_open)(uint32 rhost);
+    int16      cdecl  (* RAW_close)(int16 handle);
+    int16      cdecl  (* RAW_out)(int16 handle, const void *data, int16 dlen, uint32 dest_ip);
+    int16      cdecl  (* CN_setopt)(int16 handle, int16 opt_id, const void *optval, int16 optlen);
+    int16      cdecl  (* CN_getopt)(int16 handle, int16 opt_id, void *optval, int16 *optlen);
+    void       cdecl  (* CNfree_NDB)(int16 handle, NDB *block);
+    /* reserved fields; since DRIVER_VERSION >= 1.26 */
+    void *reserved1;
+    void *reserved2;
+    void *reserved3;
+    void *reserved4;
+} TPL;
 
 extern TPL *tpl;
 
@@ -430,6 +506,13 @@ extern TPL *tpl;
 #define ICMP_discard(x)                  (*tpl->ICMP_discard)(x)
 #define TCP_info(x,y)                    (*tpl->TCP_info)(x,y)
 #define cntrl_port(x,y,z)                (*tpl->cntrl_port)(x,y,z)
+#define UDP_info(x,y)                    (*tpl->UDP_info)(x,y)
+#define RAW_open(x)                      (*tpl->RAW_open)(x)
+#define RAW_close(x)                     (*tpl->RAW_close)(x)
+#define RAW_out(w,x,y,z)                 (*tpl->RAW_out)(w,x,y,z)
+#define CN_setopt(w,x,y,z)               (*tpl->CN_setopt)(w,x,y,z)
+#define CN_getopt(w,x,y,z)               (*tpl->CN_getopt)(w,x,y,z)
+#define CNfree_NDB(x,y)                  (*tpl->CNfree_NDB)(x,y)
 
 
 

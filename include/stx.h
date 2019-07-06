@@ -93,6 +93,11 @@ typedef struct stx {
 	int32	   cdecl  (* protect_exec) (void *parameter, int32 cdecl (*handler) (void *));
 	int16	   cdecl  (* get_route_entry) (int16 no, uint32 *tmplt, uint32 *mask, PORT **port, uint32 *gateway);
 	int16	   cdecl  (* set_route_entry) (int16 no, uint32 tmplt, uint32 mask, PORT *port, uint32 gateway);
+	/* reserved fields; since LAYER_VERSION >= 1.06 */
+	void *reserved1;
+	void *reserved2;
+	void *reserved3;
+	void *reserved4;
 } STX;
 
 extern STX *stx;

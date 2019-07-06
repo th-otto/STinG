@@ -16,3 +16,5 @@ serial.cpx   1.00      1.01
 stngprot.cpx 1.02      1.03
 stngport.cpx 1.12      1.13
 sting.cpx    1.08      1.09
+
+dialer.app   1.16      1.17

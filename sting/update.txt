@@ -1,0 +1,4 @@
+As released only those STX modules that will be needed by all are active.
+To activate others, simply rename them to change the 'passive' filename
+extension "STY" into the 'active' extension "STX" and reboot the system.
+You can also find more modules (and updates) on the STinG home page.

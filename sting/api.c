@@ -136,6 +136,14 @@ static int16 cdecl UDP_send(int16 connec, const void *buffer, int16 length)
 }
 
 
+static int16 cdecl UDP_info(int16 connec, UDPIB *udp_info)
+{
+	UNUSED(connec);
+	UNUSED(udp_info);
+	return E_BADHANDLE;
+}
+
+
 static int16 cdecl CNkick(int16 connec)
 {
 	void *anonymous;
@@ -220,6 +228,33 @@ static int16 cdecl CNgets(int16 connec, char *buffer, int16 length, char delimit
 }
 
 
+static int16 cdecl CN_setopt(int16 handle, int16 opt_id, const void *optval, int16 optlen)
+{
+	UNUSED(handle);
+	UNUSED(opt_id);
+	UNUSED(optval);
+	UNUSED(optlen);
+	return E_NOROUTINE;
+}
+
+
+static int16 cdecl CN_getopt(int16 handle, int16 opt_id, void *optval, int16 *optlen)
+{
+	UNUSED(handle);
+	UNUSED(opt_id);
+	UNUSED(optval);
+	UNUSED(optlen);
+	return E_NOROUTINE;
+}
+
+
+static void cdecl CNfree_NDB(int16 handle, NDB *block)
+{
+	UNUSED(handle);
+	UNUSED(block);
+}
+
+
 static int16 cdecl resolve(const char *domain, char **real_domain, uint32 *ip_list, int16 ip_num)
 {
 	UNUSED(domain);
@@ -245,6 +280,36 @@ static int16 cdecl carrier_detect(void)
 static void cdecl house_keep(void)
 {
 	/* Do really nothing, as this function is obsolete ! */
+}
+
+
+static int16 cdecl RAW_open(uint32 rhost)
+{
+	UNUSED(rhost);
+	return E_NOROUTINE;
+}
+
+
+static int16 cdecl RAW_close(int16 handle)
+{
+	UNUSED(handle);
+	return E_BADHANDLE;
+}
+
+
+static int16 cdecl RAW_out(int16 handle, const void *data, int16 dlen, uint32 dest_ip)
+{
+	UNUSED(handle);
+	UNUSED(data);
+	UNUSED(dlen);
+	UNUSED(dest_ip);
+	return E_BADHANDLE;
+}
+
+
+static long cdecl noop(void)
+{
+	return E_NOROUTINE;
 }
 
 
@@ -288,7 +353,18 @@ static TPL tpll = {
 	ICMP_handler,
 	ICMP_discard,
 	TCP_info,
-	cntrl_port
+	cntrl_port,
+	UDP_info,
+	RAW_open,
+	RAW_close,
+	RAW_out,
+	CN_setopt,
+	CN_getopt,
+	CNfree_NDB,
+	(void *)noop, /* reserved1 */
+	(void *)noop, /* reserved2 */
+	(void *)noop, /* reserved3 */
+	(void *)noop  /* reserved4 */
 };
 
 static STX stxl = {
@@ -314,7 +390,11 @@ static STX stxl = {
 	TIMER_elapsed,
 	protect_exec,
 	get_route_entry,
-	set_route_entry
+	set_route_entry,
+	(void *)noop, /* reserved1 */
+	(void *)noop, /* reserved2 */
+	(void *)noop, /* reserved3 */
+	(void *)noop  /* reserved4 */
 };
 
 GENERIC cookie = {

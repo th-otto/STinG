@@ -307,7 +307,7 @@ static int16 cdecl my_TCP_info(int16 connec, TCPIB *tcpib)
 		write_parameter("returns", INT16, &ret_val, get_error(ret_val));
 		if (ret_val == 0)
 		{
-			write_parameter("State", INT16, &tcpib->state, 0 <= tcpib->state && tcpib->state <= 10 ? tcp_state[tcpib->state] : "");
+			write_parameter("State", INT16, &tcpib->state, /* 0 <= tcpib->state && */ tcpib->state <= 10 ? tcp_state[tcpib->state] : "");
 		}
 	}
 

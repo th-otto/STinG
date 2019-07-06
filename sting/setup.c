@@ -53,7 +53,7 @@ static const char *const error_array[] = {
 	"Time To Live exceeded, discarded.",
 	"Problem with a parameter.",
 	"Input buffer is too small for data.",
-	"Function not available"
+	"Function is not available"
 };
 
 MEM_HDR *memory = NULL;

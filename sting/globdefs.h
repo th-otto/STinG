@@ -14,8 +14,8 @@
 #endif
 
 
-#define  TCP_DRIVER_VERSION    "01.20"
-#define  STX_LAYER_VERSION     "01.05"
+#define  TCP_DRIVER_VERSION    "01.26"
+#define  STX_LAYER_VERSION     "01.06"
 #define  LOOPBACK              0x7f000001L
 
 #define  MAX_HANDLE    64    /* Number of handles assigned by PRTCL_request */
@@ -172,6 +172,13 @@ typedef  struct route_entry {
 #undef ICMP_discard
 #undef TCP_info
 #undef cntrl_port
+#undef UDP_info
+#undef RAW_open
+#undef RAW_close
+#undef RAW_out
+#undef CN_setopt
+#undef CN_getopt
+#undef CNfree_NDB
 
 #undef set_dgram_ttl
 #undef check_dgram_ttl

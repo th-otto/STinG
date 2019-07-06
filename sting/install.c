@@ -102,6 +102,9 @@ static int16 compare(const char *string_1, const char *string_2, int16 number)
 		if (!string_1[count] || !string_2[count])
 			return FALSE;
 	}
+	
+	if (string_1[count] != '=')
+		return FALSE;
 
 	return TRUE;
 }
@@ -160,6 +163,7 @@ static int16 init_cfg(char fname[])
 	strcpy(&cfg_ptr[length], "\r\n");
 
 	for (count = 0; count < length; count++)
+	{
 		if (compare(&cfg_ptr[count], "ALLOCMEM", 8))
 		{
 			work = &cfg_ptr[count - 1];
@@ -180,6 +184,7 @@ static int16 init_cfg(char fname[])
 				return -3;
 			break;
 		}
+	}
 
 	if (count >= length)
 	{
@@ -197,7 +202,7 @@ static int16 init_cfg(char fname[])
 		if (isalpha(*work))
 		{
 			name = work;
-			while (isalpha(*work) || *work == '_')
+			while (isalnum(*work) || *work == '_')
 				work++;
 			tmp = work;
 			value = work;
@@ -271,9 +276,9 @@ static void load_stx(void)
 	}
 
 	if (modules)
-		printf("\b\b.\r\n");
+		printf("\b\b.\n");
 	else
-		printf("None.\r\n");
+		printf("None.\n");
 }
 
 
@@ -323,12 +328,25 @@ int main(void)
 	load_stx();
 	routing_table();
 
-	strcpy(def_conf, "STinG version ");
-	strcat(def_conf, TCP_DRIVER_VERSION);
-	strcat(def_conf, " (");
-	strcat(def_conf, STX_LAYER_VERSION);
-	strcat(def_conf, ") installed ...");
-	puts(def_conf);
+	printf("STinG version %s (%s) installed ...\n", TCP_DRIVER_VERSION, STX_LAYER_VERSION);
+
+	{
+		const char *config;
+		int active;
+
+		config = getvstr("ACTIVATE");
+		if (*config != '0' && *config != 'F')
+		{
+			active = atoi(getvstr("THREADING"));
+			if (active == 0)
+				active = 50;
+			if (active < 10)
+				active = 10;
+			if (active > 1000)
+				active = 1000;
+			set_sysvars(1, active / 5);
+		}
+	}
 
 	Ptermres(_PgmSize, 0);
 	return 0;
@@ -344,16 +362,18 @@ int16 cdecl setvstr(const char *name, const char *value)
 
 	length = strlen(name);
 
-	status = lock_exec(0);
+	if (!isalpha(name[0]) && name[0] != '_')
+		return FALSE;
 
-	for (count = 0; count < length; count++)
+	for (count = 1; count < length; count++)
 	{
-		if (!isalpha(name[count]) && name[count] != '_')
+		if (!isalnum(name[count]) && name[count] != '_')
 		{
-			lock_exec(status);
 			return FALSE;
 		}
 	}
+
+	status = lock_exec(0);
 
 	for (count = 0; count < STIK_CFG_NUM; count++)
 	{
@@ -373,12 +393,10 @@ int16 cdecl setvstr(const char *name, const char *value)
 		return FALSE;
 	}
 
-	if (conf.cv[count])
+	work = conf.cv[count];
+	if (work)
 	{
-		if (length <= (int) *(conf.cv[count] - 1))
-		{
-			work = conf.cv[count];
-		} else
+		if (length > (unsigned char)work[-1])
 		{
 			if ((work = KRmalloc(length)) == NULL)
 			{
