@@ -318,7 +318,7 @@ static long do_break(void)
 
 	if (handle >= 0)
 	{
-		if (Fcntl(handle, 0L, glbl_par ? TIOCSBRK : TIOCCBRK) == 0)
+		if ((short)Fcntl(handle, 0L, glbl_par ? TIOCSBRK : TIOCCBRK) == 0)
 			ok_flag = TRUE;
 		Fclose(handle);
 	}
@@ -462,7 +462,7 @@ static void set_rsc_data(void)
 			do
 			{
 				last = --spd;
-				if (Fcntl(handle, (long) &spd, TIOCIBAUD) == -32)
+				if ((short)Fcntl(handle, (long) &spd, TIOCIBAUD) == -32)
 					break;
 				speed[index] = &speedbuf[10 * index];
 				sprintf(speed[index++], "  %6ld ", spd);
@@ -555,7 +555,7 @@ static long get_port_data(void)
 
 		if (handle >= 0)
 		{
-			if (Fcntl(handle, (long) &flags, TIOCGFLAGS) == 0)
+			if ((short)Fcntl(handle, (long) &flags, TIOCGFLAGS) == 0)
 			{
 				ok_flag = TRUE;
 				port->flow = flags & TF_FLOW;
@@ -583,7 +583,7 @@ static long get_port_data(void)
 
 		if (handle >= 0)
 		{
-			if (Fcntl(handle, (long) mapping, TIOCCTLMAP) == 0)
+			if ((short)Fcntl(handle, (long) mapping, TIOCCTLMAP) == 0)
 			{
 				ok_flag = TRUE;
 				port->flags |= (mapping[0] & TIOCM_DTR) ? F_DTR : 0;
@@ -624,7 +624,7 @@ static long get_port_data(void)
 			spd = TIOCM_DTR;
 			if (handle >= 0)
 			{
-				if (Fcntl(handle, (long) &spd, TIOCCTLGET) == 0)
+				if ((short)Fcntl(handle, (long) &spd, TIOCCTLGET) == 0)
 				{
 					ok_flag = TRUE;
 					spd &= TIOCM_DTR;
@@ -643,7 +643,7 @@ static long get_port_data(void)
 
 		if (handle >= 0)
 		{
-			if (Fcntl(handle, (long) mapping, TIOCBUFFER) == 0)
+			if ((short)Fcntl(handle, (long) mapping, TIOCBUFFER) == 0)
 				ok_flag = TRUE;
 		}
 		if (ok_flag == FALSE)
@@ -713,7 +713,8 @@ static void set_port(SER_PORT *port, SER_PORT *back, int alert)
 		if (handle != -1)
 		{
 			longs[0] = longs[1] = port->speed;
-			if (Fcntl(handle, (long) &longs[0], TIOCIBAUD) == 0 && Fcntl(handle, (long) &longs[1], TIOCOBAUD) == 0)
+			if ((short)Fcntl(handle, (long) &longs[0], TIOCIBAUD) == 0 &&
+				(short)Fcntl(handle, (long) &longs[1], TIOCOBAUD) == 0)
 				ok_flag = TRUE;
 		}
 		if (!ok_flag)
@@ -771,7 +772,7 @@ static void set_port(SER_PORT *port, SER_PORT *back, int alert)
 
 	if (handle != -1)
 	{
-		if (Fcntl(handle, (long) &flags, TIOCSFLAGS) < 0)
+		if ((short)Fcntl(handle, (long) &flags, TIOCSFLAGS) < 0)
 		{
 			sprintf(error, "[1][  Can\'t set protocol due to|  illegal combination of|  Bits/Parity"
 					"/Stopbits/FlowCTRL   |  for \"%s\" !][ Hmm ]", port->name);
@@ -791,7 +792,7 @@ static void set_port(SER_PORT *port, SER_PORT *back, int alert)
 		{
 			longs[0] = TIOCM_DTR;
 			longs[1] = port->dtr;
-			if (Fcntl(handle, (long) longs, TIOCCTLSET) == 0)
+			if ((short)Fcntl(handle, (long) longs, TIOCCTLSET) == 0)
 				ok_flag = TRUE;
 		}
 		if (!ok_flag)
@@ -818,7 +819,7 @@ static void set_port(SER_PORT *port, SER_PORT *back, int alert)
 		{
 			longs[1] = longs[2] = longs[3] = -1L;
 			longs[0] = port->recve;
-			if (Fcntl(handle, (long) longs, TIOCBUFFER) == 0)
+			if ((short)Fcntl(handle, (long) longs, TIOCBUFFER) == 0)
 				if (longs[0] != -1L)
 					ok_flag |= 1;
 		}
@@ -833,7 +834,7 @@ static void set_port(SER_PORT *port, SER_PORT *back, int alert)
 		{
 			longs[0] = longs[1] = longs[2] = -1L;
 			longs[3] = port->send;
-			if (Fcntl(handle, (long) longs, TIOCBUFFER) == 0)
+			if ((short)Fcntl(handle, (long) longs, TIOCBUFFER) == 0)
 				if (longs[3] != -1L)
 					ok_flag |= 2;
 		}
