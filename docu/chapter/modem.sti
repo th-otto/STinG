@@ -3,28 +3,8 @@
 Modem Connections                                                  STinG
 @line 1 72 0 0 7
 
-This section is provisional.
-
-The structure of the archive shows how to install STinG. I guess it's
-obvious, but I rather state it once more. Note that if you got old STiK
-active by default on your machine, you must desactivate it first, by
-changing the filename extensions of STIKTSR.PRG and STIK.ACC.
-
-The STING.PRG goes into the AUTO folder of your boot partition, the
-STING.INF goes to the same place. The latter must be edited to hold
-the path to the STinG modules, i.e. the directory where you've put the
-contents of the STING directory from the archive. You can throw away all
-STXs apart from SERIAL, TCP, UDP and RESOLVE.STX, if you wish. Put the
-contents of the archive's CPX directory to where your control panel server
-(Xcontrol, Zcontrol, COPS, whatever) searches for them. Now reboot. You
-should observe STING.PRG running, showing how it loads the modules. Then
-you'll see the desktop.
-
-Now open the `STinG Internals' CPX within your control panel server. Switch
-STinG active. You can choose reaction time via the slider. Shorter times
-impose a larger load on the system. I do not notice the load on a 12 MHz
-ordinary ST with the 10 ms setting. If you do then choose a larger value.
-You may want to save the settings. Click OK.
+This section assumes that you have already done the general installation
+and configuration of STinG as described in other sections of this documentation.
 
 Now choose if you want to use the Dialer for establishing a connection.
 If your machine is connected to the Net via a phone line (modem) to some
@@ -107,8 +87,8 @@ Note there are other tools available from the Dialer, like GEM integrated
 versions of Ping and TraceRoute, a Resolve tool, batch execution, and
 display of STinG statistics, memory, and the routing table.
 
-Start up CAB (don't forget to install CAB.OVL, which does the linkage to STING
-for CAB), or TelStar, or Newsie, or AFTP, or FracIRC, or ... whatever comes
+Start up @{"CAB" LINK "CAB"} (don't forget to install CAB.OVL, which does the linkage to STING
+for @{"CAB" LINK "CAB"}), or TelStar, or Newsie, or AFTP, or FracIRC, or ... whatever comes
 into your mind, and play with the Internet ...
 
 Have fun.
@@ -131,8 +111,7 @@ The Dialer                                                         STinG
 Dialer : Windows                                                   STinG
 @line 1 72 0 0 7
 
-@remark 288x384x2
-@image "pics/dialmain.img" 32
+@image "pics/dialmain.bmp" 32
 
 @{"The dial-up dialog" LINK "Dialer : The Dialing Dialog"}
 @{"Configs / Port Parameter" LINK "Dialer : The Configs / Port Parameters Dialog"}
@@ -146,14 +125,52 @@ Dialer : Windows                                                   STinG
 Dialer : The Dialing Dialog                                        STinG
 @line 1 72 0 0 7
 
-@remark 336x208x2
-@limage "pics/dialdup1.img" 27
+@image "pics/dialdup1.bmp" 27
 
-@remark 336x208x2
-@limage "pics/dialdup2.img" 27
+This is what you see when
+dialer is dialing to the
+ISP modem pool.
 
-@remark 336x208x2
-@limage "pics/dialdup3.img" 27
+
+
+
+
+
+
+
+
+
+
+@image "pics/dialdup2.bmp" 27
+This is what you see when
+dialer is  waiting  for a
+response from the ISP.
+
+
+
+
+
+
+
+
+
+
+
+@image "pics/dialdup3.bmp" 27
+This is what you see when
+all  handshaking has been
+completed with connection
+ready for TCP/IP traffic.
+Shortly after this moment
+the dialing window closes
+automatically.
+
+
+
+
+
+
+
 
 @endnode
 
@@ -162,8 +179,7 @@ Dialer : The Dialing Dialog                                        STinG
 Dialer : The Configs / Port Parameters Dialog                      STinG
 @line 1 72 0 0 7
 
-@remark 480x352x2
-@limage "pics/dialcpp.img" 5
+@limage "pics/dialcpp.bmp" 5
 
 @endnode
 
@@ -172,8 +188,7 @@ Dialer : The Configs / Port Parameters Dialog                      STinG
 Dialer : The Configs / Miscellaneous Dialog                        STinG
 @line 1 72 0 0 7
 
-@remark 480x352x2
-@limage "pics/dialcmis.img" 5
+@limage "pics/dialcmis.bmp" 5
 
 @endnode
 
@@ -182,7 +197,6 @@ Dialer : The Configs / Miscellaneous Dialog                        STinG
 Tools : The Routing Table Dialog                                   STinG
 @line 1 72 0 0 7
 
-@remark 576x288x2
-@limage "pics/dialrout.img" 1
+@limage "pics/dialrout.bmp" 1
 
 @endnode

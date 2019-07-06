@@ -3,13 +3,342 @@
 Configuring STinG                                                  STinG
 @line 1 72 0 0 7
 
-@remark 272x208x2
-@image "pics/cpx.img" 36
+@{"STinG installation for novices" LINK "STinG installation for novices"}
+@{"STinG configuration principles" LINK "STinG configuration principles"}
+
+@{"ConfSTinG" LINK "The ConfSTinG Tool"}
+
+@image "pics/cpx.bmp" 36
+
+
+
+
+
 
 @{"STinG Internals" LINK "CPX : STinG Internals"}
+
 @{"STinG Port Setup" LINK "CPX : STinG Port Setup"}
+
 @{"STinG Protocols" LINK "CPX : STinG Protocols"}
-@{"ConfSTinG" LINK "The ConfSTinG Tool"}
+
+@endnode
+
+
+@node "STinG installation for novices"
+STinG installation for novices                                     STinG
+@line 1 72 0 0 7
+
+In this section I make the following four assumptions:
+
+A:  You are a novice at networking, and don't want tech details.
+
+B:  You don't want local networks, but only connection to an ISP.
+
+C:  You don't know what STinG needs, but are prepared to let me
+    decide where and how you shall install the files.
+
+D:  Your boot partition when using STinG will be C: .
+
+If you agree to all four assumptions, you can proceed as follows:
+
+1:  Check that you have HSModem installed, as STinG needs this to work
+    because the original serial port code of TOS is seriously bugged.
+    For ST this means that you need DRVIN.PRG and MFP.PRG in C:\AUTO\,
+    but for a Falcon030 or TT030 you need DRVIN.PRG and SCC.PRG.  The
+    currently correct HSModem version to use is known as HSMODA07.
+
+2:  Unpack the STinG archive in such a way that its internal folder
+    structure is preserved.  Else you will probably not find things
+    easily. In the remainder of this text I call the top folder level
+    of the archive STING126\, but the real numbers may vary in future
+    releases.  They reflect the main version number of the release.
+
+3:  Copy STING126\STING.INF into the folder C:\AUTO\
+4:  Copy STING126\STING.PRG into the folder C:\AUTO\
+
+5:  Check that STING.PRG in C:\AUTO\ resides after HSModem programs
+    mentioned in "1:" above. This is easy to do in TOS 2.06 or higher,
+    but in older TOS you need some special tools to manipulate \AUTO\
+    folder file ordering.  Keep at it until the order is correct.
+
+6:  Create a new folder named C:\STING\
+
+7:  Copy following 6 files from STING126\STING\ into folder C:\STING\
+        DEFAULT.CFG
+        SERIAL.STX
+        TCP.STX
+        UDP.STX
+        RESOLVE.STX
+        CACHE.DNS
+
+6:  Create a new folder named C:\DIALER\
+
+9:  Copy following 4 files from STING126\DIALER\ into folder C:\DIALER\
+        DIALER.APP
+        DIAL.INF
+        DIAL.RSC
+        DIAL.SCR
+
+10: If you want to use the dialer as a GEM ACCessory, then also copy
+    the following 2 files from C:\DIALER\ into the root folder C:\
+        DIALER.APP
+        DIAL.INF
+    and then rename DIALER.APP to DIALER.ACC
+
+11: If you are using a TOS older than TOS 2.05, then use some file
+    utility to remove the 'Fastload' bit from the program header of
+    DIALER.ACC, as a bug in all older TOS makes that bit dangerous
+    for use by ACCessories.
+
+12: Reboot the system so that the installed STING.PRG is booted, as
+    you will need to run the dialer to complete its configuration,
+    and it will not run properly without STinG booted. If this boot
+    fails something went wrong in some step above, so repeat those
+    from scratch until you get it right.
+
+13: Find the papers with the account information from your ISP, so you
+    have all needed info handy (username, password, etc).
+
+14: Start up the dialer and click the [Configs] button.  That will
+    open a window in which all dialer features can be configured.
+    The large button at the bottom left corner of the window is a
+    'popup menu' where you can choose which dialer features to edit.
+
+15: Select "Modem Specifics" in the popup
+    Edit the values shown if differing from what your modem needs.
+
+16: Select "Dial Script" in the popup
+    If you have scriptfree login (common for PPP) leave all unchanged
+    Else you must enter script details that match the login sequence
+    of your ISP.  You can read more on how to do this in the original
+    DIAL.SCR file that you still have in folder STING126\DIALER\ .
+
+17: Select "Port parameters" in the popup
+    If you have a static IP address enter this but otherwise leave the
+    IP address entry blank (displayed as "___.___.___.___").
+    Adjust the other entries to fit your ISP account specifications.
+    That must include the MTU value specified by your ISP, though some
+    providers call it MRU instead.  (Viewed from their end it is MRU.)
+
+18: Select "Addressing" in the popup
+    Here you enter more information specific to the ISP account.
+    If your ISP uses PPP configured so it can give nameserver info,
+    then do not enter any nameserver IP addresses at all, but instead
+    check the box titled "Request Name Servers from remote".  When you
+    do want to enter a nameserver IP manually, the correct way to do it
+    is to first click the "Add" button, and then to enter the address.
+
+19: Select "Phone & ISP cost" in the popup
+    Here you enter the phone numbers used to reach the modem pool.
+    You can also specify how connection costs should be calculated,
+    for logging, but personally I don't bother with that.  Click on
+    the "Fee File :" entry, and use the file selector to erase the
+    file name.  (You can change this later if you want it.)
+
+20: Select "Miscellaneous" in the popup
+    Here you must select the serial port to which your modem is
+    connected, in the popup menu titled "Serial port :". This should
+    normally be one of the following (depending on computer type):
+        Modem 1        ST, STF, STFM, STe, Mega ST
+        Modem 2        Mega STe, TT030, Falcon030
+    alternatively:
+        Ser.2/LAN      Mega STe, TT030  (has better speeds)
+        Modem 1        Mega STe, TT030  (has much worse speeds)
+
+21: Still in the configuration window, click the [Save] button.
+    This will bring up a file selector where you should select the
+    DIAL.SCR file and then click the [Ok] button.
+
+22: Start a normal text editor (not a word processor), and load the
+    two text files C:\STING\DEFAULT.CFG and C:\DIALER\DIAL.SCR into it.
+
+23: Edit the DEFAULT.CFG file entries for which a similar entry exists
+    in DIAL.SCR, so that the ISP specific entries (USERNAME etc.) are
+    made identical in both files.  (Some STinG clients may need this.)
+    Also edit the MSS setting to be equal to the MTU setting minus 40.
+
+24: If you have several NAMESERVER addresses in DIAL.SCR, then only use
+    the first of these in DEFAULT.CFG .  If you have none, meaning that
+    you request nameserver via PPP, then leave the original entry blank
+    in DEFAULT.CFG.
+
+25: Save the edited DEFAULT.CFG back into C:\STING\ and exit from the
+    text editor.
+
+26: If you have the obsolete MODEM.CPX in your CPX folder, erase it.
+
+27: Copy STING126\SERIAL.CPX to your own CPX folder, and use it to
+    configure the serial port you will be using with STinG, and save
+    those settings in the CPX so they will be reactivated in future
+    boot sessions.
+
+28: Alternative to using SERIAL.CPX, use DEVSET.PRG by Olivier Booklage
+    to configure the serial port.  Install and configure that program
+    by following the instructions in its release package.
+
+29: Reboot the system again.
+
+If you have followed the steps above successfully STinG is ready for use.
+
+Later, as you install various clients, you will find that their docs say
+that they need variables in DEFAULT.CFG which do not exist there now.
+Just add those at the end of the file with a normal text editor, so as to
+keep those clients happy.
+
+Normally no such changes need to be entered in the DIAL.SCR, but if that
+need arises, add them into the section labeled "Network Environment".
+That way they will be recognized by dialer and displayed in its subdialog
+"Configs"/"Environment" for future editing in the dialer.
+
+@endnode
+
+
+@node "STinG configuration principles"
+STinG configuration principles                                     STinG
+@line 1 72 0 0 7
+
+STinG can be used both as a simple dial-up tool,  and as a networking
+TCP/IP stack with quite complex routing etc.  This means that it must
+be capable of quite complex configuration variations, and yet without
+forcing all users to study many complexities that they may not need.
+
+Because of this (and other reasons) STinG configuration involves many
+different tools and configuration files, many of which are not needed
+by the average users, and can therefore be ignored by them.
+
+This document section attempts to clarify why and when various  STinG
+configuration files and tools are needed, and as this is dependent on
+how STinG and its configuration is booted, let us start by a study of
+how this occurs.
+
+Click here to read about @{"STinG boot" LINK "STinG boot sequence"}.
+
+That study implies that all users must have the following:
+
+1:  The main HSModem program DRVIN.PRG in \AUTO\
+
+2:  At least one fitting HSModem module (eg: MFP.PRG or SCC,PRG) also
+    in \AUTO\ and after DRVIN.PRG
+
+3:  STING.PRG in \AUTO\, after all HSModem components
+
+4:  STING.INF in \AUTO\, and containing a path string for most other
+    configuration files. (normally known as the "@{"STinG Directory" LINK "STinG Directory"}")
+    The position of this file in \AUTO\ does not matter.
+
+5:  DEFAULT.CFG in the @{"STinG Directory" LINK "STinG Directory"}, and containing a number
+    of variable definitions for the STinG network environment.
+
+6:  Several STX files in the @{"STinG Directory" LINK "STinG Directory"}:
+
+    SERIAL.STX    to define serial ports for STinG
+    TCP.STX       to define TCP protocol for STinG
+    UDP.STX       to define UDP protocol for STinG
+    RESOLVE.STX   to allow resolving of URLs
+
+7:  Either DEVSET.PRG in \AUTO\, or a CPX driver loading SERIAL.CPX.
+    This is needed to configure the serial port to use correct modes
+    for handshaking and the needed baudrate etc.
+
+8:  DIALER.APP with DIAL.INF, DIAL.RSC and DIAL.SCR
+
+The study also told us of lots of things that may be useful, some of
+which are necessary to use local networking,  but that does not need
+to concern users with only one computer, or who for other reasons do
+not want any local network.  The above is all that they really need.
+
+@endnode
+
+
+@node "STinG boot sequence"
+The STinG boot sequence:
+------------------------
+
+1:  The first step occurs when STING.PRG is booted from the \AUTO\
+    folder of the boot partition.  This loads and initializes the
+    basic IP kernel, and installs the system cookie that allows all
+    other STiK/STinG related programs to call STinG functions.
+
+2:  STING.PRG looks for the file STING.INF in \AUTO\, and uses the
+    path string in that file to find the @{"STinG Directory" LINK "STinG Directory"}. This method
+    allows you to name and place that folder as you please.
+
+3:  Next STinG reads the file DEFAULT.CFG, from @{"STinG Directory" LINK "STinG Directory"} found
+    above, and initializes the STinG network environment with all the
+    variables defined in DEFAULT.CFG .
+
+4:  Then STinG runs all STX modules installed in that same folder,
+    thus gaining access to various protocol and port drivers. Those
+    modules will check some of the variables defined above, and use
+    their values for their configuration.  Some of them will not be
+    completely configured by this however, while others may load some
+    special file of their own from the same folder, such as CACHE.DNS
+    which is loaded by RESOLVE.STX to revive an old DNS cache.
+    (If that file is not found, you'll see a harmless error message.)
+
+5:  Next STinG loads the file ROUTE.TAB, also from the same folder,
+    and uses that to build internal structures to control IP routing.
+    (If file is absent, no valid routes will exist at this stage.)
+
+6:  Then STinG checks for the "ACTIVATE" variable that may have been
+    in DEFAULT.CFG, and if found and not set to "0" or "FALSE", then
+    STinG will activate itself for TCP/IP traffic, with a 'timeslice'
+    set to match the variable "THREADING" (50 if that is not found).
+    This is a new feature, so if it gives trouble erase the ACTIVATE
+    variable and use STING.CPX for activation as in older versions.
+    (But I use the ACTIVATE method myself all the time now.)
+
+7:  Finally STinG terminates (but stays resident), so that the \AUTO\
+    boot can continue with other programs.
+
+8:  One such program may be DEVSET.PRG (by Olivier Booklage), which
+    handles configuration of HSModem ports, in which case use of the
+    SERIAL.CPX supplied with STinG becomes optional.
+
+9:  Another such program, not yet released, may be CNFSTING.PRG,
+    which will be able to handle all additional configuration needs
+    not satisfied above.  All furter steps below are then optional.
+
+10:  After the \AUTO\ boot, the system will load ACCessories, and one
+    of those will normally be a CPX driver.  That may be Atari's own
+    Xcontrol, or the independently produced Cops, Freedom, Zcontrol,
+    or some other such driver that I am not yet aware of.
+
+11: The CPX driver will load various CPX files, and normally users
+    will need the one named SERIAL.CPX, to configure the serial ports.
+    No other CPXs are needed if you just want to connect to an ISP,
+    but they are useful and/or needed if you want a local network.
+
+12: STING.CPX can be used to activate STinG after the completion of
+    /AUTO/ boot.  It is not needed, but very useful in experiments.
+
+13: STNGPORT.CPX is the main tool for configuration of local network
+    ports.  It is needed if you want a local network.  If used, this
+    CPX needs (or needs to create) a configuration file, normally
+    named STING.PRT stored in the root directory of boot partition,
+    though both name and location can be changed by the user.
+
+14: STNGPROT.CPX can be used to check/modify some protocol parameters.
+    It is not needed, but very useful in experiments.
+
+15: After all the booting has completed, you can continuously modify
+    some STinG parameters using the CPXs and/or the STinG dialer
+    which has a large number of configuration and testing tools.
+
+16: The dialer requires a file named DIAL.INF in its start directory,
+    containing a path string specifying where the dialer will look
+    for DIAL.RSC and DIAL.SCR files (and any additional SCR files).
+    Also, when connecting, the dialer normally creates a new IP route
+    for the port used, and makes that the default route, so that no
+    ROUTE.TAB is needed just for dialing an ISP.
+    (This behaviour can be changed in dialer configuration.)
+
+In addition to the boot of STinG components, it is assumed that serial
+ports exist on the system, and that they comply with HSModem standards
+for how they can be accessed and identified.  For normal Atari systems
+this requires that HSModem (DRVIN.PRG) and  some port module for it,
+(such as MFP.PRG or SCC.PRG) are also installed in \AUTO\, and that in
+such order that they are already booted before step "1:" above.
 
 @endnode
 
@@ -18,8 +347,45 @@ Configuring STinG                                                  STinG
 CPX : STinG Internals                                              STinG
 @line 1 72 0 0 7
 
+STING.CPX has formerly been needed by all STinG users, as this was
+the only way to activate STinG as needed to process TCP/IP traffic.
+It can still be used for that, although an alternative method now
+exists  (using the line "ACTIVATE = TRUE" in DEFAULT.CFG).
+
 @remark 258x196x2
-@limage "pics/maincpx.img" 36
+@image "pics/maincpx.bmp" 36
+This is the configuration dialog
+of STING.CPX
+
+It contains two settings, one of
+which turns all IP processing on
+or off, while the other controls
+how much of the  CPU power STinG
+can consume.
+
+The other  buttons and popups in
+this dialog provide  information
+on the STinG modules active, and
+the memory consumed.
+
+The 'checkbox' titled "Active" is used to activate STinG. This must be
+done  before any IP traffic can be processed,  so you should save this
+setting to get STinG activated  automatically.  The default setting in
+the distribution is  deactivated, so you can recover from bad settings
+by reinstalling the original CPX. You can also keep it this way if you
+use other methods (now available) to activate STinG.
+
+The 'dragbox' titled "Delay" is used to set the minimum delay between
+successive intervals of STinG work.  The minimum setting is 10ms, and
+is suitable for fast systems like TT030,  but slow systems like an ST
+will work better with longer delays, in the range 25-50 ms.  A delay
+much larger than 50 ms is not recommended, as it will make all TCP/IP
+responses  very  slow and irregular.  The delay setting saved in this
+CPX will overrule the variable "THREADING" in DEFAULT.CFG
+
+As usual, the "Save" button will save the settings into the CPX file,
+while "Ok" and "Cancel" are used to exit the dialog, with or without
+(respectively) activating the choices made.
 
 @endnode
 
@@ -28,12 +394,86 @@ CPX : STinG Internals                                              STinG
 CPX : STinG Port Setup                                             STinG
 @line 1 72 0 0 7
 
-@remark 258x196x2
-@limage "pics/portcpx1.img" 36
+STNGPORT.CPX is used to configure STinG communication ports,  so that
+networked communication is possible.  If you do not use a  local net,
+and do not have direct connection to Internet (as most do not),  then
+you do not need to use this CPX.  The STinG dialer will activate the
+port used to connect to an ISP modem pool.
+
+But if you do use a local network, or direct connection to Internet,
+then all ports involved in that must be configured by this CPX.
+
+@image "pics/portcpx1.bmp" 36
+STNGPORT.CPX has two main dialogs
+to configure various settings for
+all STinG communication ports.
+
+Their upper half is identical for
+both, and contains a 'popup menu'
+in the top left corner, to switch
+between the two dialogs.
+
+The first dialog is for  settings
+that all ports need, and is shown
+to the right of this text.
+
+The lower half of this dialog has three settings which are 'editable'
+plus a checkbox used to order reload of the routing table, so that a
+newly configured port can be included in the routing properly.  That
+is also useful to reload the table whenever you have edited ROUTE.TAB
+so as to rearrange the routing. Reloading occurs when you click "Ok".
+
+"IP Address" is where you give the selected port an IP address.
+"Subnet mask" is for networks that need masking of address ranges.
+"MTU" is for the Maximum Transmission Unit.
+
+I recommend that you use the MTU as specified by your ISP, for all of
+the STinG ports in your network, as this avoids packet fragmentation.
+
 
 @remark 258x196x2
-@limage "pics/portcpx2.img" 36
+@image "pics/portcpx2.bmp" 36
+The second dialog of STNGPORT.CPX
+is shown to the right, as it will
+look when one of the serial ports
+of SERIAL.STX has been selected.
 
+This dialog is intended for those
+settings that  vary for different
+port types, so settings available
+can differ completely.  Some port
+types do not have any settings at
+all in this dialog.
+(eg: Centr. PLIP & Centr. PLEP)
+
+For normal serial ports, this is where you choose either SLIP or PPP.
+You can also choose whether or not to use VJHC compression, which is
+normal for PPP, and sometimes also used for SLIP (then called CSLIP).
+On a TT you can also choose activation of the special LAN drivers for
+the "Ser. 2/LAN" port here, but that is not really recommended, as it
+appears to be an unreliable mode for HSModem.
+
+
+As stated above,  the 'popup menu' of the top left button is used to
+switch between the  two dialogs,  but the button below it is another
+'popup menu', even more important.  That one is used to select which
+STING port to configure. For each port you intend to use in your LAN
+you will need to select that port in this popup,  and set all values
+available in each of the two dialogs, using the other popup to switch
+between them
+
+Finally, "Ok" and "Cancel" work in the usual fashion, but "Save" does
+not !  Most CPXs save settings into the CPX file itself, but this one
+instead saves them into a text file,  normally stored as STING.PRT in
+the root directory of your boot partition.  You can modify the choice
+in the file selector however, and then that path and filename will be
+saved in the CPX, so that the same file can be found in the future.
+
+Old versions used a different format for the  STING.PRT file,  so when
+updating an existing installation you should check if the old settings
+are still present in the new CPX.  If not, reenter them again for each
+port, and save these settings to get a new STING.PRT file with the new
+format.
 @endnode
 
 
@@ -41,11 +481,57 @@ CPX : STinG Port Setup                                             STinG
 CPX : STinG Protocols                                              STinG
 @line 1 72 0 0 7
 
-@remark 258x196x2
-@limage "pics/prototcp.img" 36
+STNGPROT.CPX is used to configure the protocol modules of STinG,  and
+as these all have  different needs,  the settings available will vary
+greatly depending on which module is selected. That choice is made in
+the 'popup menu' of the top left button in the dialog.
 
-@remark 258x196x2
-@limage "pics/protoudp.img" 36
+As distributed, the CPX only mirrors the settings of DEFAULT.CFG, and
+I strongly recommend that you keep it so, meaning that you should not
+save temporary changes in the CPX. It's mainly intended for temporary
+experiments to find correct settings (to be placed in DEFAULT.CFG).
+When not making such experiments it is not necessary to load this CPX.
+
+
+@image "pics/prototcp.bmp" 36
+The dialog will look as is shown
+to the right for the TCP module.
+
+MSS  should  be set to the  value
+specified by your ISP,  on all of
+the systems in your LAN, to avoid
+unwanted reassembly of segments.
+
+Note that Initial  RTT must never
+be set lower than  1500 for a TCP
+that will  communicate  with the
+Internet. (Demanded by div. RFCs)
+
+Receive Window may be set much higher than before with the latest TCP
+modules, but I strongly recommend keeping it lower than 32768, as the
+value may be used as a signed 16 bit integer by some implementations.
+(Doing so is of course incorrect, but RFCs warn that some such exist)
+
+Normally there is no reason to modify the other TCP settings.
+
+
+@image "pics/protoudp.bmp" 36
+The dialog will look as is shown
+to the right for the UDP module.
+
+Normally you should never change
+either of these two settings.
+
+
+
+
+
+
+
+
+
+For documentation of other protocol modules,  look in other sections,
+dealing specifically with those modules.
 
 @endnode
 
@@ -55,5 +541,13 @@ The ConfSTinG Tool                                                 STinG
 @line 1 72 0 0 7
 
 ConfSTinG is not finished yet.
+
+When it is released it will function as an  \AUTO\ program that makes
+use of all STinG configuration CPXs optional, as it can handle all of
+the same things.
+
+The CPXs will still remain useful, however,  for those cases where it
+is necessary to modify settings without rebooting.  That need will be
+most relevant for those users who have a local network.
 
 @endnode

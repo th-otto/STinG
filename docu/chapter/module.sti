@@ -7,7 +7,8 @@ STinG Modules                                                      STinG
   Low level port driver modules :
 
      @{"SERIAL.STX" LINK "SERIAL.STX : Serial Line Networking"}
-     @{"CEN_PLIP.STX" LINK "CEN_PLIP.STX : Connect Networks Instead of Printers"}
+     @{"CEN_PLIP.STX" LINK "CEN_PLIP.STX : Parallel Line Internet Protocol"}
+     @{"CEN_PLEP.STX" LINK "CEN_PLEP.STX : Parallel Line Enhanced Protocol"}
      @{"ETHER.STX" LINK "ETHER.STX : Heyyya, This is Fast !"}
      @{"MIDI.STX" LINK "MIDI.STX : Musical Networking"}
      @{"LCLTLK.STX" LINK "LCLTLK.STX : Atari Bites the Apple"}
@@ -66,13 +67,500 @@ should be set to "Yes".
 @endnode
 
 
-@node "CEN_PLIP.STX : Connect Networks Instead of Printers"
-CEN_PLIP.STX : Connect Networks Instead of Printers                STinG
+@node "CEN_PLIP.STX : Parallel Line Internet Protocol"
+CEN_PLIP.STX : Parallel Line Internet Protocol                     STinG
 @xref "cen_plip.hyp/Main" "CEN_PLIP.STX"
 @line 1 72 0 0 7
 
-This module is not available yet for this kernel version.
+ Documentation for Cen_PLIP.Stx version 1.19
+ Created by Ulf Ronald Andersson
 
+ @{U}Contents@{u}
+
+ @{"Introduction" LINK "Cen_PLIP : Introduction"}
+ @{"Installation" LINK "Cen_PLIP : Installation"}
+ @{"Making a PLIP/PLEP cable" LINK "Cen_PLxP : Making a PLIP/PLEP cable"}
+
+ @{"cntrl_port interface" LINK "Cen_PLIP : cntrl_port interface"}
+ @{"Development History" LINK "Cen_PLIP : Development History"}
+ @{"Feedback" LINK "Credits and Copyright"}
+@endnode
+
+
+@node "Cen_PLIP : Introduction"
+Cen_PLIP : Introduction                                            STinG
+@line 1 72 0 0 7
+
+Cen_PLIP.Stx is a STinG module which implements a  PLIP port compatible to
+those used with  MintNet. (For which PLIP was invented.)  This now gives a
+normal  ST  the possibility of using  much higher transfer speed for local
+networking, thanks to the use of a parallel port.
+
+The name of this port is "Centr. PLIP", and it is these 11 characters that
+you must enter as 'port name' in  ROUTE.TAB to configure routes for  PLIP.
+The name was chosen to remain unique if other PLIP drivers for other ports
+are created, or if other drivers are made for the centronics port.
+
+The effective speed is limited by other factors of course, so having a lot
+of servers and clients constantly active may lower this efficiency, but no
+port can be immune to this effect.  The STinG timeslice also affects the
+rate at which packets are handed to clients, and thus the overall speed.
+
+Using PLIP to connect my F030 via my TT030 (using Masque.Stx) to internet,
+both machines supply their clients with data at  virtually the same speed.
+The speed limit then is actually set by the modem, since PLIP is very much
+faster than the 28K8 modem I have.
+
+The full speed of  PLIP will only be utilized when using a direct network,
+so that no modem imposes a lowered speed limit on any transfers.  Even an
+unaccelerated ST will achieve  TCP  rates in excess of 4500 cps, and even
+higher rates for simpler protocols.
+
+To me, this makes local networking truly enjoyable, to a degree that could
+never quite be matched using Midi, which is what I had to use before.  The
+many  musicians that use  Ataris  should also welcome the ability to use a
+fast networking port which does not interfere with their  Midi  equipment.
+
+@endnode
+
+
+@node "Cen_PLIP : Installation"
+Cen_PLIP : Installation                                            STinG
+@line 1 72 0 0 7
+
+PLIP.STX must of course be stored in the STinG module folder, with the rest.
+Then you need to reboot so that  STinG  loads the new module so that you can
+configure it, which is done in the usual way with STNGPORT.CPX
+
+PLIP is a very simple protocol, identical to pure SLIP,  with the difference
+of using a  parallel interface rather than a  serial one.   Because it is so
+simple there is no need to configure anything  else than the  IP number, the
+MTU size, and the activation flag.
+
+To actually make  use of the port,  you must of course also edit your  route
+file  ROUTE.TAB, to include at least one entry for the port  "Centr. PLIP".
+
+For a  'slave' unit that needs to access a  'master' unit over PLIP so as to
+get  indirect access to  internet (requires Masque.Stx), you do not need any
+other entries than the one for  PLIP, which should then have  0.0.0.0 in all
+the IP number/network fields.  Like this:
+
+0.0.0.0     0.0.0.0     Centr. PLIP 0.0.0.0
+
+For the master unit the "Centr. PLIP" entry needs to be a small subnet spec,
+and could look like this:
+
+1.0.255.0   255.255.255.0   Centr. PLIP 0.0.0.0
+
+Remember that this line must come before the default route, used for the
+internet connection, since the file may not be processed below that line.
+
+
+There are two things which are noteworthy of the last example above:
+
+1:  That network uses addresses which will not be used by internet.
+    This means there can never be any conflict.
+
+2:  You will need to use an IP address of the form 1.0.255.xxx  for any
+    machine to be reached through this subnet entry.  This particularly
+    includes the "PLIP" port of the  'slave'  unit, and it is advisable
+    to use a related number for that on the  'Master'  unit too.
+
+@endnode
+
+
+@node "Cen_PLxP : Making a PLIP/PLEP cable"
+Making a PLIP/PLEP cable                                           STinG
+@line 1 72 0 0 7
+
+The necessary connections:
+--------------------------
+
+Essentially a PLIP cable is an RS232 cable with some lines unconnected, and
+one pair of lines crossed (like in a null-modem).  Only 11 lines need to be
+used, since lines 18-24 are duplicate ground lines.  I recommend using them
+too, to minimize grounding problems, but that is up to you.
+
+The necessary connections are specified as one connecting line per character
+row in the diagram below:
+
+        DB-25           DB-25
+        Unit A          Unit B
+    ---------------     ---------------
+      pin   name          pin   name
+      ---   ----          ---   ----
+       1    STROBE         11   BUSY
+       2    D0              2   D0
+       3    D1              3   D1
+       4    D2              4   D2
+       5    D3              5   D3
+       6    D4              6   D4
+       7    D5              7   D5
+       8    D6              8   D6
+       9    D7              9   D7
+      11    BUSY            1   STROBE
+      25    GROUND         25   GROUND
+
+Pins 12-17 should be unconnected, and pins 18-24 are extra grounds.
+
+As you can see from the tables  above,  it is a very simple matter to make a
+PLIP cable from a leftover RS232 flat-cable.  Just cut away lines 12 to 17
+completely and simply cut lines 1 and 11 so you can cross connect them.
+(Splice them with some of the surplus wire from lines 12 to 17 just removed)
+
+NB: Remember that DB-25 connectors do *NOT* number the pins in the same
+    order that they appear on a flat cable. The numbers given are all DB-25!
+    So pins 1 and 2 are not adjacent in the cable, but have pin 14 between.
+
+Important !!!  The lines to cut away are thus *NOT* a block of adjacent ones.
+
+
+This was the easy way !  Now for the *BETTER* way.
+
+Keep you RS232 cable intact and make a small adapter from two leftover DB-25
+connectors instead.   This also gives you the opportunity to add  protection
+for the main port driving chip (The PSG of your computer).  This helps avoid
+damage when both ports are set as outputs with the cable connected.
+
+NB:  This happens *EVERY* time both computers are switched on, or reset.
+
+This protection simply consists of low value (not too low) resistors, placed
+in series with each of the data lines.  I used 75 Ohm resistors.  If you use
+lower resistors,  the protection is decreased,  but using much higher values
+will interfere with signal transfer levels.  I advice 50-100 Ohms as limits.
+
+The resistors together with normal circuit capacitance also form lowpass pi-
+filters that help eliminate signal reflection and 'ringing',  to keep signal
+logic levels reliable.
+
+Regardless of which method you use,  do be  careful  to avoid shortcircuits,
+and make sure everything gets properly isolated.   Any  damage you may cause
+is your own responsibility, and since the PSG fills many important functions
+(not just sound) in the computer, your system will not work without it.
+
+I have myself let the cable remain connected  since I completed the adapter,
+but you must choose what to do for yourself.  I am not responsible for that.
+
+NB: Using a separate adapter, thus keeping your cables intact, allows you
+    to also use the same cables for other things. Such as for example the
+    normal RS232 ports, or the PLMP interface I plan to release shortly.
+    (PLMP = Parallel Line Multidrop Protocol.)  The latter will require a
+    different adapter from PLIP, but will use the same ports and cables.
+
+@endnode
+
+
+@node "Cen_PLIP : cntrl_port interface"
+Cen_PLIP : @{"cntrl_port" LINK "The `cntrl_port' Function"} interface                                    STinG
+@line 1 72 0 0 7
+
+This Cen_PLIP version was developed for the STinG kernel Beta releases in
+the summer of 1998, and it will therefore not work properly with any of
+the older kernels. This is the case for all port drivers, since the driver
+structure has been changed to include a new function used by the kernel to
+implement the new @{"API" LINK "API"} function '@{"cntrl_port" LINK "The `cntrl_port' Function"}' for safe access to port data.
+
+Cen_PLIP currently supports the following @{"cntrl_port" LINK "The `cntrl_port' Function"} opcodes:
+
+CTL_GENERIC_SET_IP  =>  Set IP number of the port
+CTL_GENERIC_GET_IP  =>  Get IP number of the port
+CTL_GENERIC_SET_MTU =>  Set MTU size of the port
+CTL_GENERIC_GET_MTU =>  Get MTU size of the port
+CTL_GENERIC_GET_MMTU    =>  Get Max MTU size of the port
+CTL_GENERIC_GET_TYPE    =>  Get port link type of the port
+CTL_GENERIC_GET_STAT    =>  Get port transfer statistics
+CTL_GENERIC_CLR_STAT    =>  Clear port transfer statistics
+
+These functions are very tolerant of input data, so they accept almost any
+values, even if these will not give functional results.  This means it is
+the responsibility of the calling program to avoid nonfunctional values !
+
+Error codes possible:
+
+E_PARAMETER will result if anyone calls the cntrl function in the driver
+without setting up the port pointer like the kernel does.  That will not
+happen if you call the '@{"cntrl_port" LINK "The `cntrl_port' Function"}' @{"API" LINK "API"} function correctly, because then
+the kernel will find the port structure itself. (You use the port name.)
+
+E_PARAMETER will result if CTL_GENERIC_SET_MTU is called with an MTU value
+that is higher than the maximum allowed for the port (8192).
+
+E_FNAVAIL will result if any opcode other than those listed above are used.
+@endnode
+
+
+@node "Cen_PLIP : Development History"
+Cen_PLIP : Development History                                     STinG
+@line 1 72 0 0 7
+
+ @{U}Version@{u}        @{U}Details@{u}
+
+ 1.19       1999 October 10
+        Finally it seems that the PLIP driver for STinG works
+        the way it should.  At least it has not failed for me
+        yet, and judging from the ease of operation this does
+        seem to run reliably now.  So I will release this now.
+        Please report any problems with it to me ASAP.
+
+ 1.12-1.18  1999
+        After discovering that none of the previous versions
+        worked as intended, I almost dropped this project, but
+        continued working on it without releases, due to innate
+        inability to give up.  (What ?  Me stubborn...?  ;-)
+
+ 1.11       1998 December 14
+        Some small changes in the source plus a major correction
+        of one macro library motivate this release.  The bug in
+        the macro library (due to translation from PASM dialect)
+        does explain some of the problems encountered before.
+
+ 1.10       1998 September 8
+        Some problems still remain, but a new release is still
+        necessary due to changes in the STinG kernel. It has
+        also been discovered that PASM could not cope with all
+        the needs of the macro libs due to its 1-pass design.
+        All source code (incl all libs) have therefore now been
+        translated to DevPac dialect.
+
+ 1.09       1998 May 24
+        The problems of 1.08 have now been debugged (I hope ;-),
+        and this resulting version now runs well on my systems.
+        The speed has been raised to an average of 9000 cps for
+        most networking, with peaks of appx twice that speed. As
+        before, these figures relate to communication between a
+        Standard Falcon and a 16 MHz ST.  Other system speeds
+        will naturally affect any results of your own.
+
+ 1.08       1998 March 31
+        This version was an attempt to raise speed and safety by
+        restructuring the interrupt code (again).  Results were a
+        bit dubious though, so this version was not released.
+
+ 1.07       1998 February 12
+        After 48 hours nearly continuous work at speed optimization
+        this version has now achieved bulk transfer rates averaging
+        at 6100 cps (equivalent to serial 61000 bps), when browsing
+        from a 16 MHz Mega ST4 running @{"CAB" LINK "CAB"} 2.7 + CAB.OVL 1.2805 to
+        access pages/files on a 16 MHz falcon running SHTTPD 2.2.
+        This is good enough to release, though I still expect more!
+
+
+ 1.06       1998 February 10
+        After some necessary STinG Kernel improvements last November
+        the PLIP module lost all reliability.  It has been a long
+        struggle to get it back online, but here it is, the first
+        Cen_PLIP version running perfectly under the latest STinG.
+        This was achieved at cost of speed though, so this version
+        is not released.  Who wants PLIP at 1000 cps...?  :-(
+
+ 1.05       1997 October 25
+        Added module basepage pointer to @{"DRIVER" LINK "DRIVER"} structure.
+        This is a new standard defined to ease debugging.
+
+
+ 1.04       1997 October 13
+        Rewritten to use a new form of interupt masking, to improve
+        transfer rates and decrease errors due to kernel interrupts
+        interfering with PLIP timing.
+
+        Renamed to "Centr. PLIP" with filename "CEN_PLIP.STX", after
+        long discussions with Peter on naming conventions. This will
+        not collide with any future port.
+
+
+ 1.03       1997 September 13
+        Rewritten to take advantage of the new capabilities of the
+        latest STinG kernel to allow kernel routines to be called
+        from hardware interrupts.  This removes an unpleasant limit
+        on the number of packets tranferred per timeslice.  Even an
+        unspeeded ST can expect TCP rates in excess of 4500 cps now.
+        (Tested with MTU=576, MSS=536. Higher values = higher speed)
+
+ 1.02       1997 August 25
+        A bug that sometimes locked up the system has been killed.
+        This is the first proper release version, and test runs on
+        it include bidirectional 'Pinging' of 4500 datagrams.
+    NB: No tests have yet been made with 'partners' using MintNet,
+        so reports on results with such would be appreciated.
+
+ 1.01       1997 August 22
+        The fatal bug mentioned below has been exterminated.
+        The statistics counter for dropped packets is corrected.
+        Statistics counters for sent/received data are implemented.
+        The document is now in ST-Guide hypertext format.
+
+ 1.00       1997 August 22
+        First functional version, with one FATAL bug that could
+        kill unrelated MFP interrupts...
+
+ 0.xx       1997 August 18-21
+        Project start and various experiments
+
+@endnode
+
+
+@node "CEN_PLEP.STX : Parallel Line Enhanced Protocol"
+CEN_PLEP.STX : Parallel Line Enhanced Protocol                     STinG
+@line 1 72 0 0 7
+
+ Documentation for Cen_PLEP.Stx version 1.00
+ Created by Ulf Ronald Andersson
+
+ @{U}Contents@{u}
+
+ @{"Introduction" LINK "Cen_PLEP : Introduction"}
+ @{"Installation" LINK "Cen_PLEP : Installation"}
+ @{"Making a PLIP/PLEP cable" LINK "Cen_PLxP : Making a PLIP/PLEP cable"}
+
+ @{"cntrl_port interface" LINK "Cen_PLEP : cntrl_port interface"}
+ @{"Development History" LINK "Cen_PLEP : Development History"}
+ @{"Feedback" LINK "Credits and Copyright"}
+@endnode
+
+
+@node "Cen_PLEP : Introduction"
+Cen_PLEP : Introduction                                            STinG
+@line 1 72 0 0 7
+
+Cen_PLEP.Stx is a STinG module implementing Parallel Line Enhanced Protocol.
+This uses the Centronic port in ways somewhat similar (identical cables) to
+how it can also be used by the PLIP protocol, over which it has some rather
+important advantages.
+
+1:  PLEP uses a different modulation of the Strobe/Busy lines, to allow
+    both ends the ability to break in and tell the other about errors.
+    With PLIP the only way to do so was to stop ACKing and let the other
+    party time out, which wasted a lot of time.
+
+2:  A PLEP receiver that needs to send data can prevent the other party
+    from 'hogging' the channel, and demand it for its own sending, and
+    this can be done without undue delay.  (A few microseconds.)  That
+    enhancement too is due to the different Strobe/Busy modulation.
+
+3:  At end of a packet PLEP lets the receiver confirm reception, based
+    on a 16-bit CRC (not checksum, but real CRC) including the entire
+    IP packet. Thus faulty data is never (well almost never) delivered.
+
+4:  PLEP uses an encoding method which ensures that neither $00 nor $FF
+    can ever be transmitted as legal commands or data.  Thus any locked
+    levels (by hardware faults) can not lead to faulty commands or data.
+    The same encoding also ensures that data blocks will never contain
+    any bytes that can be taken as commands, or vice versa.
+
+Tests so far with comparable PLEP and PLIP implementations, meaning that
+appx 90% of the code is identical, with only the necessary differences in
+the interrupt routines,  show that PLEP will normally be faster than PLIP
+even though it performs more work. This is because the PLIP protocol uses
+a Strobe/Busy modulation method that inevitably wastes time.
+
+The only drawback of this protocol that I am aware of is that it is not a
+standard protocol used by any other system.  So if you want to connect the
+Centronic port to a Linux box or MintNet then you need to use Cen_PLIP.Stx
+instead of Cen_PLEP.Stx, as those machines only have standard PLIP.  But
+for connection of only machines running STinG I prefer this Cen_PLEP.Stx.
+
+The name of this port is "Centr. PLEP", and it is these 11 characters that
+you must enter as 'port name' in  ROUTE.TAB to configure routes for  PLEP.
+The name was chosen to remain unique if other PLEP drivers for other ports
+are created, or as other drivers are made for the centronics port.
+(At present we have both PLIP and PLEP, and plans exist for PLMP.)
+@endnode
+
+
+@node "Cen_PLEP : Installation"
+Cen_PLEP : Installation                                            STinG
+@line 1 72 0 0 7
+
+CEN_PLEP.STX must be stored in the STinG module folder, as all STX modules.
+Then you need to reboot so STinG will load the new module,  so that you can
+configure it, which is done in the usual way with STNGPORT.CPX
+
+PLEP is a fairly complex protocol, but its complexities are kept where they
+belong, inside the interrupt routines where the normal user never sees them.
+Because of this there is no need to configure anything  other  than the  IP
+number, the MTU size, and the activation flag.
+
+To actually make  use of the port,  you must of course also edit your  route
+file  ROUTE.TAB, to include at least one entry for the port  "Centr. PLEP".
+
+For a  'slave' unit that needs to access a  'master' unit over PLEP so as to
+get  indirect access to  internet (requires Masque.Stx), you do not need any
+other entries than the one for  PLEP, which should then have  0.0.0.0 in all
+the IP number/network fields.  Like this:
+
+0.0.0.0     0.0.0.0     Centr. PLEP 0.0.0.0
+
+For the master unit the "Centr. PLEP" entry needs to be a small subnet spec,
+and could look like this:
+
+1.0.255.0   255.255.255.0   Centr. PLEP 0.0.0.0
+
+Remember that this line must come before the default route, used for the
+internet connection, since the file may not be processed below that line.
+
+
+There are two things which are noteworthy of the last example above:
+
+1:  That network uses addresses which will not be used by internet.
+    This means there can never be any conflict.
+
+2:  You will need to use an IP address of the form 1.0.255.xxx  for any
+    machine to be reached through this subnet entry.  This particularly
+    includes the "PLEP" port of the  'slave'  unit, and it is advisable
+    to use a related number for that on the  'Master'  unit too.
+@endnode
+
+
+@node "Cen_PLEP : cntrl_port interface"
+Cen_PLEP : @{"cntrl_port" LINK "The `cntrl_port' Function"} interface                                    STinG
+@line 1 72 0 0 7
+
+This Cen_PLEP version was developed for STinG 1.20 and will therefore not
+work properly with any of the older kernels. This is the case for all port
+drivers, since the driver structure is changed to include a new function
+used by the kernel to implement the new @{"API" LINK "API"} function '@{"cntrl_port" LINK "The `cntrl_port' Function"}' for safe
+access to port data.
+
+Cen_PLEP currently supports the following @{"cntrl_port" LINK "The `cntrl_port' Function"} opcodes:
+
+CTL_GENERIC_SET_IP      =>  Set IP number of the port
+CTL_GENERIC_GET_IP      =>  Get IP number of the port
+CTL_GENERIC_SET_MTU     =>  Set MTU size of the port
+CTL_GENERIC_GET_MTU     =>  Get MTU size of the port
+CTL_GENERIC_GET_MMTU    =>  Get Max MTU size of the port
+CTL_GENERIC_GET_TYPE    =>  Get port link type of the port
+CTL_GENERIC_GET_STAT    =>  Get port transfer statistics
+CTL_GENERIC_CLR_STAT    =>  Clear port transfer statistics
+
+These functions are very tolerant of input data, so they accept almost any
+values, even if these will not give functional results.  This means it is
+the responsibility of the calling program to avoid nonfunctional values !
+
+Error codes possible:
+
+E_PARAMETER will result if anyone calls the cntrl function in the driver
+without setting up the port pointer like the kernel does.  That will not
+happen if you call the '@{"cntrl_port" LINK "The `cntrl_port' Function"}' @{"API" LINK "API"} function correctly, because then
+the kernel will find the port structure itself. (You use the port name.)
+
+E_PARAMETER will result if CTL_GENERIC_SET_MTU is called with an MTU value
+that is higher than the maximum allowed for the port (8192).
+
+E_FNAVAIL will result if any opcode other than those listed above are used.
+@endnode
+
+
+@node "Cen_PLEP : Development History"
+Cen_PLEP : Development History                                     STinG
+@line 1 72 0 0 7
+
+ @{U}Version@{u}        @{U}Details@{u}
+
+ 1.00       1999 October 10-20
+        First conversion from Cen_PLIP 1.19 achieved, by total
+        rewrite of the interrupt driven state machine.  Even in
+        first attempts this Cen_PLEP driver is both faster and
+        more reliable than Cen_PLIP, thus validating the methods.
 @endnode
 
 
@@ -80,8 +568,13 @@ This module is not available yet for this kernel version.
 ETHER.STX : Heyyya, This is Fast !                                 STinG
 @line 1 72 0 0 7
 
-This module only contains dummy code as yet. I'm working on a module
-supporting LANCE based Ethernet adapters.
+This is an Ethernet driver developed by Peter Rottengatter for the
+'Riebl' board, based on the LANCE chip.
+
+The documentation for it is not yet merged into the main hypertext.
+
+Other Ethernet drivers have been developed by Vassilis Papathanassiou,
+and can be found on his web pages.  (URL in 'Credits and Copyright')
 
 @endnode
 
@@ -94,6 +587,12 @@ This module only contains dummy code as yet. I always wanted to do
 real networking with the Atari's Midi ports, by connecting many
 machines in a ring shaped network. No time to work on it right now,
 though.
+
+Ring shaped Midi networks work anyway, using the SERIAL.STX, but that
+causes a full packet delay for each node in the rine.  A proper ring
+network on the other hand should only give a single byte transfer delay
+for each node in the ring, giving much faster delivery in a multi-node
+ring.  That is why it is still a good idea to make a Midi-ring module.
 
 @endnode
 
@@ -122,8 +621,8 @@ MASQUE.STX : Carnival on the Net                                   STinG
  @{"Installation of Masque" LINK "Masque : Installation"}
  @{"Configuring Masque" LINK "Masque : Configuration"}
 
- @{"Masque tool programs" LINK "Masque tool programs"}
- @{"Masque cntrl_port interface" LINK "Masque cntrl_port interface"}
+ @{"Masque tool programs" LINK "Masque : Tool programs"}
+ @{"Masque cntrl_port interface" LINK "Masque : cntrl_port interface"}
  @{"Masque Development History" LINK "Masque : Development History"}
  @{"Masque Feedback" LINK "Credits and Copyright"}
 @endnode
@@ -146,14 +645,14 @@ normally connected to my TT030.  I also have a Falcon030 and a Mega ST4, none
 of which have a modem.  These computers are connected as a STinG network and
 can all access Internet at the same time, thanks to Masque which is running on
 the TT030.  All normal STiK/STinG clients work well with this setup, including
-CAB, Newsie, PopWatch, etc...
+@{"CAB" LINK "CAB"}, Newsie, PopWatch, etc...
 
 However:
 
 For technical reasons there are a few operations that can not work with the
 current Masquerade methods, but normally those operations can be replaced by
 other means, simply by reconfiguring the client programs.  For example, the
-FTP command "PORT" will not work, but all FTP clients can instead use the
+FTP command "@{"PORT" LINK "The `PORT' Structure"}" will not work, but all FTP clients can instead use the
 FTP command "PASV" instead, and some of them do that by default anyway.
 
 Incoming requests from clients on Internet to servers running in your local
@@ -168,9 +667,6 @@ thus be able to service requests from Internet, as well as local requests.
 @endnode
 
 
-@endnode
-
-
 @node "Masque : Installation"
 Masque : Installation                                              STinG
 @line 1 72 0 0 7
@@ -178,7 +674,7 @@ Masque : Installation                                              STinG
 1:  Copy MASQUE.STX to your STinG STX collection folder on the machine used
     for connecting to the Internet (preferably one with a fast modem port).
 
-2:  Configure masquerading as described in the section  @{"Configuring Masque" LINK "Masque : Configuration"}
+2:  Configure masquerading as described in the section on @{"configuration" LINK "Masque : Configuration"}
 
 That's it...
 @endnode
@@ -309,14 +805,14 @@ NB: An error simple to make is to use STNGPORT.CPX to manually activate
 @endnode
 
 
-@node "Masque tool programs"
-Masque tool programs                                               STinG
+@node "Masque : Tool programs"
+Masque : Tool programs                                             STinG
 @line 1 72 0 0 7
 
 Two extra tool programs are included in the Masque package, and they are:
 
-        MASQLOOK.APP    used to display the true IP a masked connection
-        M_MASTER.APP    used to switch 'master' machine in masquerade
+    MASQLOOK.APP    used to display the true IP a masked connection
+    M_MASTER.APP    used to switch 'master' machine in masquerade
 
 
 MASQLOOK is only useful on the machine where Masqe is active, and it will
@@ -360,28 +856,28 @@ then no specific reply will be sent anyway.
 @endnode
 
 
-@node "Masque cntrl_port interface"
-Masque cntrl_port interface                                        STinG
+@node "Masque : cntrl_port interface"
+Masque : @{"cntrl_port" LINK "The `cntrl_port' Function"} interface                                      STinG
 @line 1 72 0 0 7
 
-STinG now has a new API function to access and control ports and as Masque
+STinG now has a new @{"API" LINK "API"} function to access and control ports and as Masque
 is implemented as a port, its driver does support that new function.  The
-supported 'cntrl_port' opcodes are the following:
+supported '@{"cntrl_port" LINK "The `cntrl_port' Function"}' opcodes are the following:
 
-CTL_GENERIC_SET_IP      =>      Set IP number of Masquerade port
-CTL_GENERIC_GET_IP      =>      Get IP number of Masquerade port
-CTL_GENERIC_SET_MTU     =>      Set MTU size of Masquerade port
-CTL_GENERIC_GET_MTU     =>      Get MTU size of Masquerade port
-CTL_GENERIC_GET_MMTU    =>      Get Max MTU size of Masquerade port
-CTL_GENERIC_GET_TYPE    =>      Get port link type of Masquerade port
-CTL_GENERIC_GET_STAT    =>      Get port transfer statistics
-CTL_GENERIC_CLR_STAT    =>      Clear port transfer statistics
+CTL_GENERIC_SET_IP      =>  Set IP number of Masquerade port
+CTL_GENERIC_GET_IP      =>  Get IP number of Masquerade port
+CTL_GENERIC_SET_MTU     =>  Set MTU size of Masquerade port
+CTL_GENERIC_GET_MTU     =>  Get MTU size of Masquerade port
+CTL_GENERIC_GET_MMTU    =>  Get Max MTU size of Masquerade port
+CTL_GENERIC_GET_TYPE    =>  Get port link type of Masquerade port
+CTL_GENERIC_GET_STAT    =>  Get port transfer statistics
+CTL_GENERIC_CLR_STAT    =>  Clear port transfer statistics
 
-CTL_MASQUE_SET_PORT     =>      Set ptr to masked port struct
-CTL_MASQUE_GET_PORT     =>      Get ptr to masked port struct
-CTL_MASQUE_SET_MASKIP   =>      Set IP address to be used for masking
-CTL_MASQUE_GET_MASKIP   =>      Get IP address to be used for masking
-CTL_MASQUE_GET_REALIP   =>      Get IP address which is being masked
+CTL_MASQUE_SET_PORT     =>  Set ptr to masked port struct
+CTL_MASQUE_GET_PORT     =>  Get ptr to masked port struct
+CTL_MASQUE_SET_MASKIP   =>  Set IP address to be used for masking
+CTL_MASQUE_GET_MASKIP   =>  Get IP address to be used for masking
+CTL_MASQUE_GET_REALIP   =>  Get IP address which is being masked
 
 These functions are very tolerant of input data, so they accept almost any
 values, even if these will not give functional results.  This means it is
@@ -391,7 +887,7 @@ Error codes possible:
 
 E_PARAMETER will result if anyone calls the cntrl function in the driver
 without setting up the port pointer like the kernel does.  That will not
-happen if you call the 'cntrl_port' API function correctly, because then
+happen if you call the '@{"cntrl_port" LINK "The `cntrl_port' Function"}' @{"API" LINK "API"} function correctly, because then
 the kernel will find the port structure itself. (You use the port name.)
 
 E_PARAMETER will result if CTL_GENERIC_SET_MTU is called with an MTU value
@@ -403,7 +899,7 @@ is not active.  Since no masking is done then, no masked IP can exist.
 E_FNAVAIL will result if any opcode other than those listed above are used.
 
 A small utilitily program named MASQLOOK.APP is supplied with the Masque
-driver, which uses the cntrl_port functions to see if Masque is active
+driver, which uses the @{"cntrl_port" LINK "The `cntrl_port' Function"} functions to see if Masque is active
 and which 'real IP' it is then masking.  This can be useful to know when
 you want someone on Internet to access local servers on your LAN machines.
 @endnode
@@ -413,7 +909,7 @@ you want someone on Internet to access local servers on your LAN machines.
 Masque : Development History                                       STinG
 @line 1 72 0 0 7
 
-@{U} Version 1.15   1999.11.03 @{u} Public release: 2000.07.05
+@{U} Version 1.15   1999.11.03  Public release: 2000.07.06 @{u}
 
     This version was released with the STinG 1.26 release package.
     It contains some internal changes, mainly to allow TCP and UDP
@@ -443,8 +939,8 @@ Masque : Development History                                       STinG
 @{U} Version 1.12   1998 September 8 @{u}
 
     Added the new driver structure element 'cntrl' used by the kernel
-    to implement the new 'cntrl_port' API function.  A call dispatcher
-    was also added to support a number of 'cntrl_port' opcodes. This
+    to implement the new '@{"cntrl_port" LINK "The `cntrl_port' Function"}' @{"API" LINK "API"} function.  A call dispatcher
+    was also added to support a number of '@{"cntrl_port" LINK "The `cntrl_port' Function"}' opcodes. This
     is a big change, but an even bigger one is that the source has now
     been converted to DevPac dialect, as has all the support libraries.
     The actual masquerade methods remain unchanged from version 1.11 .
@@ -472,7 +968,7 @@ Masque : Development History                                       STinG
 
 @{U} Version 1.09   1997 October 25 @{u}
 
-    Added module basepage pointer to DRIVER structure.
+    Added module basepage pointer to @{"DRIVER" LINK "DRIVER"} structure.
     This is a new standard defined to ease debugging.
 
 
@@ -563,6 +1059,14 @@ Masque : Development History                                       STinG
 TCP.STX : Transmission Control Protocol                            STinG
 @line 1 72 0 0 7
 
+This module installs all TCP specific functions for the STinG @{"API" LINK "API"},
+thereby replacing the dummy functions which is all that the kernel
+provides for these functions.
+
+Functions in the following two groups are affected:
+
+                    The @{"TCP Manager" LINK "The TCP Manager"}
+                    The @{"Connection Manager" LINK "The Connection Manager"}
 
 @endnode
 
@@ -571,6 +1075,14 @@ TCP.STX : Transmission Control Protocol                            STinG
 UDP.STX : User Datagram Protocol                                   STinG
 @line 1 72 0 0 7
 
+This module installs all UDP specific functions for the STinG @{"API" LINK "API"},
+thereby replacing the dummy functions which is all that the kernel
+provides for these functions.
+
+Functions in the following two groups are affected:
+
+                    The @{"UDP Manager" LINK "The UDP Manager"}
+                    The @{"Connection Manager" LINK "The Connection Manager"}
 
 @endnode
 
@@ -579,7 +1091,7 @@ UDP.STX : User Datagram Protocol                                   STinG
 RESOLVE.STX : The DNS-Resolver                                     STinG
 @line 1 72 0 0 7
 
- Documentation for Resolve.Stx version 1.06
+ Documentation for Resolve.Stx version 1.08
  Created by Ulf Ronald Andersson
 
  @{U}Contents@{u}
@@ -614,7 +1126,7 @@ will also be returned for any commands that fail, regardless of actual causes.
 
 The reason for this is that some clients test for that error code only.  These
 would attempt to use some garbage data if I use another error code, with bombs
-resulting from that attempt.  All successful commands will resolve some  cache
+resulting from that attempt.  All successful commands will @{"resolve" LINK "The `resolve' Function"} some  cache
 entry on completion, to provide a visible indication of the success.  The only
 exceptions are [FIRST] and [NEXT] when used so as to get a nonexistent entry.
 That will naturally return E_CANTRESOLVE, though there was no real failure.
@@ -702,6 +1214,14 @@ Resolver : Development History                                     STinG
 
 Version     Major changes from last version
 -------     -------------------------------
+  1.08      Corrected a misleading string in an error message.
+98.01.19    Revised negative caching of failed inquiries for
+        numerical IP's.  The new method will allow proper
+        resolving at later date when the resulting dummy
+        name has been saved for reuse by a client (hotlists).
+
+  1.07      Added module basepage pointer to @{"LAYER" LINK "LAYER"} structure.
+97.10.25    This is a new standard defined to ease debugging.
 
   1.06      Modified [NEXT] to recognize cache end in user scans
 97.09.24    Fixed bug returning E_NOMEM on RAM error to use E_CANTRESOLVE

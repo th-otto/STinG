@@ -5,17 +5,17 @@
 @lang en
 @endif
 @database "STinG Dokumentation"
-@options "+g -a -i +z -t4 -s"
-@author "Peter Rottengatter"
+@options "+g -a +i +z -t4 -s"
+@author "Peter Rottengatter & Ronald Andersson"
 @help "Credits and Copyright"
-@$VER: sting.hyp 0.11 (18/1/1998)
+@$VER: sting.hyp 1.26 (6/7/2000)
 @subject "Documentation/DFUE"
 @width 75
 
 
 @node "Main" "STinG : ST Internet Next Generation"
 @remark 400x144x2
-@image "pics/titel.img" 12
+@image "pics/title.bmp" 12
 This is the documentation for
 
 
@@ -26,13 +26,13 @@ This is the documentation for
 
 
 the `ST Internet Next Generation', that enables your Atari computer
-to connect to every other computer on the whole world !
+to connect to every other computer in the whole world !
 
 
 
                 Contents :
 
-                    @{"Introduction" LINK "Introduction"}
+                    @{"Introduction to networking" LINK "Introduction"}
                     @{"The TCP/IP philosophy" LINK "The TCP/IP Philosophy"}
                     @{"Configuring STinG" LINK "Configuring STinG"}
                     @{"Dialing Modem Connections" LINK "Modem Connections"}
@@ -76,56 +76,94 @@ write to my @{"e-mail address" LINK "Credits and Copyright"}.
 Credits and Copyright                                              STinG
 @line 1 72 0 0 7
 
+Here is a list of STinG components and the author who created each.
+Further down you can find contact addresses for most of them.
+
 The STinG kernel code is by Peter Rottengatter
 
 Modules :
-   SERIAL.STX  is by Peter Rottengatter
-   PLIP.STX    is by Ronald Andersson
-   MASQUE.STX  is by Ronald Andersson
-   TCP.STX     is by Peter Rottengatter
-   UDP.STX     is by Peter Rottengatter
-   RESOLVE.STX is by Ronald Andersson
+   SERIAL.STX   is by Peter Rottengatter
+   TCP.STX      is by Peter Rottengatter
+   UDP.STX      is by Peter Rottengatter
+   ETHER.STX    is by Peter Rottengatter
+   RESOLVE.STX  is by Ronald Andersson
+   MASQUE.STX   is by Ronald Andersson
+   CEN_PLIP.STX is by Ronald Andersson
+   CEN_PLEP.STX is by Ronald Andersson
 
 Dialer :
    Code           is by Peter Rottengatter
-   Serial Library is by Jan Kriesten
+   Serial Library is by Jan Kriesten (revised by Olivier Booklage)
 
 ALL Control Panel Extensions (CPXs) are by Peter Rottengatter
 Developers-Kit including LogSTinG    is by Peter Rottengatter
 
 
-It's Ronald Andersson whom I owe a lot for helpful discussions and
-excellently detailed bug reports.
+In early 1999 Peter Rottengatter became too busy with his other work
+to be able to devote time for STinG development and support.  It was
+then that I (Ronald Andersson) began to take over partial support and
+development of those STinG components that Peter and I had worked on
+together (mainly the TCP module).
+
+In September 1999  Peter and I agreed that it would be best for STinG
+that I also take over the other components, as well as administration
+of STinG releases,  and coordination of contributions from some other
+programmers.
+
+A group has been formed,  named "STinG Evolution Team",  which as yet
+consists of myself and Vassilis Papathanassiou. This group has access
+to  STinG sources and contributes  improvements which are merged into
+released components by me.
+
+Peter Rottengatter does not take part in this at present, although he
+is naturally welcome back when/if  he has more time available for it.
+But at present this means that you need to direct feedback/questions
+on most STinG components to me, as I'm involved in all recent updates.
 
 
-Comments and inquiries should be directed to the respective author.
-If in doubt, contact
+   Ronald Andersson                             (All current updates)
+   H”ders V„g 7
+   14570 Norsborg
+   Sweden
 
-   Peter Rottengatter
+   Tel. :   +(46) (8) 53184105
+   E-mail : dlanor@@ettnet.se
+   WWW :    http://www.ettnet.se/~dlanor/
+or WWW :    http://dlanor.atari.org/
+or WWW :    http://sting.atari.org/
+
+
+   Vassilis Papathanassiou                 (Some port driver modules)
+   E-mail : papval@@otenet.gr
+   WWW :    http://users.otenet.gr/~papval/
+
+
+   Peter Rottengatter         (Creation and earlier support of STinG)
    Kriegerstrasse 18
    30161 Hannover
    Germany
    Tel. :   +(49) (511) 668759, +(49) (511) 722905
-   E-mail : perot@@pallas.amp.uni-hannover.de
-   WWW :    http://www.stud.uni-hannover.de/~perot
+   E-mail : peter@@rottengatter.de
+   WWW :    http://www.rottengatter.de/
 
 
-   Ronald Andersson
-   Hoeders Vaeg 7
-   14570 Norsborg
-   Sweden
-   Tel. :   +(46) (8) 53184105
-   E-mail : dlanor@@oden.se
-   WWW :    http://www.oden.se/~dlanor
-
-
-   Jan Kriesten
+   Jan Kriesten                             (Serial library creation)
    Wunderburggasse 3
    90403 Nuernberg
    Germany
    E-mail : kriesten@@mailer.uni-marburg.de
 
 
+   Olivier Booklage                         (Serial library revision)
+   E-mail : obooklage@@free.fr
+   WWW :    http://obooklage.free.fr/
+
+Several of the programmers above have produced other STinG related
+software apart from that mentioned above (not part of STinG release).
+For information on such software you should visit their web pages.
+
+The release form as specified by Peter below remains valid:
+-----------------------------------------------------------
 STinG and all it's components are Freeware, nobody is required to pay
 for it. I would appreciate a lot however if you'd just send a postcard
 showing the area where you're living, so that I can see how the places
@@ -139,6 +177,5 @@ wealth :
    Bank :    Kreissparkasse Hannover
              #25050299
    Account : 1172823427
-
 
 @endnode

@@ -82,7 +82,7 @@ typedef struct drv_list {
     int16     cdecl (*ETM_exec) (char *string);
     void      *cfg;
     BASPAG    *sting_basepage;
- } DRV_LIST;
+} DRV_LIST;
 @endnode
 
 
@@ -106,55 +106,57 @@ DRV_LIST  *sting_drivers;
 TPL       *tpl;
 
 
-void  main (void)
-
+int main (void)
 {
-   switch (sting_init()) {
-      case -3 :
+   switch (sting_init())
+   {
+   case -3 :
         puts ("STinG not loaded !");
-        return;
-      case -2 :
+        return 1;
+   case -2 :
         puts ("STinG structures corrupted !");
-        return;
-      case -1 :
+        return 1;
+   case -1 :
         puts ("No transport layer !");
-        return;
-      }
+        return 1;
+   }
+   /* Insert client code here, with access to all client @{"API" LINK "API"} calls */
 
-   /* Your client code, which can make use of all client API calls */
- }
+   return 0;
+}
 
 
-int  sting_init (void)
-
+int sting_init (void)
 {
-   sting_drivers = (DRV_LIST *) Supexec (get_sting_cookie);
+    sting_drivers = (DRV_LIST *) Supexec (get_sting_cookie);
 
-   if (sting_drivers == NULL)
-        return (-3);
-   if (strcmp (sting_drivers->magic, MAGIC) != 0)
-        return (-2);
+    if (sting_drivers == NULL)
+        return -3;
+    if (strcmp (sting_drivers->magic, MAGIC) != 0)
+        return -2;
 
-   tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
+    tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
 
-   if (tpl == (TPL *) NULL)
-        return (-1);
+    if  (tpl == (TPL *) NULL)
+        return -1;
 
-   return (0);
- }
+    return 0;
+}
 
 
-long  get_sting_cookie (void)
-
+long get_sting_cookie (void)
 {
-   long  *work;
+    long  *work;
 
-   for (work = * (long **) 0x5a0L; *work != 0L; work += 2)
-        if (*work == 'STiK')
-             return (*++work);
+    work = * (long **) 0x5a0L;
+    if (work == 0)
+        return 0;
+    for (; *work != 0; work += 2)
+        if  (*work == 'STiK')
+            return *++work;
 
-   return (0L);
- }
+    return 0;
+}
 
 @endnode
 
@@ -194,6 +196,7 @@ Brian W. Kernighan  and  Dennis M. Ritchie
 
 
 @node "The `KRmalloc' Function"
+@symbol ar "KRmalloc"
 @prev "The System Memory Manager"
 The `KRmalloc' Function                                            STinG
 @line 1 72 0 0 7
@@ -218,6 +221,7 @@ Returns the address of the allocated block, or NULL if memory is low.
 
 
 @node "The `KRfree' Function"
+@symbol ar "KRfree"
 The `KRfree' Function                                              STinG
 @line 1 72 0 0 7
 
@@ -237,6 +241,7 @@ not crash the system.
 
 
 @node "The `KRgetfree' Function"
+@symbol ar "KRgetfree"
 The `KRgetfree' Function                                           STinG
 @line 1 72 0 0 7
 
@@ -256,6 +261,7 @@ ternal memory. The parameter determines if the size of the largest block
 
 
 @node "The `KRrealloc' Function"
+@symbol ar "KRrealloc"
 The `KRrealloc' Function                                           STinG
 @line 1 72 0 0 7
 
@@ -298,10 +304,12 @@ These calls are :
     int16  cdecl  @{"TCP_send" LINK "The `TCP_send' Function"} (int16, char *, int16);
     int16  cdecl  @{"TCP_wait_state" LINK "The `TCP_wait_state' Function"} (int16, int16, int16);
     int16  cdecl  @{"TCP_ack_wait" LINK "The `TCP_ack_wait' Function"} (int16, int16);
+    int16  cdecl  @{"TCP_info" LINK "The `TCP_info' Function"} (int16, @{"TCPIB" LINK "The `TCPIB' Structure"} *);
 @endnode
 
 
 @node "The `TCP_open' Function"
+@symbol ar "TCP_open"
 The `TCP_open' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -366,6 +374,12 @@ call @{"CNbyte_count" LINK "The `CNbyte_count' Function"} which will return E_LI
 is in LISTEN mode. Still another option is to check out the info that is
 pointed to by the pointer returned by @{"CNgetinfo" LINK "The `CNgetinfo' Function"}.
 
+
+The above was the STiK compatible way of waiting for a connection to
+be completed.  A better option for STinG-specific code is to directly
+test the TCP state returned by @{"TCP_info" LINK "The `TCP_info' Function"} in a @{"TCPIB" LINK "The `TCPIB' Structure"} structure.
+
+
 Returns a non-negative connection handle or a (negative) error code. The
 error codes can be  E_UNREACHABLE  (there is no route to the destination
 host, or the chain of physical links is interrupted),  E_PARAMETER  (for
@@ -379,24 +393,33 @@ This dummy always returns E_UNREACHABLE.
 
 
 @node "The `TCP_close' Function"
+@symbol ar "TCP_close"
 The `TCP_close' Function                                           STinG
 @line 1 72 0 0 7
 
 
-    int16  cdecl  TCP_close (int16 handle, int16 timeout);
+    int16 cdecl TCP_close (int16 handle, int16 timemode, int16 *result);
 
 
 Function :
    Closes a TCP connection.
 
+This function has been redefined from STinG release 1.20 and onwards,
+but the present implementation remains compatible even at binary level
+with all clients and servers compiled with the older prototype.
 
-The function description is not available yet, since this function might
-see an extension of it's specification soon. Here is the specification
-by Steve Adam as a kludge :
+For programmers that want to simply patch their source to be accepted
+with the new prototype, without using new features:
+
+The change you need to make is simply to add a new argument "NULL" as
+the last argument in the list.  Then all still works as before.
+
+
+The original STiK specification for TCP_close by Steve Adam is:
 
   - Closes a connection.  `handle' is the connection handle.
   - Returns 0 or a negative error code.
-  - timeout is the time in seconds to wait for the connection to close.
+  - timemode is the time in seconds to wait for the connection to close.
     TCP_close() must negotiate the close with the remote host, so
     it can take some time if the net is slow.  Pending data may need
     to be received and discarded before the connection closes cleanly.
@@ -406,6 +429,41 @@ by Steve Adam as a kludge :
   - If the ESC key is pressed during the timeout period, TCP_close()
     returns immediately with a E_USERTIMEOUT error code.
 
+STinG does not allow global use of ESC key, as defined by Steve, but
+apart from that his definition is still valid for those cases where
+'timemode' is a positive value (including zero).  That does mean it
+is valid for all the values that STiK allowed.
+
+
+If 'timemode' is -1 however, this means that the caller wants to let the
+timeout proceed under interrupt control, so that the caller can continue
+to work (in event loops etc) while that connection closes.  The caller
+can still receive a return value, by passing a pointer in 'result'.
+If that is not done, it means that the caller wants no result code.
+For such cases the caller can then forget about that connection.
+
+If a pointer is passed, that will be used by the interrupt routines to
+store a final result code (usually E_NORMAL or E_CNTIMEOUT), either when
+closing negotiation with the other end succeeds, or when a final timeout
+is exceeded (fixed internally at 1000 seconds).
+
+If a former caller, which did pass a pointer this way, decides it does
+not want the value stored after all, then it must inform the interrupt
+code of this.  That is done by making a new TCP_close call for the same
+connection, but this time with a zero 'timemode' value, which will
+cancel the pointer passed earlier.  The function then returns E_NORMAL
+directly, and the caller can forget the connection, although closing
+process still continues, but fully controlled by the interrupt code.
+
+
+It remains legal to read data on connections after closing but not to
+send data and, whenever the close negotiation completes, the handle
+of the connection will be released as will all connection structures.
+From that moment on all attempts to use that connection will return
+E_BADHANDLE, as the connection is no longer even half open.
+Half_open connenction is thus implemented as per RFC specs.
+
+
 Note that only a dummy function is available if TCP.STX is not loaded.
 This dummy always returns E_BADHANDLE.
 
@@ -413,6 +471,7 @@ This dummy always returns E_BADHANDLE.
 
 
 @node "The `TCP_send' Function"
+@symbol ar "TCP_send"
 The `TCP_send' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -442,6 +501,7 @@ This dummy always returns E_BADHANDLE.
 
 
 @node "The `TCP_wait_state' Function"
+@symbol ar "TCP_wait_state"
 The `TCP_wait_state' Function                                      STinG
 @line 1 72 0 0 7
 
@@ -467,6 +527,16 @@ cooperatively multitask while the function is waiting.
 Returns E_NORMAL, or E_BADHANDLE, E_CNTIMEOUT, E_UNREACHABLE, E_CONNECTFAIL,
 E_REFUSE or E_RRESET.
 
+
+Note that for STinG-specific programs this function is now redundant, as
+the @{"TCP_info" LINK "The `TCP_info' Function"} function can return the current TCP state at each call, and
+will then do so without any delay whatsoever. That permits smart clients
+to do other useful work (event loops etc) while awaiting pecific states.
+This makes clients using @{"TCP_info" LINK "The `TCP_info' Function"} better than those using TCP_wait_state,
+by allowing them to do more things in parallel, and also allows a client
+to test for many different states, not just one.
+
+
 Note that only a dummy function is available if TCP.STX is not loaded.
 This dummy always returns E_BADHANDLE.
 
@@ -474,6 +544,7 @@ This dummy always returns E_BADHANDLE.
 
 
 @node "The `TCP_ack_wait' Function"
+@symbol ar "TCP_ack_wait"
 The `TCP_ack_wait' Function                                        STinG
 @line 1 72 0 0 7
 
@@ -496,8 +567,99 @@ cooperatively multitask while the function is waiting.
 Returns E_NORMAL, or E_BADHANDLE, E_CNTIMEOUT, E_UNREACHABLE, E_REFUSE,
 E_CONNECTFAIL or E_RRESET.
 
+
+Note that for STinG-specific programs this function is now redundant, as
+the @{"TCP_info" LINK "The `TCP_info' Function"} function can return the number of unacknowledged sequence
+positions sent on the connection (incl SYN/FIN bits). It will do so with
+no delay whatsoever. That permits smart clients to do other useful work
+(event loops etc) while awaiting acknowledgments for data sent.  This
+will make clients using @{"TCP_info" LINK "The `TCP_info' Function"} better than those using TCP_ack_wait,
+by allowing them to do more things in parallel.
+
+
 Note that only a dummy function is available if TCP.STX is not loaded.
 This dummy always returns E_BADHANDLE.
+
+@endnode
+
+
+@node "The `TCP_info' Function"
+@symbol ar "TCP_info"
+The `TCP_info' Function                                            STinG
+@line 1 72 0 0 7
+
+
+    int16  cdecl  TCP_info (int16 handle, @{"TCPIB" LINK "The `TCPIB' Structure"} *buffer);
+
+
+Function :
+   Read or set special TCP information not available elsewhere.
+
+
+This function was invented to avoid adding new functions to the @{"API" LINK "API"} for
+'odd jobs', which nevertheless are extremely useful to some clients.
+The 'buffer' parameter should be set to a buffer that is owned by the
+caller, and which has space needed for all the data the caller is going
+to request as reply.  It is up to the calling code to allocate the RAM
+of this buffer in whatever way it pleases, and likewise to release it
+again when no longer needed.  Using static RAM arrays for such buffers
+is also legal, and then no special release will be necessary.
+
+One vital use of this function is to switch a connection to DEFER mode.
+That is needed to use the @{"API" LINK "API"} freely from interrupts and TOS function
+dispatchers, which is needed for some special servers and clients.
+
+Unlike @{"CIB" LINK "The `CIB' Structure"} buffers, a @{"TCPIB" LINK "The `TCPIB' Structure"} buffer only receives data from the TCP
+module each time TCP_info is called for that buffer, and according
+to the request data then stored in the first uint32 of it. For more
+details on how to use it, read specification of the @{"TCPIB" LINK "The `TCPIB' Structure"} structure.
+
+@endnode
+
+
+@node "The `TCPIB' Structure"
+@symbol ar "TCPIB"
+The `TCPIB' Structure                                              STinG
+@line 1 72 0 0 7
+
+Structure used by @{"TCP_info" LINK "The `TCP_info' Function"} to fetch or set special TCP info for things
+which the normal @{"API" LINK "API"} functions can not handle. There is also a similar
+structure named @{"UDPIB" LINK "The `UDPIB' Structure"}, documented separately, doing the same for UDP.
+
+typedef struct tcpib
+{   uint32  request;  /* 32 bits requesting various info (following) */
+    uint16  state;    /* current TCP state                           */
+    uint32  unacked;  /* unacked outgoing seq_length (incl SYN/FIN)  */
+    uint32  srtt;     /* smoothed round trip time of connection      */
+}   TCPIB;
+
+Only those info values specified by the 'request' element will be filled
+in with data during a @{"TCP_info" LINK "The `TCP_info' Function"} call.
+
+The four values defined below are bit values for the 'request element.
+For combined requests the sum of the relevant values should be used.
+
+#define TCPI_state      1L  /* request current TCP state             */
+#define TCPI_unacked    2L  /* request length of unacked sequence    */
+#define TCPI_srtt       4L  /* request smoothed round trip time      */
+#define TCPI_defer      8L  /* request switch to DEFER mode          */
+
+Note that TCPI_defer does not specify info to be fetched, but is used to
+switch a connection into DEFER mode.  Such a switch is permanent, so the
+effect will last until the connection has been closed, but of course, it
+does not affect any other connections not switched to this mode.
+
+In DEFER mode no TCP function will loop internally to await any result.
+Instead they will return directly for such cases, and will then return
+the error code E_LOCKED.  That means that no real error has occurred,
+but the function could not be completed right away.  Correct response
+to this is to call again at some later time. For interrupt driven code
+that normally means doing it in some future interrupt event.
+
+The purpose of DEFER mode is to prevent interrupt driven servers from
+locking up the system, and to allow all @{"API" LINK "API"} calls to be made from any
+runtime environment, including both interrupts and GEMDOS dispatcher.
+(The latter is needed for networked filesystem and device drivers.)
 
 @endnode
 
@@ -517,10 +679,12 @@ These calls are :
     int16  cdecl  @{"UDP_open" LINK "The `UDP_open' Function"} (uint32, uint16);
     int16  cdecl  @{"UDP_close" LINK "The `UDP_close' Function"} (int16);
     int16  cdecl  @{"UDP_send" LINK "The `UDP_send' Function"} (int16, char *, int16);
+    int16  cdecl  @{"UDP_info" LINK "The `UDP_info' Function"} (int16, @{"UDPIB" LINK "The `UDPIB' Structure"} *);
 @endnode
 
 
 @node "The `UDP_open' Function"
+@symbol ar "UDP_open"
 The `UDP_open' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -568,6 +732,12 @@ returns immediately.  You need to call @{"CNgetinfo" LINK "The `CNgetinfo' Funct
 returned pointer points to, in order to find out if the endpoint became
 fully specified in the meantime.
 
+
+The above was one STiK compatible way of waiting for a connection to
+be specified.  A better option for STinG-specific code is to directly
+test the UDP pseudo state returned by @{"UDP_info" LINK "The `UDP_info' Function"} in a @{"UDPIB" LINK "The `UDPIB' Structure"} structure.
+
+
 Returns a non-negative connection handle or a (negative) error code. The
 error codes can be  E_UNREACHABLE  (there is no route to the destination
 host or the chain of physical links is interrupted) or E_NOMEM (required
@@ -580,6 +750,7 @@ This dummy always returns E_UNREACHABLE.
 
 
 @node "The `UDP_close' Function"
+@symbol ar "UDP_close"
 The `UDP_close' Function                                           STinG
 @line 1 72 0 0 7
 
@@ -610,6 +781,7 @@ This dummy always returns E_BADHANDLE.
 
 
 @node "The `UDP_send' Function"
+@symbol ar "UDP_send"
 The `UDP_send' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -639,6 +811,87 @@ This dummy always returns E_BADHANDLE.
 @endnode
 
 
+@node "The `UDP_info' Function"
+@symbol ar "UDP_info"
+The `UDP_info' Function                                            STinG
+@line 1 72 0 0 7
+
+
+    int16  cdecl  UDP_info (int16 handle, @{"UDPIB" LINK "The `UDPIB' Structure"} *buffer);
+
+
+Function :
+   Read or set special UDP information not available elsewhere.
+
+
+This function was invented to avoid adding new functions to the @{"API" LINK "API"} for
+'odd jobs', which nevertheless are extremely useful to some clients.
+The 'buffer' parameter should be set to a buffer that is owned by the
+caller, and which has space needed for all the data the caller is going
+to request as reply.  It is up to the calling code to allocate the RAM
+of this buffer in whatever way it pleases, and likewise to release it
+again when no longer needed.  Using static RAM arrays for such buffers
+is also legal, and then no special release will be necessary.
+
+One vital use of this function is to switch a connection to DEFER mode.
+That is needed to use the @{"API" LINK "API"} freely from interrupts and TOS function
+dispatchers, which is needed for some special servers and clients.
+
+Unlike @{"CIB" LINK "The `CIB' Structure"} buffers, a @{"UDPIB" LINK "The `UDPIB' Structure"} buffer only receives data from the UDP
+module each time UDP_info is called for that buffer, and according
+to the request data then stored in the first uint32 of it. For more
+details on how to use it, read specification of the @{"UDPIB" LINK "The `UDPIB' Structure"} structure.
+
+@endnode
+
+
+@node "The `UDPIB' Structure"
+@symbol ar "UDPIB"
+The `UDPIB' Structure                                              STinG
+@line 1 72 0 0 7
+
+Structure used by @{"UDP_info" LINK "The `UDP_info' Function"} to fetch or set special UDP info for things
+which the normal @{"API" LINK "API"} functions can not handle. This roughly corresponds
+to the @{"TCPIB" LINK "The `TCPIB' Structure"} structure and is intended for similar uses for UDP.
+
+typedef struct udpib
+{   uint32  request;  /* 32 bits requesting various info (following) */
+    uint16  state;    /* current UDP pseudo state                    */
+    uint32  reserve1; /* reserved */
+    uint32  reserve2;     /* reserved */
+}   UDPIB;
+
+Only those info values specified by the 'request' element will be filled
+in with data during a @{"UDP_info" LINK "The `UDP_info' Function"} call.
+
+The four values defined below are bit values for the 'request element.
+For combined requests the sum of the relevant values should be used.
+
+#define UDPI_state      1L  /* request current UDP pseudo state      */
+#define UDPI_reserve1   2L  /* reserved */
+#define UDPI_reserve2   4L  /* reserved */
+#define UDPI_defer      8L  /* request switch to DEFER mode          */
+
+Note that UDPI_defer does not specify info to be fetched, but is used to
+switch a connection into DEFER mode.  Such a switch is permanent, so the
+effect will last until the connection has been closed, but of course, it
+does not affect any other connections not switched to this mode.
+
+In DEFER mode no UDP function will loop internally to await any result.
+Instead they will return directly for such cases, and will then return
+the error code E_LOCKED.  That means that no real error has occurred,
+but the function could not be completed right away.  Correct response
+to this is to call again at some later time. For interrupt driven code
+that normally means doing it in some future interrupt event.
+
+The purpose of DEFER mode is to prevent interrupt driven servers from
+locking up the system, and to allow all @{"API" LINK "API"} calls to be made from any
+runtime environment, including both interrupts and GEMDOS dispatcher.
+(The latter is needed for networked filesystem and device drivers.)
+
+@endnode
+
+
 @node "The ICMP Manager"
 The ICMP Manager                                                   STinG
 @line 1 72 0 0 7
@@ -656,6 +909,7 @@ These calls are :
 
 
 @node "The `ICMP_send' Function"
+@symbol ar "ICMP_send"
 The `ICMP_send' Function                                           STinG
 @line 1 72 0 0 7
 
@@ -683,6 +937,7 @@ Returns E_BADDNAME, E_PARAMETER, E_NOMEM or E_NORMAL.
 
 
 @node "The `ICMP_handler' Function"
+@symbol ar "ICMP_handler"
 The `ICMP_handler' Function                                        STinG
 @line 1 72 0 0 7
 
@@ -736,6 +991,7 @@ The `install code' can be
 
 
 @node "The `ICMP_discard' Function"
+@symbol ar "ICMP_discard"
 The `ICMP_discard' Function                                        STinG
 @line 1 72 0 0 7
 
@@ -770,12 +1026,14 @@ These calls are :
     int16  cdecl  @{"CNget_char" LINK "The `CNget_char' Function"} (int16);
     NDB *  cdecl  @{"CNget_NDB" LINK "The `CNget_NDB' Function"} (int16);
     int16  cdecl  @{"CNget_block" LINK "The `CNget_block' Function"} (int16, char *, int16);
-    CIB *  cdecl  @{"CNgetinfo" LINK "The `CNgetinfo' Function"} (int16);
+    @{"CIB" LINK "The `CIB' Structure"} *  cdecl  @{"CNgetinfo" LINK "The `CNgetinfo' Function"} (int16);
     int16  cdecl  @{"CNgets" LINK "The `CNgets' Function"} (int16, uint8 *, int16, uint8);
+    void   cdecl  @{"CNfree_NDB" LINK "The `CNfree_NDB' Function"} (int16, @{"NDB" LINK "NDB"} *);
 @endnode
 
 
 @node "The `CNkick' Function"
+@symbol ar "CNkick"
 The `CNkick' Function                                              STinG
 @line 1 72 0 0 7
 
@@ -809,6 +1067,7 @@ and E_TTLEXCEED are returned.
 
 
 @node "The `CNbyte_count' Function"
+@symbol ar "CNbyte_count"
 The `CNbyte_count' Function                                        STinG
 @line 1 72 0 0 7
 
@@ -837,6 +1096,7 @@ Note : Return values of zero and E_NODATA are equivalent, and not fatal.
 
 
 @node "The `CNget_char' Function"
+@symbol ar "CNget_char"
 The `CNget_char' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -861,6 +1121,7 @@ and E_TTLEXCEED are returned.
 
 
 @node "The `CNget_NDB' Function"
+@symbol ar "CNget_NDB"
 @next "The `CNget_block' Function"
 The `CNget_NDB' Function                                           STinG
 @line 1 72 0 0 7
@@ -906,10 +1167,18 @@ valid bytes (`len') as entries.  The following C code is a guide on how a
 Returns the pointer to the next Network Data Block, or NULL if an error
 occured or no Network Data Blocks are queued.
 
-Note : This function is not capable of returning real error codes.  Since
+Note 1: This function is not capable of returning real error codes. Since
 network errors are reported only once, and cleared by every data transfer
-function (CNget_NDB too),  the @{"CIB" LINK "The `CIB' Structure"} status entry for this connection  (see
-@{"CNgetinfo" LINK "The `CNgetinfo' Function"}) should be checked whenever CNget_NDB is used.
+function (CNget_NDB too),  the @{"CIB" LINK "The `CIB' Structure"} status entry for this connection (see
+@{"CNgetinfo" LINK "The `CNgetinfo' Function"}) should be checked whenever CNget_NDB is used and returns NULL.
+
+Note 2: An exception exists to the above rule of CNget_NDB not returning
+normal error codes. Under special circumstances (see @{"TCP_info" LINK "The `TCP_info' Function"} and UDPinfo
+comments on DEFER mode) it can return (@{"NDB" LINK "NDB"} *)E_LOCKED, and should then be
+tested by some typecast expression.  In fact it is a good idea under most
+conditions to test returned pointers by  "if ((int32) p) < 0)"  to detect
+illegal pointer values (that may sometimes represent error codes).  Doing
+so improves safety and possibly improves compatibility with future usage.
 
 @endnode
 
@@ -917,16 +1186,18 @@ function (CNget_NDB too),  the @{"CIB" LINK "The `CIB' Structure"} status entry 
 @pnode "NDB"
 The  Network Data Block :
 
-typedef struct ndb {
+typedef struct ndb
+{
     char        *ptr;     /* Ptr. to base of block     */
     char        *ndata;   /* Ptr. to data to deliver   */
     uint16      len;      /* Length of remaining data  */
     struct ndb  *next;    /* Next NDB in chain or NULL */
- } NDB;
+} NDB;
 @endnode
 
 
 @node "The `CNget_block' Function"
+@symbol ar "CNget_block"
 @prev "The `CNget_NDB' Function"
 The `CNget_block' Function                                         STinG
 @line 1 72 0 0 7
@@ -956,11 +1227,12 @@ by Steve Adam as a kludge :
 
 
 @node "The `CNgetinfo' Function"
+@symbol ar "CNgetinfo"
 The `CNgetinfo' Function                                           STinG
 @line 1 72 0 0 7
 
 
-    CIB *  cdecl  CNgetinfo (int16 handle);
+    @{"CIB" LINK "The `CIB' Structure"} *  cdecl  CNgetinfo (int16 handle);
 
 
 Function :
@@ -974,7 +1246,7 @@ IP addresses of both endpoints and port numbers, etc. This information is
 is not possible to alter the connection's behaviour by writing to the @{"CIB" LINK "The `CIB' Structure"}
 structure.
 
-The CIB structure must not be accessed anymore, after the associated con-
+The @{"CIB" LINK "The `CIB' Structure"} structure must not be accessed anymore, after the associated con-
 nection has been fully closed using the appropriate call.
 
 Returns either the pointer to the @{"CIB" LINK "The `CIB' Structure"}, or NULL in case of an error.
@@ -983,6 +1255,7 @@ Returns either the pointer to the @{"CIB" LINK "The `CIB' Structure"}, or NULL i
 
 
 @node "The `CIB' Structure"
+@symbol ar "CIB"
 @next "The `CNgets' Function"
 The `CIB' Structure                                                STinG
 @line 1 72 0 0 7
@@ -990,24 +1263,29 @@ The `CIB' Structure                                                STinG
 The Connection Information Block structure. A pointer to this structure
 is returned by @{"CNgetinfo" LINK "The `CNgetinfo' Function"}.
 
-typedef  struct cib {
+typedef struct cib
+{
     uint16   protocol;     /* TCP or UDP or ...               */
     @{"CAB" LINK "CAB"}      address;      /* Adress information              */
     uint16   status;       /* @{"Net status" LINK "Net Status"}. 0 means normal      */
- } CIB;
+} CIB;
 
 @endnode
 
 
 @pnode "CAB"
-The  Connection Addressing Block :
+CAB is a word with two different meanings to STinG.
 
-typedef  struct cab {
+'Cool Atari Browser' is the most popular web browser,
+but in C programs CAB means Connection Addressing Block :
+
+typedef  struct cab
+{
     uint16   lport;      /* Local  machine port        */
     uint16   rport;      /* Remote machine port        */
     uint32   rhost;      /* Remote machine IP address  */
     uint32   lhost;      /* Local  machine IP address  */
- } CAB;
+} CAB;
 @endnode
 
 
@@ -1027,6 +1305,7 @@ The meaning of the code value depends on the ICMP type.
 
 
 @node "The `CNgets' Function"
+@symbol ar "CNgets"
 @prev "The `CIB' Structure"
 The `CNgets' Function                                              STinG
 @line 1 72 0 0 7
@@ -1068,6 +1347,24 @@ and E_TTLEXCEED codes are returned.
 @endnode
 
 
+@node "The `CNfree_NDB' Function"
+@symbol ar "CNfree_NDB"
+The `CNfree_NDB' Function                                          STinG
+@line 1 72 0 0 7
+
+    void cdecl CNfree_NDB(int16 cn, @{"NDB" LINK "NDB"} *block);
+
+Function :
+    Frees an @{"NDB" LINK "NDB"} from the queue of connection cn.
+    For use with @{"CNget_NDB" LINK "The `CNget_NDB' Function"} call
+
+NB: This function only exists in STinG kernel 1.26 and later.
+    For older kernels you must use "@{"KRfree" LINK "The `KRfree' Function"}(block->ptr); KRfree(block);"
+    instead, and that method will work fine for newer kernels too.
+
+@endnode
+
+
 @node "The Port Manager"
 The Port Manager                                                   STinG
 @line 1 72 0 0 7
@@ -1086,6 +1383,7 @@ These calls are :
 
 
 @node "The `on_port' Function"
+@symbol ar "on_port"
 The `on_port' Function                                             STinG
 @line 1 72 0 0 7
 
@@ -1115,6 +1413,7 @@ returned.
 
 
 @node "The `off_port' Function"
+@symbol ar "off_port"
 The `off_port' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -1140,6 +1439,7 @@ entry is followed to a @{"DRIVER" LINK "DRIVER"} structure, which contains a poi
 
 
 @node "The `query_port' Function"
+@symbol ar "query_port"
 The `query_port' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -1165,6 +1465,7 @@ entry is returned by query_port.
 
 
 @node "The `cntrl_port' Function"
+@symbol ar "cntrl_port"
 @next "The Miscellaneous Manager"
 The `cntrl_port' Function                                          STinG
 @line 1 72 0 0 7
@@ -1240,11 +1541,12 @@ error codes are possible. See the driver @{"documentation" LINK "STinG Modules"}
 @pnode "PNTA"
 The  Port Name Transfer Area.
 
-typedef  struct pnta {
+typedef struct pnta
+{
     PORT    *opaque;         /* Ignore this entry      */
     int16   name_len;        /* Length of name buffer  */
     char    *port_name;      /* Buffer address         */
- } PNTA;
+} PNTA;
 @endnode
 
 
@@ -1269,6 +1571,7 @@ These calls are :
 
 
 @node "The `get_err_text' Function"
+@symbol ar "get_err_text"
 The `get_err_text' Function                                        STinG
 @line 1 72 0 0 7
 
@@ -1332,11 +1635,13 @@ by the @{"get_err_text" LINK "The `get_err_text' Function"} function.
   -29    E_TTLEXCEED        "Time To Live exceeded, discarded."
   -30    E_PARAMETER        "Problem with a parameter."
   -31    E_BIGBUF           "Input buffer is too small for data."
+  -32    E_FNAVAIL          "Function is not available."
 
 @endnode
 
 
 @node "The `getvstr' Function"
+@symbol ar "getvstr"
 The `getvstr' Function                                             STinG
 @line 1 72 0 0 7
 
@@ -1372,6 +1677,7 @@ See also @{"setvstr" LINK "The `setvstr' Function"}()
 
 
 @node "The `setvstr' Function"
+@symbol ar "setvstr"
 The `setvstr' Function                                             STinG
 @line 1 72 0 0 7
 
@@ -1401,6 +1707,7 @@ pointer to the text "10.11.12.13".
 
 
 @node "The `set_flag' Function"
+@symbol ar "set_flag"
 The `set_flag' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -1427,6 +1734,7 @@ See also @{"clear_flag" LINK "The `clear_flag' Function"}()
 
 
 @node "The `clear_flag' Function"
+@symbol ar "clear_flag"
 The `clear_flag' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -1446,6 +1754,7 @@ should be called after the lock has been succesfully requested via the
 
 
 @node "The `resolve' Function"
+@symbol ar "resolve"
 The `resolve' Function                                             STinG
 @line 1 72 0 0 7
 
@@ -1471,7 +1780,7 @@ If `real' is not NULL, a pointer is filled into `*real'. When the string
 it points to has been evaluated, it's space must be freed by using the
 @{"KRfree" LINK "The `KRfree' Function"} call :
 
-     KRfree (*real);
+     KRfree(*real);
 
 Returns the number of dotted quad IP addresses filled in, or an error.
 
@@ -1485,20 +1794,35 @@ This dummy always returns E_CANTRESOLVE.
 The Dummy Manager                                                  STinG
 @line 1 72 0 0 7
 
-The Dummy Manager contains all the functions that are obsolete in STinG.
-They're merely remnants from old STiK, and they are implemented in STinG
-for compatibility reasons only.
+The Dummy Manager contains all the functions that are obsolete in STinG,
+but were necessary in old STiK versions, plus some new functions of STiK2
+that have no real motivation in STinG, which has other methods available.
+They are defined in STinG for compatibility reasons only, to avoid bombs
+when a client program uses them.  In STinG they have no real effects.
 
-These calls are :
-
+The old STiK calls are :
     int16  cdecl  @{"carrier_detect" LINK "The `carrier_detect' Function"} (void);
     void   cdecl  @{"housekeep" LINK "The `housekeep' Function"} (void);
     void   cdecl  @{"ser_disable" LINK "The `ser_disable' Function"} (void);
     void   cdecl  @{"ser_enable" LINK "The `ser_enable' Function"} (void);
+
+Those four old STiK calls will never return any error codes.
+
+The new STiK2 calls are :
+    int16  cdecl  @{"RAW_open" LINK "The `RAW_open' Function"} (uint32);
+    int16  cdecl  @{"RAW_close" LINK "The `RAW_close' Function"} (int16);
+    int16  cdecl  @{"RAW_out" LINK "The `RAW_out' Function"} (int16, void *, int16, uint32);
+    int16  cdecl  @{"CN_setopt" LINK "The `CN_setopt' Function"} (int16, int16, const void *, int16);
+    int16  cdecl  @{"CN_getopt" LINK "The `CN_getopt' Function"} (int16, int16, void *, int16 *);
+
+These five STiK2 calls will return E_NOROUTINE, as they do not perform
+any of the work that they would do under STiK2.  (This may change later)
+
 @endnode
 
 
 @node "The `carrier_detect' Function"
+@symbol ar "carrier_detect"
 The `carrier_detect' Function                                      STinG
 @line 1 72 0 0 7
 
@@ -1521,6 +1845,7 @@ Returns always +1, meaning carrier is always on.
 
 
 @node "The `housekeep' Function"
+@symbol ar "housekeep"
 The `housekeep' Function                                           STinG
 @line 1 72 0 0 7
 
@@ -1542,6 +1867,7 @@ to time.
 
 
 @node "The `ser_disable' Function"
+@symbol ar "ser_disable"
 The `ser_disable' Function                                         STinG
 @line 1 72 0 0 7
 
@@ -1563,6 +1889,7 @@ using @{"ser_enable" LINK "The `ser_enable' Function"}.
 
 
 @node "The `ser_enable' Function"
+@symbol ar "ser_enable"
 The `ser_enable' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -1578,6 +1905,136 @@ This function is only required because some old clients written for STiK
 might use it. In STinG it exists only for compatibility. In STiK this call
 was used to enable the port again after is has been desactivated via the
 @{"ser_disable" LINK "The `ser_disable' Function"} call.
+
+@endnode
+
+
+@node "The `RAW_open' Function"
+@symbol ar "RAW_open"
+The `RAW_open' function                                            STinG
+@line 1 72 0 0 7
+
+    int16     cdecl RAW_open(uint32 rhost)
+
+Under STiK2 this will:
+  - Open a RAW connection with rhost on port 0.
+       The port is not really integral for the type of functions
+          where the RAW protocol is used.
+  - Returns connection handle or error code.
+  - RAW is used primarily by utilities such as Ping or Traceroute.
+
+Under STinG it will simply return E_NOROUTINE (this may change later),
+as STinG has other means for support of ICMP and other IP protocols.
+
+@endnode
+
+
+@node "The `RAW_close' Function"
+@symbol ar "RAW_close"
+The `RAW_close' function                                           STinG
+@line 1 72 0 0 7
+
+    int16     cdecl RAW_close(int16 cn)
+
+Under STiK2 this will:
+  - Close the RAW connection cn.
+  - Frees the connection handle and any blocks pending in the
+    input queue, returns immediately.
+
+Under STinG it will simply return E_NOROUTINE (this may change later),
+as STinG has other means for support of ICMP and other IP protocols.
+
+@endnode
+
+
+@node "The `RAW_out' Function"
+@symbol ar "RAW_out"
+The `RAW_out' function                                             STinG
+@line 1 72 0 0 7
+
+    int16 cdecl RAW_out(int16 cn, void *data, int16 dlen, uint32 dest)
+
+Under STiK2 this will:
+  - Send dlen bytes from data to the connection cn.
+  - Return E_NORMAL or an error code.
+
+  - @{"CN_setopt" LINK "The `CN_setopt' Function"} modifies how this command is used
+
+        If the client app sets the options on this Connection,
+  to  IP_HDRINCL, then STiK assumes that the client has already
+  completely constructed a packet for transmission and will simply
+  pass it onto the router for transmision.
+
+        If the IP_HDRINCL option is off the STiK will finish making
+  the packet for the client.  Using the default TTL and TOS for the
+  packet and will give it the Protocol of RAW.
+
+  - Note this second option needs a complete packet to be set up and
+     pointed to by data and the full length passed in dlen.  You are
+     responsible for completely setting up the packet just as the
+     stack would.  Failure to do so could lead to failure of the
+     packet at the remote end.
+
+Under STinG it will simply return E_NOROUTINE (this may change later),
+as STinG has other means for support of ICMP and other IP protocols.
+
+@endnode
+
+
+@node "The `CN_setopt' Function"
+@symbol ar "CN_setopt"
+The `CN_setopt' function                                           STinG
+@line 1 72 0 0 7
+
+    int16 cdecl
+    CN_setopt(int16 cn, int16 opt_id, const void *optval, int16 optlen);
+
+Under STinG it will simply return E_NOROUTINE (this may change later),
+but under STiK2 it is defined as follows:
+
+   - opt_id chooses the option to set:
+    IP_HDRINCL
+    IP_TOS
+    IP_TTL
+
+   - Sets the value of a socket option for connection cn.
+   - Client passes the connection in cn, the option in opt_id,
+   - and an appropriate pointer in optval.  The optlen argument,
+   - length of the option value, is not necessary. It is there so
+   - that there is one less line to edit when porting BSD code.
+   - In the case of IP_HDRINCL it is not necessary to pass optval.
+
+   - Returns:
+      - E_NORMAL if it could process the option
+      - E_PARAMETER if the option is currently unsupported
+      - E_BADHANDLE if the connection doesn't exist
+@endnode
+
+
+@node "The `CN_getopt' Function"
+@symbol ar "CN_getopt"
+The `CN_getopt' function                                           STinG
+@line 1 72 0 0 7
+
+    int16 cdecl
+    CN_getopt(int16 cn, int16 optname, void *optval, int16 *optlen);
+
+Under STinG it will simply return E_NOROUTINE (this may change later),
+but under STiK2 it is defined as follows:
+
+   - opt_id chooses the option to get:
+    IP_HDRINCL
+    IP_TOS
+    IP_TTL
+
+   - Client passes the connection in cn, the option in opt_id,
+   - and an appropriate pointer in optval and optlen. The latter,
+   - length of the option value, is not necessary (so use NULL).
+
+   - Returns:
+      - E_NORMAL if it could process the option
+      - E_PARAMETER if the option is currently unsupported
+      - E_BADHANDLE if the connection doesn't exist
 
 @endnode
 
@@ -1603,6 +2060,7 @@ These calls are :
 
 
 @node "The `set_dgram_ttl' Function"
+@symbol ar "set_dgram_ttl"
 The `set_dgram_ttl' Function                                       STinG
 @line 1 72 0 0 7
 
@@ -1623,6 +2081,7 @@ of the time-to-live timeout for the specified datagram by the kernel.
 
 
 @node "The `check_dgram_ttl' Function"
+@symbol ar "check_dgram_ttl"
 The `check_dgram_ttl' Function                                     STinG
 @line 1 72 0 0 7
 
@@ -1649,6 +2108,7 @@ Returns either E_NORMAL or E_TTLEXCEED.
 
 
 @node "The `set_sysvars' Function"
+@symbol ar "set_sysvars"
 The `set_sysvars' Function                                         STinG
 @line 1 72 0 0 7
 
@@ -1677,6 +2137,7 @@ while the lower word contains the former setting of the call delay.
 
 
 @node "The `query_chains' Function"
+@symbol ar "query_chains"
 The `query_chains' Function                                        STinG
 @line 1 72 0 0 7
 
@@ -1698,6 +2159,7 @@ NULL pointer may be passed.
 
 
 @node "The `PORT' Structure"
+@symbol ar "PORT"
 @next "The `protect_exec' Function"
 The `PORT' Structure                                               STinG
 @line 1 72 0 0 7
@@ -1705,7 +2167,8 @@ The `PORT' Structure                                               STinG
 The port structure. One of these is provided by a hardware driver for each
 port the driver handles.
 
-typedef  struct port_desc {
+typedef struct port_desc
+{
     char      *name;            /* Name of port                          */
     int16     type;             /* Type of port                          */
     int16     active;           /* Flag for port active or not           */
@@ -1721,28 +2184,31 @@ typedef  struct port_desc {
     int16     stat_dropped;     /* Statistics of dropped datagrams       */
     struct drv_desc   *driver;  /* Driver program to handle this port    */
     struct port_desc  *next;    /* Next port in port chain               */
- } PORT;
+} PORT;
 
 @endnode
 
 
 @pnode "DRIVER"
-typedef  struct drv_desc {
+typedef struct drv_desc
+{
     int16  cdecl  (* set_state) (PORT *, int16);  /* Init */
-    void   cdecl  (* send) (PORT *);              /* Send */
-    void   cdecl  (* receive) (PORT *);        /* Receive */
+    int16  cdecl  (* cntrl) (PORT *, uint32, int16);
+    void   cdecl  (* send) (PORT *);         /* Send      */
+    void   cdecl  (* receive) (PORT *);      /* Receive   */
     char             *name;     /* Name of driver         */
     char             *version;  /* Version as "xx.yy"     */
     uint16           date;      /* Compile date           */
     char             *author;   /* Name of programmer     */
     struct drv_desc  *next;     /* Next driver in chain   */
     BASPAG           *basepage; /* Basepage of module     */
- } DRIVER;
+} DRIVER;
 @endnode
 
 
 @pnode "LAYER"
-typedef  struct lay_desc {
+typedef struct lay_desc
+{
     char             *name;        /* Name of layer       */
     char             *version;     /* Version as xx.yy    */
     uint32           flags;        /* Private data        */
@@ -1751,11 +2217,12 @@ typedef  struct lay_desc {
     int16            stat_dropped; /* Statistics          */
     struct lay_desc  *next;        /* Next layer in chain */
     BASPAG           *basepage;    /* Basepage of module  */
- } LAYER;
+} LAYER;
 @endnode
 
 
 @node "The `protect_exec' Function"
+@symbol ar "protect_exec"
 @prev "The `PORT' Structure"
 The `protect_exec' Function                                        STinG
 @line 1 72 0 0 7
@@ -1804,6 +2271,7 @@ These calls are :
 
 
 @node "The `IP_send' Function"
+@symbol ar "IP_send"
 @next "The `IP_HDR' Structure"
 The `IP_send' Function                                             STinG
 @line 1 72 0 0 7
@@ -1846,7 +2314,8 @@ Returns either E_NORMAL or E_NOMEM or E_UNREACHABLE.
 
 
 @pnode "IP_DGRAM"
-typedef  struct ip_packet {
+typedef struct ip_packet
+{
     IP_HDR    hdr;             /* Header of IP packet     */
     void      *options;        /* Options data block      */
     int16     opt_length;      /* Length of options       */
@@ -1856,11 +2325,12 @@ typedef  struct ip_packet {
     uint32    ip_gateway;      /* Gateway for forwarding  */
     struct port_desc  *recvd;  /* Receiving port          */
     struct ip_packet  *next;   /* Next IP packet in queue */
- } IP_DGRAM;
+} IP_DGRAM;
 @endnode
 
 
 @node "The `IP_HDR' Structure"
+@symbol ar "IP_HDR"
 @prev "The `IP_send' Function"
 The `IP_HDR' Structure                                             STinG
 @line 1 72 0 0 7
@@ -1868,7 +2338,8 @@ The `IP_HDR' Structure                                             STinG
 The IP header structure. This structure is a part of the internal IP
 packet @{"representation" LINK "IP_DGRAM"}.
 
-typedef  struct ip_header {
+typedef struct ip_header
+{
     unsigned  version   : 4;    /* IP Version                            */
     unsigned  hd_len    : 4;    /* Internet Header Length                */
     unsigned  tos       : 8;    /* Type of Service                       */
@@ -1883,12 +2354,13 @@ typedef  struct ip_header {
     uint16    hdr_chksum;       /* Header checksum                       */
     uint32    ip_src;           /* Source IP address                     */
     uint32    ip_dest;          /* Destination IP address                */
- } IP_HDR;
+} IP_HDR;
 
 @endnode
 
 
 @node "The `IP_fetch' Function"
+@symbol ar "IP_fetch"
 The `IP_fetch' Function                                            STinG
 @line 1 72 0 0 7
 
@@ -1910,6 +2382,7 @@ call after use.
 
 
 @node "The `IP_handler' Function"
+@symbol ar "IP_handler"
 The `IP_handler' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -1965,6 +2438,7 @@ The `install code' can be
 
 
 @node "The `IP_discard' Function"
+@symbol ar "IP_discard"
 The `IP_discard' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -2011,6 +2485,7 @@ These calls are :
 
 
 @node "The `PRTCL_announce' Function"
+@symbol ar "PRTCL_announce"
 The `PRTCL_announce' Function                                      STinG
 @line 1 72 0 0 7
 
@@ -2036,6 +2511,7 @@ returned value is TRUE, the module should refrain of installing itself.
 
 
 @node "The `PRTCL_get_parameters' Function"
+@symbol ar "PRTCL_get_parameters"
 The `PRTCL_get_parameters' Function                                STinG
 @line 1 72 0 0 7
 
@@ -2064,6 +2540,7 @@ Returns either E_NORMAL or E_UNREACHABLE.
 
 
 @node "The `PRTCL_request' Function"
+@symbol ar "PRTCL_request"
 The `PRTCL_request' Function                                       STinG
 @line 1 72 0 0 7
 
@@ -2107,6 +2584,7 @@ PRTCL_request returns a new handle, or -1 if an error occurred.
 
 
 @node "The `PRTCL_release' Function"
+@symbol ar "PRTCL_release"
 The `PRTCL_release' Function                                       STinG
 @line 1 72 0 0 7
 
@@ -2133,6 +2611,7 @@ calling @{"PRTCL_request" LINK "The `PRTCL_request' Function"}.
 
 
 @node "The `PRTCL_lookup' Function"
+@symbol ar "PRTCL_lookup"
 @next "The Timing Manager"
 The `PRTCL_lookup' Function                                        STinG
 @line 1 72 0 0 7
@@ -2169,17 +2648,18 @@ the handle does not exist or belongs to a different module.
 
 
 @pnode "CN_FUNCS"
-typedef  struct cn_funcs {
+typedef struct cn_funcs
+{
     int16  cdecl  (* CNkick) (void *cn);
     int16  cdecl  (* CNbyte_count) (void *cn);
     int16  cdecl  (* CNget_char) (void *cn);
     NDB *  cdecl  (* CNget_NDB) (void *cn);
     int16  cdecl  (* CNget_block) (void *cn, void *buf,
-                       int16 len);
+                                   int16 len);
     CIB *  cdecl  (* CNgetinfo) (void *cn);
     int16  cdecl  (* CNgets) (void *cn, char *buf,
-                       int16 len, char delim);
- } CN_FUNCS;
+                              int16 len, char delim);
+} CN_FUNCS;
 @endnode
 
 
@@ -2202,6 +2682,7 @@ These calls are :
 
 
 @node "The `TIMER_call' Function"
+@symbol ar "TIMER_call"
 The `TIMER_call' Function                                          STinG
 @line 1 72 0 0 7
 
@@ -2250,6 +2731,7 @@ The `install code' can be
 
 
 @node "The `TIMER_now' Function"
+@symbol ar "TIMER_now"
 The `TIMER_now' Function                                           STinG
 @line 1 72 0 0 7
 
@@ -2270,6 +2752,7 @@ from zero (inclusive) to 86,400,000 (exclusive).
 
 
 @node "The `TIMER_elapsed' Function"
+@symbol ar "TIMER_elapsed"
 The `TIMER_elapsed' Function                                       STinG
 @line 1 72 0 0 7
 
@@ -2314,6 +2797,7 @@ These calls are :
 
 
 @node "The `load_routing_table' Function"
+@symbol ar "load_routing_table"
 @next "The Routing Table"
 The `load_routing_table' Function                                  STinG
 @line 1 72 0 0 7
@@ -2404,6 +2888,7 @@ of the point to point connection at SERIAL2.
 
 
 @node "The `get_route_entry' Function"
+@symbol ar "get_route_entry"
 The `get_route_entry' Function                                     STinG
 @line 1 72 0 0 7
 
@@ -2427,6 +2912,7 @@ Returns the current number of entries, or -1 if `index' is out of range.
 
 
 @node "The `set_route_entry' Function"
+@symbol ar "set_route_entry"
 The `set_route_entry' Function                                     STinG
 @line 1 72 0 0 7
 

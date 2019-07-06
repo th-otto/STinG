@@ -169,7 +169,7 @@ machine STinG is running on.
 
 
 @remark 312x429x2
-@limage "pics/concept.img" 15
+@limage "pics/concept.bmp" 15
 
 
 In the lower part you see an outer annulus which contains the names of the
@@ -199,12 +199,12 @@ generation and evaluation, and the protocol multiplexer.
 On top of this, but still interwoven with the @{"IP" LINK "Internet Protocol (IP)"} layer, is @{"ICMP" LINK "Internet Control Message Protocol (ICMP)"}, the inter-
 net control facility. For each of them a programming interface is provided.
 Some miscellaneous services are provided by the kernel too, like memory
-handling (KRmalloc), semaphores (set_flag, clear_flag), and some functions
+handling (@{"KRmalloc" LINK "The `KRmalloc' Function"}), semaphores (@{"set_flag" LINK "The `set_flag' Function"}, @{"clear_flag" LINK "The `clear_flag' Function"}), and some functions
 for port control. The broken line encircles all parts with are located in-
 side the STinG kernel.
 
 On top of the IP part you will find the high level protocols @{"TCP" LINK "Transmission Control Protocol (TCP)"}, @{"UDP" LINK "User Datagram Protocol (UDP)"}, and
-the DNS resolve facility as separate modules to be loaded after the kernel
+the DNS @{"resolve" LINK "The `resolve' Function"} facility as separate modules to be loaded after the kernel
 has initialized itself. Other protocols can be added in principle by just
 providing appropriate *.STX files.
 

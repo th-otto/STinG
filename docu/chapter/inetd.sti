@@ -3,7 +3,6 @@
 The Internet Super Server                                          STinG
 @line 1 72 0 0 7
 
-@remark 288x384x2
-@limage "pics/iss_main.img" 16
+@limage "pics/iss_main.bmp" 16
 
 @endnode

@@ -352,11 +352,14 @@ Question #15                                                       STinG
 
 Q: Most applications, like Antmail or FracIRC work, but CAB doesn't.
 
-A: CAB does Internet traffic via a separate module, i.e. CAB.OVL which is
-     written by Dan Ackerman. To put this module to work with STinG, you
-     must use a rather recent version. After it's loaded by CAB, you can
-     look up it's version number in the CAB/About dialog. For STinG, use
-     V.25 or later.
+A: CAB does Internet traffic via a separate module, named CAB.OVL which
+     needs to be stored in a subfolder of the @{"CAB" LINK "CAB"} package named MODULES.
+     Two different programmers produce @{"CAB" LINK "CAB"}.OVL versions that work with
+     STinG.  They are Dan Ackerman and Olivier Booklage.  More info on
+     them and links to the current homepages can be found on the STinG
+     home page. You should make sure of having a modern version, so as
+     soon as you have one that works, visit the STinG page and follow
+     the links to download the latest versions.
 
 @endnode
 
