@@ -13,7 +13,10 @@
 
 #include <aes.h>
 #include <vdi.h>
+#define Fcntl int_Fcntl
 #include <tos.h>
+#undef Fcntl
+long     Fcntl( int f, long arg, int cmd );
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,7 +52,7 @@ int       num_ports = 0, which = 0;
 #include "serial.rsh"
 #pragma  warn  .rpt
 
-#include <xctrl.h>
+#include "xctrl.h"
 
 
 #define  FALSE       0
@@ -85,6 +88,31 @@ int       num_ports = 0, which = 0;
 #define  TIOCM_DTR      0x0002
 #define  TIOCM_RTS      0x0004
 #define  TIOCM_CTS      0x0008
+
+#define TIOCFLUSH	(('T'<< 8) | 8)
+#define TIOCIBAUD	(('T'<< 8) | 18)
+#define TIOCOBAUD	(('T'<< 8) | 19)
+#define TIOCCBRK	(('T'<< 8) | 20)
+#define TIOCSBRK	(('T'<< 8) | 21)
+#define TIOCGFLAGS	(('T'<< 8) | 22)
+#define TIOCSFLAGS	(('T'<< 8) | 23)
+#define TIOCOUTQ	(('T'<< 8) | 24)
+#define TIOCSETP	(('T'<< 8) | 25)
+#define TIOCHPCL	(('T'<< 8) | 26)
+#define TIOCCAR		(('T'<< 8) | 27)
+#define TIOCNCAR	(('T'<< 8) | 28)
+#define TIOCWONLINE	(('T'<< 8) | 29)
+#define TIOCSFLAGSB	(('T'<< 8) | 30)
+#define TIOCGSTATE	(('T'<< 8) | 31)
+#define TIOCSSTATEB	(('T'<< 8) | 32)
+#define TIOCGVMIN	(('T'<< 8) | 33)
+#define TIOCSVMIN	(('T'<< 8) | 34)
+
+/* HSMODEM sersoftst.txt.  */
+# define TIOCBUFFER	(('T'<< 8) | 128)	/* HSMODEM sersoftst.txt */
+# define TIOCCTLMAP	(('T'<< 8) | 129)
+# define TIOCCTLGET	(('T'<< 8) | 130)
+# define TIOCCTLSET	(('T'<< 8) | 131)
 
 
 long        cdecl  do_Rsconf (MAPTAB *ent, int spd, int flw, int u, int r, int t, int s);
@@ -477,7 +505,7 @@ long  do_break()
         handle = (int) Fopen (file, 0x40 | FO_RW);
 
    if (handle >= 0) {
-        if (Fcntl (handle, 0L, (glbl_par) ? TIOCSBRK : TIOCCBRK) == 0)
+        if ((short)Fcntl (handle, 0L, (glbl_par) ? TIOCSBRK : TIOCCBRK) == 0)
              ok_flag = TRUE;
         Fclose (handle);
       }
@@ -576,7 +604,7 @@ void  set_rsc_data()
         if (handle >= 0) {
              do {
                   last = --spd;
-                  if (Fcntl (handle, (long) & spd, TIOCIBAUD) == EINVFN)
+                  if ((short)Fcntl (handle, (long) & spd, TIOCIBAUD) == -32)
                        break;
                   speed[index] = & speedbuf[10 * index];
                   sprintf (speed[index++], "  %6ld ", spd);
@@ -680,7 +708,7 @@ long  get_port_data()
         ok_flag = FALSE;
 
         if (handle >= 0) {
-             if (Fcntl (handle, (long) & flags, TIOCGFLAGS) == 0) {
+             if ((short)Fcntl (handle, (long) & flags, TIOCGFLAGS) == 0) {
                   ok_flag = TRUE;
                   port->flow  = flags & TF_FLOW;       port->parity = flags & TF_PARITY;
                   port->stops = flags & TF_STOPBITS;   port->bits   = flags & TF_CHARBITS;
@@ -700,7 +728,7 @@ long  get_port_data()
         ok_flag = FALSE;
 
         if (handle >= 0) {
-             if (Fcntl (handle, (long) mapping, TIOCCTLMAP) == 0) {
+             if ((short)Fcntl (handle, (long) mapping, TIOCCTLMAP) == 0) {
                   ok_flag = TRUE;
                   port->flags |= (mapping[0] & TIOCM_DTR) ? F_DTR : 0;
                 }
@@ -731,7 +759,7 @@ long  get_port_data()
         if (port->flags & F_DTR) {
              spd = TIOCM_DTR;
              if (handle >= 0) {
-                  if (Fcntl (handle, (long) & spd, TIOCCTLGET) == 0) {
+                  if ((short)Fcntl (handle, (long) & spd, TIOCCTLGET) == 0) {
                        ok_flag = TRUE;
                        spd &= TIOCM_DTR;
                      }
@@ -747,7 +775,7 @@ long  get_port_data()
         mapping[0] = mapping[1] = mapping[2] = mapping[3] = -1L;
 
         if (handle >= 0) {
-             if (Fcntl (handle, (long) mapping, TIOCBUFFER) == 0)
+             if ((short)Fcntl (handle, (long) mapping, TIOCBUFFER) == 0)
                   ok_flag = TRUE;
            }
         if (ok_flag == FALSE) {
@@ -897,8 +925,8 @@ int       alert;
         ok_flag = FALSE;
         if (handle != -1) {
              longs[0] = longs[1] = port->speed;
-             if (Fcntl (handle, (long) & longs[0], TIOCIBAUD) == 0 &&
-                 Fcntl (handle, (long) & longs[1], TIOCOBAUD) == 0)
+             if ((short)Fcntl (handle, (long) & longs[0], TIOCIBAUD) == 0 &&
+                 (short)Fcntl (handle, (long) & longs[1], TIOCOBAUD) == 0)
                   ok_flag = TRUE;
            }
         if (! ok_flag) {
@@ -943,7 +971,7 @@ int       alert;
       }
 
    if (handle != -1) {
-        if (Fcntl (handle, (long) & flags, TIOCSFLAGS) < 0) {
+        if ((short)Fcntl (handle, (long) & flags, TIOCSFLAGS) < 0) {
              sprintf (error, "[1][  Can\'t set protocol due to|  illegal combination of|  Bits/Parity"
                              "/Stopbits/FlowCTRL   |  for \"%s\" !][ Hmm ]", port->name);
              if (alert)
@@ -960,7 +988,7 @@ int       alert;
         if (handle != -1) {
              longs[0] = TIOCM_DTR;
              longs[1] = port->dtr;
-             if (Fcntl (handle, (long) longs, TIOCCTLSET) == 0)
+             if ((short)Fcntl (handle, (long) longs, TIOCCTLSET) == 0)
                   ok_flag = TRUE;
            }
         if (! ok_flag) {
@@ -982,7 +1010,7 @@ int       alert;
         if (handle != -1) {
              longs[1] = longs[2] = longs[3] = -1L;
              longs[0] = port->recve;
-             if (Fcntl (handle, (long) longs, TIOCBUFFER) == 0)
+             if ((short)Fcntl (handle, (long) longs, TIOCBUFFER) == 0)
                   if (longs[0] != -1L)
                        ok_flag |= 1;
            }
@@ -994,7 +1022,7 @@ int       alert;
         if (handle != -1) {
              longs[0] = longs[1] = longs[2] = -1L;
              longs[3] = port->send;
-             if (Fcntl (handle, (long) longs, TIOCBUFFER) == 0)
+             if ((short)Fcntl (handle, (long) longs, TIOCBUFFER) == 0)
                   if (longs[3] != -1L)
                        ok_flag |= 2;
            }
@@ -1198,10 +1226,10 @@ void  bconmap_init()
    if (Bconmap (0) != 0L) {
         for (port = 0; port < num_ports; port++) {
              if (array[port].bios_no == 6) {
-                  array[port].port_driver.Rsconf = my_Rsconf;
+                  array[port].port_driver.Rsconf = (void *)my_Rsconf;
                   array[port].port_driver.iorec = Iorec(0);
-                  array[port].port_driver.Bconstat = my_Bconstat;
-                  array[port].port_driver.Bconin = my_Bconin;
+                  array[port].port_driver.Bconstat = (void *)my_Bconstat;
+                  array[port].port_driver.Bconin = (void *)my_Bconin;
                 }
            }
         return;
