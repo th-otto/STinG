@@ -1,6 +1,6 @@
 Flags: bootinit
 Id: 'STNG'
-Version: 0x0108
+Version: 0x0109
 IconText: 'Networking'
 Icon: 00 00 01 00 00 00 02 00 1f 80 04 00 10 80 08 00 10 80 70 00 1f bf f0 00 00 00 70 fc 3f c0 80 84 3f c7 00 84 00 07 fe fc 00 07 00 00 00 08 01 fe 00 10 01 fe 00 20 00 00 00 43 c0 00 00 82 40 00 01 03 cf c0 02 02 48 40 04 03 c8 40 38 02 4f c0 3f fa 40 00 38 02 5f e0 40 03 df e0 80 00 00 00
 IconColor: 0x1000
