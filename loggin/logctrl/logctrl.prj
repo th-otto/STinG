@@ -16,7 +16,7 @@ logctrl.prg
 =
 cstart0.o
 
-logctrl.c (ctrl.h)
+logctrl.c (logctrl.h)
 
 pcgemlib.lib
 pctoslib.lib

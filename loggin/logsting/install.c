@@ -34,7 +34,7 @@ static STX *sting_stx;
 static STX my_stx;
 static int cache_len;
 static char path[256];
-static char const version[] = "1.6";
+static char const version[] = "1.7";
 static char *cache;
 
 #ifdef __GNUC__

@@ -2,7 +2,7 @@
 /*                                                                   */
 /*     LogSTinG : Control Program                                    */
 /*                                                                   */
-/*      Version 1.2                         from 17. March 1997      */
+/*      Version 1.3                         from 15. June 2000       */
 /*                                                                   */
 /*********************************************************************/
 
@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ctrl.h"
+#include "logctrl.h"
 
 #include "transprt.h"
 
@@ -22,9 +22,6 @@
 #define  FALSE       0
 #define  TRUE        1
 #endif
-
-#define  CLI_NUM     37
-#define  MOD_NUM     20
 
 #define  CROS_CHK    (OS_CROSSED | OS_CHECKED)
 #define  SWAP(a,b)   (zwsp = (a), (a) = (b), (b) = zwsp)
@@ -59,14 +56,17 @@ static _WORD const cli_array[] = {
 	C_USEND, C_CKICK, C_CBCNT, C_CGCHAR, C_CGNDB, C_CGBLK, C_HSKEEP,
 	C_RSLV, C_SERDIS, C_SEREN, C_SETFLG, C_CLRFLG, C_CGINFO, C_ONPRT,
 	C_OFFPRT, C_STVSTR, C_QUPRT, C_CGS, C_ISEND, C_IHNDLR, C_IDSCRD,
-	C_TINFO, C_CTLPRT
+	C_TINFO, C_CTLPRT, C_UINFO
 };
+#define  CLI_NUM     ((int)(sizeof(cli_array)/sizeof(cli_array[0])))
+
 
 static _WORD const mod_array[] = {
 	M_SETTTL, M_CHKTTL, M_LDROUT, M_SETSYS, M_QUCHNS, M_IPSEND, M_IPFTCH,
 	M_IPHAND, M_IPDISC, M_PANNOU, M_PGTPAR, M_PREQU, M_PRELEA, M_PLOOK,
 	M_TCALL, M_TNOW, M_TELAPS, M_EXEC, M_GTROUT, M_STROUT
 };
+#define  MOD_NUM     ((int)(sizeof(mod_array)/sizeof(mod_array[0])))
 
 static _WORD cli_num = CLI_NUM;
 static _WORD mod_num = MOD_NUM;
@@ -524,9 +524,9 @@ int main(void)
 
 	graf_mouse(ARROW, NULL);
 
-	if (rsrc_load("ctrl.rsc") == 0)
+	if (rsrc_load("logctrl.rsc") == 0)
 	{
-		form_alert(1, "[1][ |  Couldn't locate CTRL.RSC !  ][ Ooops ]");
+		form_alert(1, "[1][ | Couldn't locate LOGCTRL.RSC ! ][ Ooops ]");
 		appl_exit();
 		return 1;
 	}

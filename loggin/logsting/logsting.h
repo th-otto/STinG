@@ -19,7 +19,7 @@ typedef struct logstruc
 	char *path;
 } LOGSTRUC;
 
-#define  CLI_NUM    37
+#define  CLI_NUM    38
 #define  MOD_NUM    20
 
 

@@ -20,8 +20,17 @@
 static DRV_HDR *cdecl(*old_get_dftab) (const char *drv_name);
 
 static char const tcp_state[][12] = {
-	"TCLOSED", "TLISTEN", "TSYN_SENT", "TSYN_RECV", "TESTABLISH", "TFIN_WAIT1",
-	"TFIN_WAIT2", "TCLOSE_WAIT", "TCLOSING", "TLAST_ACK", "TTIME_WAIT"
+	"TCLOSED",
+	"TLISTEN",
+	"TSYN_SENT",
+	"TSYN_RECV",
+	"TESTABLISH",
+	"TFIN_WAIT1",
+	"TFIN_WAIT2",
+	"TCLOSE_WAIT",
+	"TCLOSING",
+	"TLAST_ACK",
+	"TTIME_WAIT"
 };
 
 static char func_code[] = "Driver \'%\', Code \'%\'";
@@ -300,14 +309,15 @@ static int16 cdecl my_TCP_info(int16 connec, TCPIB *tcpib)
 				write_parameter("Information_Block", UINT32, &tcpib, "");
 		}
 	}
+	tcpib->request |= TCPI_state;
 	ret_val = TCP_info(connec, tcpib);
 
 	if (cli_flags[35] && generic[1])
 	{
 		write_parameter("returns", INT16, &ret_val, get_error(ret_val));
-		if (ret_val == 0)
+		/* if (ret_val == 0) */
 		{
-			write_parameter("State", INT16, &tcpib->state, /* 0 <= tcpib->state && */ tcpib->state <= 10 ? tcp_state[tcpib->state] : "");
+			write_parameter("State", INT16, &tcpib->state, tcpib->state <= 10 ? tcp_state[tcpib->state] : "");
 		}
 	}
 
@@ -401,6 +411,34 @@ static int16 cdecl my_UDP_send(int16 connec, const void *buffer, int16 length)
 
 	--offset;
 
+	return ret_val;
+}
+
+
+static int16 cdecl my_UDP_info(int16 handle, UDPIB *buffer)
+{
+	int16 ret_val;
+
+	offset++;
+
+	if (cli_flags[37])
+	{
+		write_function("UDP_info");
+		if (generic[1])
+		{
+			write_parameter("Connection", INT16, &handle, "");
+			if (generic[2])
+				write_parameter("Information_Block", UINT32, &buffer, "");
+		}
+	}
+	buffer->request |= UDPI_state; /* WTF: modifying clients request here */
+	ret_val = UDP_info(handle, buffer);
+	if (cli_flags[35] && generic[1]) /* BUG: should be 37 */
+	{
+		write_parameter("returns", INT16, &ret_val, get_error(ret_val));
+		write_parameter("State", INT16, &buffer->state, ""); /* BUG: should be UINT16 */
+	}
+	--offset;
 	return ret_val;
 }
 
@@ -1612,6 +1650,7 @@ void install_api(TPL *sting_tpl, STX *sting_stx, DRV_LIST *sting_drivers)
 	sting_tpl->UDP_open = my_UDP_open;
 	sting_tpl->UDP_close = my_UDP_close;
 	sting_tpl->UDP_send = my_UDP_send;
+	sting_tpl->UDP_info = my_UDP_info;
 	sting_tpl->ICMP_send = my_ICMP_send;
 	sting_tpl->ICMP_handler = my_ICMP_handler;
 	sting_tpl->ICMP_discard = my_ICMP_discard;

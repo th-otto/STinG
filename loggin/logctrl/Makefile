@@ -15,4 +15,4 @@ logctrl.prg: $(OBJS)
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/dev-kit/logsting
-	cp -a logctrl.prg ctrl.rsc $(RELEASE_DIR)/dev-kit/logsting
+	cp -a logctrl.prg logctrl.rsc $(RELEASE_DIR)/dev-kit/logsting

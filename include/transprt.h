@@ -28,7 +28,7 @@
  *   Data types used throughout STinG.
  */
 
-typedef          char    int8;        /*   Signed  8 bit (char)             */
+typedef   signed char    int8;        /*   Signed  8 bit (char)             */
 typedef unsigned char   uint8;        /* Unsigned  8 bit (byte, octet)      */
 typedef          short  int16;        /*   Signed 16 bit (int)              */
 typedef unsigned short uint16;        /* Unsigned 16 bit (word)             */

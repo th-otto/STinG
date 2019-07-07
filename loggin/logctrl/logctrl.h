@@ -1,11 +1,11 @@
 /*
- * resource set indices for ctrl
+ * resource set indices for logctrl
  *
  * created by ORCS 2.16
  */
 
 /*
- * Number of Strings:        160
+ * Number of Strings:        162
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 0
@@ -13,20 +13,20 @@
  * Number of Tedinfos:       3
  * Number of Free Strings:   0
  * Number of Free Images:    0
- * Number of Objects:        242
+ * Number of Objects:        245
  * Number of Trees:          3
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          7312
+ * Total file size:          7396
  */
 
 #undef RSC_NAME
 #ifndef __ALCYON__
-#define RSC_NAME "ctrl"
+#define RSC_NAME "logctrl"
 #endif
 #undef RSC_ID
-#ifdef ctrl
-#define RSC_ID ctrl
+#ifdef logctrl
+#define RSC_ID logctrl
 #else
 #define RSC_ID 0
 #endif
@@ -35,7 +35,7 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 160
+#define NUM_STRINGS 162
 #define NUM_FRSTR 0
 #define NUM_UD 0
 #define NUM_IMAGES 0
@@ -44,7 +44,7 @@
 #define NUM_IB 0
 #define NUM_CIB 0
 #define NUM_TI 3
-#define NUM_OBS 242
+#define NUM_OBS 245
 #define NUM_TREE 3
 #endif
 
@@ -78,38 +78,39 @@
 #define C_UOPEN   23 /* BUTTON in tree CLI_API */
 #define C_UCLOSE  26 /* BUTTON in tree CLI_API */
 #define C_USEND   29 /* BUTTON in tree CLI_API */
-#define C_ISEND   33 /* BUTTON in tree CLI_API */
-#define C_IHNDLR  36 /* BUTTON in tree CLI_API */
-#define C_IDSCRD  39 /* BUTTON in tree CLI_API */
-#define C_CGNDB   43 /* BUTTON in tree CLI_API */
-#define C_CGBLK   46 /* BUTTON in tree CLI_API */
-#define C_CGCHAR  49 /* BUTTON in tree CLI_API */
-#define C_CGS     52 /* BUTTON in tree CLI_API */
-#define C_CBCNT   55 /* BUTTON in tree CLI_API */
-#define C_CGINFO  58 /* BUTTON in tree CLI_API */
-#define C_CKICK   61 /* BUTTON in tree CLI_API */
-#define C_KMALL   65 /* BUTTON in tree CLI_API */
-#define C_KREALL  68 /* BUTTON in tree CLI_API */
-#define C_KFREE   71 /* BUTTON in tree CLI_API */
-#define C_KGETFR  74 /* BUTTON in tree CLI_API */
-#define C_GTVSTR  78 /* BUTTON in tree CLI_API */
-#define C_STVSTR  81 /* BUTTON in tree CLI_API */
-#define C_ONPRT   85 /* BUTTON in tree CLI_API */
-#define C_OFFPRT  88 /* BUTTON in tree CLI_API */
-#define C_QUPRT   91 /* BUTTON in tree CLI_API */
-#define C_CTLPRT  94 /* BUTTON in tree CLI_API */
-#define C_RSLV    97 /* BUTTON in tree CLI_API */
-#define C_SETFLG 101 /* BUTTON in tree CLI_API */
-#define C_CLRFLG 104 /* BUTTON in tree CLI_API */
-#define C_ERRTXT 107 /* BUTTON in tree CLI_API */
-#define C_HSKEEP 111 /* BUTTON in tree CLI_API */
-#define C_CARDET 114 /* BUTTON in tree CLI_API */
-#define C_SEREN  117 /* BUTTON in tree CLI_API */
-#define C_SERDIS 120 /* BUTTON in tree CLI_API */
-#define C_ALL    127 /* BUTTON in tree CLI_API */
-#define C_NONE   128 /* BUTTON in tree CLI_API */
-#define C_OK     129 /* BUTTON in tree CLI_API */
-#define C_CANCEL 130 /* BUTTON in tree CLI_API */
+#define C_UINFO   32 /* BUTTON in tree CLI_API */
+#define C_ISEND   36 /* BUTTON in tree CLI_API */
+#define C_IHNDLR  39 /* BUTTON in tree CLI_API */
+#define C_IDSCRD  42 /* BUTTON in tree CLI_API */
+#define C_CGNDB   46 /* BUTTON in tree CLI_API */
+#define C_CGBLK   49 /* BUTTON in tree CLI_API */
+#define C_CGCHAR  52 /* BUTTON in tree CLI_API */
+#define C_CGS     55 /* BUTTON in tree CLI_API */
+#define C_CBCNT   58 /* BUTTON in tree CLI_API */
+#define C_CGINFO  61 /* BUTTON in tree CLI_API */
+#define C_CKICK   64 /* BUTTON in tree CLI_API */
+#define C_KMALL   68 /* BUTTON in tree CLI_API */
+#define C_KREALL  71 /* BUTTON in tree CLI_API */
+#define C_KFREE   74 /* BUTTON in tree CLI_API */
+#define C_KGETFR  77 /* BUTTON in tree CLI_API */
+#define C_GTVSTR  81 /* BUTTON in tree CLI_API */
+#define C_STVSTR  84 /* BUTTON in tree CLI_API */
+#define C_ONPRT   88 /* BUTTON in tree CLI_API */
+#define C_OFFPRT  91 /* BUTTON in tree CLI_API */
+#define C_QUPRT   94 /* BUTTON in tree CLI_API */
+#define C_CTLPRT  97 /* BUTTON in tree CLI_API */
+#define C_RSLV   100 /* BUTTON in tree CLI_API */
+#define C_SETFLG 104 /* BUTTON in tree CLI_API */
+#define C_CLRFLG 107 /* BUTTON in tree CLI_API */
+#define C_ERRTXT 110 /* BUTTON in tree CLI_API */
+#define C_HSKEEP 114 /* BUTTON in tree CLI_API */
+#define C_CARDET 117 /* BUTTON in tree CLI_API */
+#define C_SEREN  120 /* BUTTON in tree CLI_API */
+#define C_SERDIS 123 /* BUTTON in tree CLI_API */
+#define C_ALL    130 /* BUTTON in tree CLI_API */
+#define C_NONE   131 /* BUTTON in tree CLI_API */
+#define C_OK     132 /* BUTTON in tree CLI_API */
+#define C_CANCEL 133 /* BUTTON in tree CLI_API */
 
 #define MOD_API    2 /* form/dialog */
 #define M_IPSEND   4 /* BUTTON in tree MOD_API */
@@ -148,7 +149,7 @@
 #    define _WORD short
 #  endif
 #endif
-extern _WORD ctrl_rsc_load(_WORD wchar, _WORD hchar);
-extern _WORD ctrl_rsc_gaddr(_WORD type, _WORD idx, void *gaddr);
-extern _WORD ctrl_rsc_free(void);
+extern _WORD logctrl_rsc_load(_WORD wchar, _WORD hchar);
+extern _WORD logctrl_rsc_gaddr(_WORD type, _WORD idx, void *gaddr);
+extern _WORD logctrl_rsc_free(void);
 #endif
