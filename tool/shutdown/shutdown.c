@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : Shutdown Tool                                         */
@@ -130,14 +129,14 @@ long  remove_mem()
    LAYER     *layer, *next_layer;
    BASPAG    *sting, **process, *old_proc;
    CONFIG    *conf;
-   OSHEADER  *oshdr = * (OSHEADER **) 0x4f2L;
+   SYSHDR  *oshdr = * (SYSHDR **) 0x4f2L;
 
    disable_interrupts();
 
    if (oshdr->os_version >= 0x0102)
-        process = oshdr->p_run;
+        process = oshdr->_run;
      else
-        process = (BASPAG **) (((oshdr->os_conf >> 1) == 4) ? 0x873cL : 0x602cL);
+        process = (BASPAG **) ((((unsigned short)oshdr->os_palmode >> 1) == 4) ? 0x873cL : 0x602cL);
 
    old_proc = *process;
 

@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : Save-IP Network Tool                                  */
@@ -13,6 +12,8 @@
 #include <tos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #include "transprt.h"
 #include "port.h"
@@ -27,11 +28,14 @@ STX         *stx;
 
 char  *path, port_name[32] = "";
 
-char  arguments[] = "[1][ |  Two arguments : File and port   ][ Ok ]";
-char  not_there[] = "[1][ |  STinG is not loaded or enabled !   ][ Hmmm ]";
-char  corrupted[] = "[1][ |  STinG structures corrupted !   ][ Oooops ]";
-char  no_open[]   = "[1][ |  Can't create file \'IP.INF\' !   ][ Shit ]";
+char  arguments[] = "[1][ | Use 2 args: file + port][ Ok ]";
+char  not_there[] = "[1][ | STinG not loaded and active!][ Hmmm ]";
+char  corrupted[] = "[1][ | STinG structures corrupted !][ Oooops ]";
+char  no_stik[] = "[1][ | You need STinG, not STiK !][ Oooops ]";
+char  no_open[] = "[1][ | Can't create file 'IP.INF' !][ Shit ]";
 
+
+void terminate(const char *alert);
 
 
 void main (argc, argv)
@@ -45,8 +49,7 @@ char  *argv[];
    appl_init();
 
    if (argc < 3) {
-        form_alert (1, arguments);
-        return;
+        terminate (arguments);
       }
 
    path = argv[1];
@@ -59,21 +62,27 @@ char  *argv[];
    sting_drivers = (DRV_LIST *) Supexec (get_sting_cookie);
 
    if (sting_drivers == 0L) {
-        form_alert (1, not_there);
-        return;
+        terminate (not_there);
       }
    if (strcmp (sting_drivers->magic, MAGIC) != 0) {
-        form_alert (1, corrupted);
-        return;
+        terminate (corrupted);
       }
 
    stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
 
-   if (stx != (STX *) NULL)   do_some_work();
+   if (stx == NULL)
+   	  terminate(no_stik);
+   do_some_work();
 
    appl_exit();
  }
 
+void terminate(const char *alert)
+{
+   form_alert(1, alert);
+   appl_exit();
+   exit(-1);
+}
 
 long  get_sting_cookie()
 
@@ -98,7 +107,7 @@ void  do_some_work()
    char    *name, ip_addr[20];
 
    if (path[1] == ':') {
-        Dsetdrv (path[0] - 'A');   path = & path[2];
+        Dsetdrv (toupper(path[0]) - 'A');   path = & path[2];
       }
 
    name = path;

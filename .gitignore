@@ -1,6 +1,7 @@
 *.ttp
 *.prg
 *.app
+*.gtp
 *.o
 *.cpx
 aaa.cfg
