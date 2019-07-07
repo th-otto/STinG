@@ -410,11 +410,13 @@ TCPIB  *tcpib;
                   write_parameter ("Information_Block", UINT32, & tcpib, "");
            }
       }
+   tcpib->request = TCPI_state; /* WTF: modifying clients request here */
    ret_val = TCP_info (connec, tcpib);
 
    if (cli_flags[35] && generic[1]) {
         write_parameter ("returns", INT16, & ret_val, get_error (ret_val));
-        if (ret_val == 0) {
+        /* if (ret_val == 0) */
+        {
              write_parameter ("State", INT16, & tcpib->state, 
                      (0 <= tcpib->state && tcpib->state <= 10) ? tcp_state[tcpib->state] : "");
            }
@@ -517,6 +519,34 @@ void   *buffer;
 
    return (ret_val);
  }
+
+
+int16 cdecl my_UDP_info(int16 handle, UDPIB *buffer)
+{
+	int16  ret_val;
+	
+	offset++;
+
+	if (cli_flags[37])
+	{
+		write_function("UDP_info");
+		if (generic[1])
+		{
+			write_parameter("Connection", INT16, &handle, "");
+			if (generic[2])
+				write_parameter("Information_Block", UINT32, &buffer, "");
+		}
+	}
+	buffer->request = UDPI_state; /* WTF: modifying clients request here */
+	ret_val = UDP_info(handle, buffer);
+	if (cli_flags[35] && generic[1]) /* BUG: should be 37 */
+	{
+		write_parameter("returns", INT16, &ret_val, get_error(ret_val));
+		write_parameter("State", INT16, &buffer->state, ""); /* BUG: should be UINT16 */
+	}
+	--offset;
+	return ret_val;
+}
 
 
 int16  cdecl  my_ICMP_send (rem_host, type, code, data, length)

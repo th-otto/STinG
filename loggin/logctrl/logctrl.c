@@ -1,9 +1,8 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     LogSTinG : Control Program                                    */
 /*                                                                   */
-/*      Version 1.2                         from 17. March 1997      */
+/*      Version 1.3                         from 15. June 2000       */
 /*                                                                   */
 /*********************************************************************/
 
@@ -22,7 +21,7 @@
 #define  FALSE       0
 #define  TRUE        1
 
-#define  CLI_NUM     37
+#define  CLI_NUM     38
 #define  MOD_NUM     20
 
 #define  CROS_CHK    (CROSSED | CHECKED)
@@ -64,7 +63,7 @@ int   cli_array[] = { C_KMALL,  C_KFREE,  C_KGETFR, C_KREALL, C_ERRTXT, C_GTVSTR
                       C_USEND,  C_CKICK,  C_CBCNT,  C_CGCHAR, C_CGNDB,  C_CGBLK,  C_HSKEEP, 
                       C_RSLV,   C_SERDIS, C_SEREN,  C_SETFLG, C_CLRFLG, C_CGINFO, C_ONPRT, 
                       C_OFFPRT, C_STVSTR, C_QUPRT,  C_CGS,    C_ISEND,  C_IHNDLR, C_IDSCRD,
-                      C_TINFO,  C_CTLPRT
+                      C_TINFO,  C_CTLPRT, C_UINFO
             };
 int   mod_array[] = { M_SETTTL, M_CHKTTL, M_LDROUT, M_SETSYS, M_QUCHNS, M_IPSEND, M_IPFTCH, 
                       M_IPHAND, M_IPDISC, M_PANNOU, M_PGTPAR, M_PREQU,  M_PRELEA, M_PLOOK,

@@ -28,7 +28,7 @@
 #define  STRING     6
 #define  IP_ADDR    7
 
-#define  CLI_NUM    37
+#define  CLI_NUM    38
 #define  MOD_NUM    20
 
 
@@ -55,6 +55,7 @@ int16      cdecl  my_TCP_info (int16 connec, TCPIB *tcpib);
 int16      cdecl  my_UDP_open (uint32 rem_host, uint16 rem_port);
 int16      cdecl  my_UDP_close (int16 connec);
 int16      cdecl  my_UDP_send (int16 connec, void *buffer, int16 length);
+int16      cdecl  my_UDP_info (int16 handle, UDPIB *buffer);
 int16      cdecl  my_ICMP_send (uint32 rem_host, uint8 type, uint8 code, void *data, uint16 length);
 int16      cdecl  my_ICMP_handler (int16 cdecl (* handler) (IP_DGRAM *), int16 code);
 void       cdecl  my_ICMP_discard (IP_DGRAM *dgram);
@@ -121,7 +122,7 @@ DRV_HDR   *cdecl  (*old_get_dftab) (char *drv_name);
 LOGSTRUC  log_this;
 int       offset = -1, cache_len;
 char      generic[7], cli_flags[CLI_NUM], mod_flags[MOD_NUM], path[256];
-char      version[] = "1.6", *cache;
+char      version[] = "1.7", *cache;
 
 char  type_txt[][9] = { "(uint8)", "(int8)", "(uint16)", "(int16)", "(uint32)",
                         "(int32)", "(string)", "(IP)"   };
@@ -231,6 +232,7 @@ void  install()
    sting_tpl->UDP_open       = my_UDP_open;
    sting_tpl->UDP_close      = my_UDP_close;
    sting_tpl->UDP_send       = my_UDP_send;
+   sting_tpl->UDP_info       = my_UDP_info;
    sting_tpl->ICMP_send      = my_ICMP_send;
    sting_tpl->ICMP_handler   = my_ICMP_handler;
    sting_tpl->ICMP_discard   = my_ICMP_discard;
@@ -423,6 +425,11 @@ void  *value;
         sprintf (val_str, "%u ($%x)", (uint16) number, (uint16) number);
         break;
       case INT8 :
+        /*
+         * BUG: int8 is defined as char,
+         * and project is compiled with default unsigned char,
+         * so this is actually same as UINT8
+         */
         sprintf (val_str, "%d", (int16) * ((int8 *) value));
         break;
       case UINT16 :
