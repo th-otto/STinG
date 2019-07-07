@@ -18,6 +18,6 @@ all::
 
 
 clean distclean::
-	$(RM) *.o *.prg *.pdb *.app *.tos *.ttp
+	$(RM) *.o *.prg *.pdb *.app *.tos *.ttp *.gtp
 
 release::

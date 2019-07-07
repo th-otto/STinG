@@ -2,6 +2,7 @@
 *.prg
 *.app
 *.tos
+*.gtp
 *.o
 *.cpx
 aaa.cfg

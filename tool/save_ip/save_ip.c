@@ -12,6 +12,7 @@
 #include <tos.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -19,16 +20,16 @@
 
 
 
-static DRV_LIST *sting_drivers;
 STX *stx;
 
 static char *path;
 static char port_name[32];
 
-static char const arguments[] = "[1][ |  Two arguments : File and port   ][ Ok ]";
-static char const not_there[] = "[1][ |  STinG is not loaded or enabled !   ][ Hmmm ]";
-static char const corrupted[] = "[1][ |  STinG structures corrupted !   ][ Oooops ]";
-static char const no_open[] = "[1][ |  Can't create file \'IP.INF\' !   ][ Shit ]";
+static char const arguments[] = "[1][ | Use 2 args: file + port][ Ok ]";
+static char const not_there[] = "[1][ | STinG not loaded and active!][ Hmmm ]";
+static char const corrupted[] = "[1][ | STinG structures corrupted !][ Oooops ]";
+static char const no_stik[] = "[1][ | You need STinG, not STiK !][ Oooops ]";
+static char const no_open[] = "[1][ | Can't create file 'IP.INF' !][ Shit ]";
 
 
 
@@ -43,7 +44,7 @@ static long get_sting_cookie(void)
 		if (*work == STIK_COOKIE_MAGIC)
 			return (*++work);
 
-	return (0L);
+	return 0;
 }
 
 
@@ -57,7 +58,7 @@ static void do_some_work(void)
 
 	if (path[1] == ':')
 	{
-		Dsetdrv(path[0] - 'A');
+		Dsetdrv(toupper(path[0]) - 'A');
 		path = &path[2];
 	}
 
@@ -95,15 +96,23 @@ static void do_some_work(void)
 }
 
 
+static void do_alert(const char *alert)
+{
+	form_alert(1, alert);
+	appl_exit();
+}
+
+
 int main(int argc, char **argv)
 {
+	DRV_LIST *sting_drivers;
 	int count;
 
 	appl_init();
 
 	if (argc < 3)
 	{
-		form_alert(1, arguments);
+		do_alert(arguments);
 		return 1;
 	}
 
@@ -120,19 +129,24 @@ int main(int argc, char **argv)
 
 	if (sting_drivers == 0L)
 	{
-		form_alert(1, not_there);
+		do_alert(not_there);
 		return 1;
 	}
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
-		form_alert(1, corrupted);
+		do_alert(corrupted);
 		return 1;
 	}
 
 	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
 
-	if (stx != (STX *) NULL)
-		do_some_work();
+	if (stx == NULL)
+	{
+		do_alert(no_stik);
+		return 1;
+	}
+
+	do_some_work();
 
 	appl_exit();
 	return 0;

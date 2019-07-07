@@ -198,7 +198,7 @@ static void gem_program(void)
 {
 	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
-	if (sting_drivers == 0L)
+	if (sting_drivers == 0)
 	{
 		form_alert(1, not_there);
 		return;

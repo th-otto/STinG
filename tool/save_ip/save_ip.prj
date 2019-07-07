@@ -1,4 +1,4 @@
-save_ip.prg
+save_ip.gtp
 
 .C[-I..\..\include]
 

@@ -4,7 +4,7 @@
 
 
 Here you can find a number of tools that are useful when operating
-STinG. Currently these tools are PING.PRG, TRACROUT.PRG, SAVE_IP.PRG,
+STinG. Currently these tools are PING.PRG, TRACROUT.PRG, SAVE_IP.GTP,
 SYSINFO.TTP and SHUTDOWN.PRG. See below for explanations for each of
 the tools, and how to use them.
 
@@ -56,9 +56,9 @@ time out then and ask you to either abort or retry (resend the packet
 with the same time-to-live number).
 
 
-3. ----- SAVE_IP.TTP -----
+3. ----- SAVE_IP.GTP -----
 
-SAVE_IP.TTP is a little program that is intented to be run from the 
+SAVE_IP.GTP is a little program that is intended to be run from the 
 login batch of the Dialer. It expects two parameters on the command-
 line : The first is the path to a file to be created, and the second
 is a STinG port name. See the sample LOGIN.BAT for an example. Basi-
@@ -84,6 +84,11 @@ and you're connected again.
 Note it solely depends on the HSMODEM settings, if your machine will
 drop the line when rebooting after the crash. Configure your HSMODEM
 to NOT drop the DTR line, in order to keep an existing connection.
+
+NB: In some older versions SAVE_IP was named SAVE_IP.TTP, which was
+    a mistake.  It uses GEM functions, and must therefore be named
+    as either an APP or a GTP program, to ensure correct usage by
+    multitaskers (also avoids opening a VT-52 or VT-100 window).
 
 
 4. ----- SYSINFO.TTP -----
@@ -123,6 +128,19 @@ tory. So simply drop SHUTDOWN.PRG into that directory and forget it.
 You'll notice it's presence by a small shutdown delay of about three
 seconds, which is for properly desactivating STinG ports.
 
+
+6. ----- MASQLOOK.APP -----
+
+This is a tool for inspecting the true IP with which you are logged
+on to internet when Masquerading is active. It is documented in the
+section of STING.HYP that deals with MASQUE.STX.
+
+
+7. ----- M_MASTER.APP -----
+
+Another tool for use with MASQUE.STX, to allow a machine on the LAN
+to work as if directly connected to Internet.  This too is better
+documented in the MASQUE.STX section of STING.HYP.
 
 
 Happy STinGing.
