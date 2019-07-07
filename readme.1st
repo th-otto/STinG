@@ -1,4 +1,58 @@
+-----------------------------------------------------------------------------
+File name:	README.1ST			Revision date:	2000.07.05
+Revised by:	Ulf Ronald Andersson		Revision start:	1999.11.28
+Created by:	Peter Rottengatter		Creation date:	1997.12.30
+-----------------------------------------------------------------------------
+Purpose:	Spread vital information concerning STinG
+-----------------------------------------------------------------------------
+Preface by Ronald Andersson:
+----------------------------
+The most important thing you need to know is that the real document on
+STinG is the  ST-Guide hypertext contained in the two files  STING.HYP
+and STING.REF.  These need to be installed in some hypertext folder of
+your ST-Guide installation for best usage (help in editors etc.).
 
+That hypertext contains extensive information both on how to use STinG,
+and on how to program applications for it.  In the latest version some
+extra links were added, to help programmers get familiar with STinG,
+as well as new sections on simplified installation for beginners.
+Reading those sections could save you a lot of unnecessary trouble...
+
+
+For programmers:
+----------------
+Each API function of STinG is documented with separate 'links' leading
+to these pages, so that any smart GEM-based editor can easily show the
+hypertext page needed, when ST-Guide is resident (ACC/multitasked APP).
+
+Just Place the editing cursor on the name of a STinG function or data
+structure in the source code you are working on and press the  [Help]
+key. (Works fine in Everest and QED, for example.)
+
+
+Another important thing to know is that Peter Rottengatter has handed over
+the STinG support and development to me and a team of programmers whose
+efforts for STinG I coordinate (The "STinG Evolution Team"). This means
+that my homepage is the official release site of STinG components now.
+
+URLs:
+-----
+http://www.ettnet.se/~dlanor/		my personal homepage
+http://dlanor.atari.org/		alias for my personal homepage
+http://sting.atari.org/			alias for STinG homepage
+
+At present the STinG homepage is identical to my own, with the STinG
+stuff in a subpage of it.  This may change in the future however, and
+then it is the last URL, "http://sting.atari.org/" which will be valid.
+
+All feedback on the STinG release itself, and its components, should
+be sent to me, using this address:
+
+mailto:dlanor@ettnet.se
+
+-----------------------------------------------------------------------------
+Below follow the original release notes by Peter Rottengatter:
+-----------------------------------------------------------------------------
 This is a rewrite of STiK, incorporating many of those fancy ideas that 
 have been developed within the STiK developers group in the year 1996. 
 Along with some others, I figured a complete rewrite is the only way to 
