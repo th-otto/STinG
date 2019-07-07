@@ -14,5 +14,5 @@ sysinfo.ttp: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 release::
-	$(MKDIR) $(RELEASE_DIR)/tools
-	cp -a sysinfo.ttp $(RELEASE_DIR)/tools
+	$(MKDIR) $(RELEASE_DIR)/sting/tools
+	cp -a sysinfo.ttp $(RELEASE_DIR)/sting/tools

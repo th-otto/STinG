@@ -110,7 +110,7 @@ MASQUERADE = FALSE;
 #
 #
 #   The NAMESERVER (ie: DNS or Domain Name Server) *must* be set,
-#   preferably to a name server that your provider recommends.  Note :
+#   preferably to a nameserver that your provider recommends.  Note :
 #   The address must be a dotted quad, that is, four decimal numbers
 #   separated by dots.  The mnemonic name will not work, as again a
 #   name server would be needed to resolve it.  Put IP addresses of

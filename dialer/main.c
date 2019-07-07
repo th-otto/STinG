@@ -40,6 +40,7 @@ int off_hook;
 int connected;
 static int main_is_open = FALSE;
 static int exit_dialer = FALSE;
+static int exit_main = FALSE;
 char config_path[256];
 char const hangup_alert[] = "[2][ |  Really hangup Modem ?   ][ Yes | No ]";
 static char const no_udp_alert[] = "[1][ |  Opening UDP port failed.   | |" "  No Remote Control !][ Hmm ]";
@@ -48,7 +49,7 @@ unsigned char ip_address[4] = { 127, 0, 0, 1 };
 unsigned char ip_dns[4][4];
 
 
-static char const version[] = "01.16";
+static char const version[] = "01.17";
 
 
 static void terminate(void)
@@ -56,7 +57,7 @@ static void terminate(void)
 	_WORD message[8];
 	static char const problem[] = "[1][ |  Problem occured during   | |    initialisation !][ Hmm ]";
 
-	if (_app)
+	if (_app || aes_global[1] != 1)
 	{
 		appl_exit();
 		return;
@@ -131,7 +132,9 @@ static void get_path(void)
 		if ((ptr = strchr(config_path, '\n')) != NULL)
 			*ptr = '\0';
 	} else
+	{
 		strcpy(config_path, path);
+	}
 }
 
 
@@ -188,6 +191,23 @@ static void spawn_tools(int which)
 }
 
 
+static void close_main(void)
+{
+	close_rsc_window(CREDITS, -1);
+	close_rsc_window(DIALER, -1);
+	close_rsc_window(CONF, -1);
+	close_rsc_window(O_MEM, -1);
+	close_rsc_window(O_STAT, -1);
+	close_rsc_window(O_RSLV, -1);
+	close_rsc_window(O_PING, -1);
+	close_rsc_window(OP_DOIT, -1);
+	close_rsc_window(O_TRACE, -1);
+	close_rsc_window(OT_DOIT, -1);
+	main_is_open = FALSE;
+	exit_main = TRUE;
+}
+
+
 static int main_click(_WORD object)
 {
 	_WORD shown;
@@ -208,7 +228,9 @@ static int main_click(_WORD object)
 					dial_state = S_NONE;
 				}
 			} else
+			{
 				top_rsc_window(DIALER);
+			}
 		} else
 		{
 			sender = -1;
@@ -235,18 +257,7 @@ static int main_click(_WORD object)
 		set_callbacks(CREDITS, 0, key_typed);
 		break;
 	case ST_EXIT:
-		close_rsc_window(CREDITS, -1);
-		close_rsc_window(DIALER, -1);
-		close_rsc_window(CONF, -1);
-		close_rsc_window(O_MEM, -1);
-		close_rsc_window(O_STAT, -1);
-		close_rsc_window(O_ROUTE, -1);
-		close_rsc_window(O_RSLV, -1);
-		close_rsc_window(O_PING, -1);
-		close_rsc_window(OP_DOIT, -1);
-		close_rsc_window(O_TRACE, -1);
-		close_rsc_window(OT_DOIT, -1);
-		exit_dialer = TRUE;
+		close_main();
 		return 1;
 	case CLOSER_CLICKED:
 		main_is_open = FALSE;
@@ -273,7 +284,9 @@ static void operate_main(void)
 	do
 	{
 		if ((event = operate_events()) == -4)
-			exit_dialer = TRUE;
+			exit_main = TRUE;
+		if (event == -1)
+			main_is_open = FALSE;
 	} while (event >= 0);
 }
 
@@ -330,20 +343,12 @@ static int message_handler(_WORD *message)
 		else
 			top_rsc_window(START);
 		break;
-	case AC_CLOSE:
 	case AP_TERM:
 	case AP_RESCHG:
-		close_rsc_window(CREDITS, -1);
-		close_rsc_window(DIALER, -1);
-		close_rsc_window(CONF, -1);
-		close_rsc_window(O_MEM, -1);
-		close_rsc_window(O_STAT, -1);
-		close_rsc_window(O_RSLV, -1);
-		close_rsc_window(O_PING, -1);
-		close_rsc_window(OP_DOIT, -1);
-		close_rsc_window(O_TRACE, -1);
-		close_rsc_window(OT_DOIT, -1);
 		exit_dialer = TRUE;
+		/* fall through */
+	case AC_CLOSE:
+		close_main();
 		return -1;
 	}
 
@@ -485,7 +490,7 @@ int main(void)
 		return 1;
 	}
 
-	if (initialise_windows(19, ICONIFY) == 0)
+	if (initialise_windows(NUM_TREE, ICONIFY) == 0)
 	{
 		leave_windows();
 		rsrc_free();
@@ -555,20 +560,11 @@ int main(void)
 	graf_mouse(ARROW, NULL);
 
 	if (_app)
-	{
 		open_main();
-		operate_main();
-		while (resident && !exit_dialer)
-		{
-			operate_main();
-		}
-	} else
+	do
 	{
-		for (;;)
-		{
-			operate_main();
-		}
-	}
+		operate_main();
+	} while ((resident || (!_app && aes_global[1] == 1)) && !exit_dialer);
 
 	if (handle != -1)
 		UDP_close(handle);

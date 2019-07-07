@@ -1,11 +1,24 @@
+-----------------------------------------------------------------------------
+File name:	DIALER.TXT			Revision date:	1999.11.28
+Revised by:	Ulf Ronald Andersson		Revision start:	1999.11.26
+Created by:	Peter Rottengatter		Creation date:	Unknown
+-----------------------------------------------------------------------------
+This file describes the current development state of the STinG dialer APP,
+as it has progressed since Peter handed over STinG development to me, and
+to the 'STinG Evolution Team' that has joined me in this work.
 
+At present that team consists of:
 
-  - Editing network environment not implemented yet.
+Ronald Andersson	(myself)
+Vassili Papathanassiou
 
-  - Passwording in the remote dial protocol.
+The copyright to updated versions remains property of Peter Rottengatter,
+and the release form remains FREEWARE, as originally defined by him.
 
-  - Examine the DEVICE-LIB to fix certain things.
+Updates will be described below, in reverse chronological order.
+-----------------------------------------------------------------------------
 
+  - Editing network environment not fully implemented yet.
 
      /\
 Still to do
@@ -13,9 +26,42 @@ Still to do
 Has been done
      \/
 
+-----------------------------------------------------------------------------
+DIALER 1.17:		Beta release:	1999.11.26
+------------
+This is the first update to the dialer made by the STinG Evolution Team.
+(Actually I did these changes myself, but others may join in later.)
 
-V1.16  Public version to go out with STinG 1.15
+In this version I have rewritten several event handling routines and the
+main event loop, so as to allow proper functionality as an ACCessory.
+
+To install it as ACC, just rename DIALER.APP to DIALER.ACC and store it, with
+DIAL.INF, in the same folder as your other ACCessories.  Note that it is not
+necessary to move DIAL.RSC or DIAL.SCR (or other scripts) to that folder.
+They must all reside in the folder indicated by the string in DIAL.INF.
+
+
+Another change in this version is that both the configured CLIENT_IP of the
+dialer itself as well as the original IP of the dialing port will be reset
+when disconnecting, to the IP values they had before dialing.  This will
+give consistent results for repeated dialing with PAP-requested dynamic
+IP addresses (and static ones too of course).
+
+The recommended value of the CLIENT_IP address in DIAL.SCR, for usage with
+dynamic IP addresses is "0.0.0.0", as that value will always be recognized
+by an ISP as a valid request for dynamic IP.
+
+
+Finally, all access to hardware ports is made through the updated version
+of the device lib released by Olivier Booklage, as this fixes some bugs.
+
+NB: In this early version the RSC file is still unchanged, but fortunately
+    the version number is not stored there, so it will be shown as 1.17 .
+-----------------------------------------------------------------------------
+V1.16  		Public release:	1999.04.12
 -----------------------------------------------
+This is the last beta version of DIALER.APP produced by Peter Rottengatter,
+and it was released to the public as part of the STinG 1.20 release package.
 
    - Uses shel_find() now to find the DIAL.INF file.
 

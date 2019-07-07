@@ -14,5 +14,5 @@ shutdown.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 release::
-	$(MKDIR) $(RELEASE_DIR)/tools
-	cp -a shutdown.prg $(RELEASE_DIR)/tools
+	$(MKDIR) $(RELEASE_DIR)/sting/tools
+	cp -a shutdown.prg $(RELEASE_DIR)/sting/tools

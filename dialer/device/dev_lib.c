@@ -83,7 +83,6 @@ static LONG const speeds[] = {
 static LONG const midi_speeds[] = { 31250, -1 };
 
 static DEVICES *devices;
-static LONG cntrls[4];
 
 static void (*pause_1)(void);
 void (*pause_2)(void);
@@ -106,7 +105,7 @@ static BOOLEAN InitStdDevices(MAPTAB *maps, BOOLEAN has_bconmap, WORD num_device
 
 	loop = num_devices > 4 ? 4 : num_devices;
 
-	for (i = 1; i <= loop; i++)
+	for (i = 0; i < loop; i++)
 	{
 		if ((dptr = (DEVICES *) calloc(1, sizeof(DEVICES))) == NULL)
 			return FALSE;
@@ -120,7 +119,7 @@ static BOOLEAN InitStdDevices(MAPTAB *maps, BOOLEAN has_bconmap, WORD num_device
 
 		switch (i)
 		{
-		case 1:
+		case 0:
 			if (atari != 3 || num_devices != 1)
 			{
 				dwalk->bios = has_bconmap ? 6 : 1;
@@ -131,30 +130,30 @@ static BOOLEAN InitStdDevices(MAPTAB *maps, BOOLEAN has_bconmap, WORD num_device
 				break;
 			}
 			/* fall through */
-		case 2:
+		case 1:
 			dwalk->bios = 7;
 			dwalk->func_num = PORT_SCC_B + 1;
 			dwalk->device.name = d_name[1];
 			if (has_drv_u)
 				dwalk->dopen = d_open[1];
 			break;
-		case 3:
+		case 2:
 			dwalk->bios = 8;
-			if (atari == 1)
-			{
-				dwalk->func_num = PORT_SCC_A + 1;
-				dwalk->device.name = d_name[3];
-				if (has_drv_u)
-					dwalk->dopen = d_open[3];
-			} else
+			if (atari == 2)
 			{
 				dwalk->func_num = PORT_MFP_2 + 1;
 				dwalk->device.name = d_name[2];
 				if (has_drv_u)
 					dwalk->dopen = d_open[2];
+			} else
+			{
+				dwalk->func_num = PORT_SCC_A + 1;
+				dwalk->device.name = d_name[3];
+				if (has_drv_u)
+					dwalk->dopen = d_open[3];
 			}
 			break;
-		case 4:
+		case 3:
 			dwalk->bios = 9;
 			dwalk->func_num = PORT_SCC_A + 1;
 			dwalk->device.name = d_name[3];
@@ -177,7 +176,7 @@ static BOOLEAN InitStdDevices(MAPTAB *maps, BOOLEAN has_bconmap, WORD num_device
 
 		if (has_bconmap)
 			dwalk->func_map = &maps[dwalk->bios - 6];
-		else if (i == 1)
+		else if (i == 0)
 			SetMapM1(&dwalk->func_map);
 	}
 
@@ -451,6 +450,7 @@ static void SetPortProtokoll(DEVICES *dev)
 
 	PortParameter(&dev->device, flow, _8BIT, _1STOP, _NO_PARITY);
 
+#if 0
 	/*
 	 * Unter MiNT muž noch der Terminal-Typ "raw" eingestellt
 	 * werden (grrrrr!):
@@ -466,6 +466,7 @@ static void SetPortProtokoll(DEVICES *dev)
 			Fcntl(dev->dhandle, (long) &tty, TIOCGETP);
 		}
 	}
+#endif
 }
 
 /*-------------------------------------------------------------------*/
@@ -539,6 +540,7 @@ DEV_LIST *InitDevices(void *timerelease1, void *timerelease2)
 	WORD num_devices = 0;
 	BOOLEAN mega;
 	MAPTAB *maps;
+	long cookval = 0;
 
 	devices = NULL;
 	tos = get_tos();
@@ -548,12 +550,12 @@ DEV_LIST *InitDevices(void *timerelease1, void *timerelease2)
 	pause_1 = timerelease1;
 	pause_2 = timerelease2;
 
-	atari = getcookie(0x5f4d4348L /* '_MCH' */, cntrls) ? (UWORD) (cntrls[0] >> 16) : 0;
-	mega = (UWORD) cntrls[0] ? TRUE : FALSE;
-	fser = getcookie(0x46534552L /* 'FSER' */, cntrls) ? (FSER_INFO *) cntrls[0] : NULL;
-	rsvf = getcookie(0x52535646L /* 'RSVF' */, cntrls) ? (RSVF_DEV *) cntrls[0] : NULL;
-	MiNT = getcookie(0x4d694e54L /* 'MiNT' */, cntrls) ? (WORD) cntrls[0] : 0;
-	MagX = getcookie(0x4d616758L /* 'MagX' */, cntrls) ? (void *) cntrls[0] : NULL;
+	atari = getcookie(0x5f4d4348L /* '_MCH' */, &cookval) ? (UWORD) (cookval >> 16) : 0;
+	mega = atari == 1 && (UWORD) cookval != 0;
+	fser = getcookie(0x46534552L /* 'FSER' */, &cookval) ? (FSER_INFO *) cookval : NULL;
+	rsvf = getcookie(0x52535646L /* 'RSVF' */, &cookval) ? (RSVF_DEV *) cookval : NULL;
+	MiNT = getcookie(0x4d694e54L /* 'MiNT' */, &cookval) ? (WORD) cookval : 0;
+	MagX = getcookie(0x4d616758L /* 'MagX' */, &cookval) ? (void *) cookval : NULL;
 
 	/*
 	 * Set MiNT process execution domain (to let Fread, Fwrite
@@ -578,14 +580,15 @@ DEV_LIST *InitDevices(void *timerelease1, void *timerelease2)
 	
 	switch (atari)
 	{
-	case 0:
-	case 3:
+	case 0: /* plain ST */
+	case 3: /* Falcon */
+	case 5: /* Aranym */
 		num_devices = 1;
 		break;
-	case 1:
+	case 1: /* STE/MSTE */
 		num_devices = mega ? 3 : 1;
 		break;
-	case 2:
+	case 2: /* TT */
 		num_devices = 4;
 		break;
 	}
@@ -609,7 +612,7 @@ void TermDevices(void)
 
 	DEVICES *dwalk;
 
-	for (dwalk = devices; dwalk; dwalk = devices)
+	while ((dwalk = devices) != NULL)
 	{
 		CloseDevice(&dwalk->device);
 
@@ -780,6 +783,7 @@ LONG *GetSpeedList(DEV_LIST *dev)
 LONG SetDTESpeed(DEV_LIST *port, LONG speed)
 {
 	DEVICES *dev;
+	long val;
 
 	dev = (DEVICES *) port;
 
@@ -791,9 +795,9 @@ LONG SetDTESpeed(DEV_LIST *port, LONG speed)
 
 	if (dev->dhandle >= 0)
 	{
-		cntrls[0] = speed;
+		val = speed;
 
-		if (!Fcntl(dev->dhandle, (long) cntrls, TIOCIBAUD))
+		if (!Fcntl(dev->dhandle, (long) &val, TIOCIBAUD))
 			dev->device.curr_dte = speed;
 	} else if (dev->bios == 3)
 	{
@@ -871,13 +875,14 @@ WORD SetTxBuffer(DEV_LIST *port, WORD size)
 	IOREC *iorec;
 	BYTE *mem;
 	BYTE *b = NULL;
+	long cntrls[4];
 
 	dev = (DEVICES *) port;
 
 	if (dev->dhandle >= 0)
 	{
-		cntrls[0] = cntrls[1] = cntrls[2] = -1L;
-		cntrls[3] = (LONG) size;
+		cntrls[0] = cntrls[1] = cntrls[2] = -1;
+		cntrls[3] = size;
 
 		if (!Fcntl(dev->dhandle, (long) cntrls, TIOCBUFFER))
 			return (WORD) cntrls[3];
@@ -913,12 +918,13 @@ WORD SetTxBuffer(DEV_LIST *port, WORD size)
 WORD GetTxBuffer(DEV_LIST *port)
 {
 	DEVICES *dev;
+	long cntrls[4];
 
 	dev = (DEVICES *) port;
 
 	if (dev->dhandle >= 0)
 	{
-		cntrls[0] = cntrls[1] = cntrls[2] = cntrls[3] = -1L;
+		cntrls[0] = cntrls[1] = cntrls[2] = cntrls[3] = -1;
 
 		if (!Fcntl(dev->dhandle, (long) cntrls, TIOCBUFFER))
 			return (WORD) cntrls[3];
@@ -935,15 +941,16 @@ WORD SetRxBuffer(DEV_LIST *port, WORD size)
 	IOREC *iorec;
 	BYTE *mem;
 	BYTE *b = NULL;
+	long cntrls[4];
 
 	dev = (DEVICES *) port;
 
 	if (dev->dhandle >= 0)
 	{
-		cntrls[0] = (LONG) size;
-		cntrls[1] = (LONG) (size >> 2);
-		cntrls[2] = (LONG) ((size + size + size) >> 2);
-		cntrls[3] = -1L;
+		cntrls[0] = size;
+		cntrls[1] = size >> 2;
+		cntrls[2] = (size + size + size) >> 2;
+		cntrls[3] = -1;
 
 		if (!Fcntl(dev->dhandle, (long) cntrls, TIOCBUFFER))
 			return (WORD) cntrls[0];
@@ -978,12 +985,13 @@ WORD SetRxBuffer(DEV_LIST *port, WORD size)
 WORD GetRxBuffer(DEV_LIST *port)
 {
 	DEVICES *dev;
+	long cntrls[4];
 
 	dev = (DEVICES *) port;
 
 	if (dev->dhandle >= 0)
 	{
-		cntrls[0] = cntrls[1] = cntrls[2] = cntrls[3] = -1L;
+		cntrls[0] = cntrls[1] = cntrls[2] = cntrls[3] = -1;
 
 		if (!Fcntl(dev->dhandle, (long) cntrls, TIOCBUFFER))
 			return (WORD) cntrls[0];
@@ -1091,13 +1099,14 @@ BOOLEAN OutIsEmpty(DEV_LIST *port)
 {
 	DEVICES *dev;
 	IOREC *iorec;
+	long count = 0;
 
 	dev = (DEVICES *) port;
 
 	if (dev->dhandle >= 0)
 	{
-		if (!Fcntl(dev->dhandle, (long) cntrls, TIONOTSEND))
-			return cntrls[0] == 0;
+		if (!Fcntl(dev->dhandle, (long) &count, TIONOTSEND))
+			return count == 0;
 	}
 
 	iorec = dev->func_map->iorec;
@@ -1191,10 +1200,11 @@ void ClearIOBuffer(DEV_LIST *port, LONG io)
 void DtrOn(DEV_LIST *port)
 {
 	DEVICES *dev;
+	long cntrls[2];
 
 	dev = (DEVICES *) port;
 
-	if (dev->dhandle >= 0 && dev->ioctrlmap[0] & TIOCM_DTR)
+	if (dev->dhandle >= 0 && (dev->ioctrlmap[0] & TIOCM_DTR))
 	{
 		cntrls[0] = cntrls[1] = TIOCM_DTR;
 
@@ -1210,10 +1220,11 @@ void DtrOn(DEV_LIST *port)
 void DtrOff(DEV_LIST *port)
 {
 	DEVICES *dev;
+	long cntrls[2];
 
 	dev = (DEVICES *) port;
 
-	if (dev->dhandle >= 0 && dev->ioctrlmap[0] & TIOCM_DTR)
+	if (dev->dhandle >= 0 && (dev->ioctrlmap[0] & TIOCM_DTR))
 	{
 		cntrls[0] = TIOCM_DTR;
 		cntrls[1] = 0;
@@ -1230,19 +1241,21 @@ void DtrOff(DEV_LIST *port)
 BOOLEAN IsCarrier(DEV_LIST *port)
 {
 	DEVICES *dev;
+	long val_and_mask;
 
 	dev = (DEVICES *) port;
 
-	if (dev->dhandle >= 0 && dev->ioctrlmap[0] & TIOCM_CAR)
+	if (dev->dhandle >= 0 && (dev->ioctrlmap[0] & TIOCM_CAR))
 	{
-		cntrls[0] = TIOCM_CAR;
+		val_and_mask = TIOCM_CAR;
 
-		Fcntl(dev->dhandle, (long) cntrls, TIOCCTLGET);
+		Fcntl(dev->dhandle, (long) &val_and_mask, TIOCCTLGET);
 
-		return (UWORD) cntrls[0] & TIOCM_CAR;
+		if ((val_and_mask & TIOCM_CAR) == 0)
+			return FALSE;
 	} else if (dev->func_num)
 	{
-		return is_dcd(dev->func_num - 1);
+		return is_dcd(dev->func_num - 1) != 0;
 	}
 
 	return TRUE;
@@ -1296,4 +1309,3 @@ void PortParameter(DEV_LIST *port, UWORD flowctl, UWORD charlen, UWORD stopbits,
 		Rsconf(-1, flowctl, ucr.word, -1, -1, -1);
 	}
 }
-

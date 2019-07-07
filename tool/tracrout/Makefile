@@ -14,5 +14,5 @@ tracrout.prg: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 release::
-	$(MKDIR) $(RELEASE_DIR)/tools
-	cp -a tracrout.prg tracrout.rsc $(RELEASE_DIR)/tools
+	$(MKDIR) $(RELEASE_DIR)/sting/tools
+	cp -a tracrout.prg tracrout.rsc $(RELEASE_DIR)/sting/tools
