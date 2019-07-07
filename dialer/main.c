@@ -66,6 +66,7 @@ void   terminate (void);
 void   get_path (void);
 long   get_boot_drv (void);
 void   open_main (void);
+void   close_main (void);
 void   operate_main (void);
 int    main_click (int object);
 int    set_mode (int mode, int alert_flag);
@@ -84,7 +85,7 @@ void           (* dial_timer) (void), (* mem_timer) (void), (* stat_timer) (void
 void           (* ping_timer) (void), (* trace_timer) (void);
 int            gl_apid, out_msg[8], mode, handle, sender, counter, dialer_delay;
 int            dial_state, off_hook, connected;
-int            main_is_open = FALSE, exit_dialer = FALSE;
+int            main_is_open = FALSE, exit_dialer = FALSE, exit_main = FALSE;
 char           config_path[256];
 char           hangup_alert[] = "[2][ |  Really hangup Modem ?   ][ Yes | No ]";
 char           no_udp_alert[] = "[1][ |  Opening UDP port failed.   | |"
@@ -163,18 +164,16 @@ void  main()
 
    graf_mouse (ARROW, NULL);
 
-   if (_app) {
+   if (_app)
         open_main();
+
+again:;
         operate_main();
-        while (resident && ! exit_dialer) {
-             operate_main();
-           }
-      }
-     else {
-        FOREVER {
-             operate_main();
-           }
-      }
+        if (!resident && _app)
+        	goto done;
+        if (!exit_dialer)
+        	goto again;
+done:;
 
    if (handle != -1)
         UDP_close (handle);
@@ -272,6 +271,23 @@ void  open_main()
    set_callbacks (START, main_click, key_typed);
  }
 
+void close_main()
+{
+    close_rsc_window (CREDITS, -1);
+    close_rsc_window (DIALER, -1);
+    close_rsc_window (CONF, -1);
+    close_rsc_window (O_MEM, -1);
+    close_rsc_window (O_STAT, -1);
+    close_rsc_window (O_ROUTE, -1);
+    close_rsc_window (O_RSLV, -1);
+    close_rsc_window (O_PING, -1);
+    close_rsc_window (OP_DOIT, -1);
+    close_rsc_window (O_TRACE, -1);
+    close_rsc_window (OT_DOIT, -1);
+    main_is_open = FALSE;
+    exit_main = TRUE;
+}
+
 
 void  operate_main()
 
@@ -280,7 +296,9 @@ void  operate_main()
 
    do {
         if ((event = operate_events()) == -4)
-             exit_dialer = TRUE;
+             exit_main = TRUE;
+        if (event == -1)
+        	main_is_open = FALSE;
      } while (event >= 0);
  }
 
@@ -331,18 +349,7 @@ int  object;
         set_callbacks (CREDITS, (FUNC) NULL, key_typed);
         break;
       case ST_EXIT :
-        close_rsc_window (CREDITS, -1);
-        close_rsc_window (DIALER, -1);
-        close_rsc_window (CONF, -1);
-        close_rsc_window (O_MEM, -1);
-        close_rsc_window (O_STAT, -1);
-        close_rsc_window (O_ROUTE, -1);
-        close_rsc_window (O_RSLV, -1);
-        close_rsc_window (O_PING, -1);
-        close_rsc_window (OP_DOIT, -1);
-        close_rsc_window (O_TRACE, -1);
-        close_rsc_window (OT_DOIT, -1);
-        exit_dialer = TRUE;
+        close_main();
         return (1);
       case CLOSER_CLICKED :
         main_is_open = FALSE;
@@ -465,20 +472,11 @@ int  message[8];
           else
              top_rsc_window (START);
         break;
-      case AC_CLOSE :
       case AP_TERM :
       case AP_RESCHG :
-        close_rsc_window (CREDITS, -1);
-        close_rsc_window (DIALER, -1);
-        close_rsc_window (CONF, -1);
-        close_rsc_window (O_MEM, -1);
-        close_rsc_window (O_STAT, -1);
-        close_rsc_window (O_RSLV, -1);
-        close_rsc_window (O_PING, -1);
-        close_rsc_window (OP_DOIT, -1);
-        close_rsc_window (O_TRACE, -1);
-        close_rsc_window (OT_DOIT, -1);
         exit_dialer = TRUE;
+      case AC_CLOSE :
+        close_main();
         return(-1);
       }
 

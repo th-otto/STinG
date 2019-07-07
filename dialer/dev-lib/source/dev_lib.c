@@ -13,14 +13,14 @@
 /*--- includes              ---*/
 /*-----------------------------*/
 
-#include <import.h>
-#include <device.h>
+#include "device.h"
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "dev_misc.h"
 #include "types.h"
 #include "port.h"
-
-#include <export.h>
 
 /*-----------------------------*/
 /*--- defines               ---*/
@@ -30,6 +30,9 @@
 
 #define		MAX_BLOCK		4096L
 #define		MAX_SPEEDS		25
+
+#define Pdomain(a) gemdos(0x119, (short)(a))
+#define Fcntl(a, b, c) gemdos(0x104, (short)(a), (void *)(b), (short)(c))
 
 /*-----------------------------*/
 /*--- types                 ---*/
@@ -96,18 +99,18 @@ typedef union
 /*--- variables             ---*/
 /*-----------------------------*/
 
-LOCAL	UWORD		atari,
+static	UWORD		atari,
 					tos,
 					MiNT;
-LOCAL	VOID		*MagX;
+static	void		*MagX;
 
-LOCAL	FSER_INFO	*fser;
-LOCAL	RSVF_DEV	*rsvf;
+static	FSER_INFO	*fser;
+static	RSVF_DEV	*rsvf;
 
-LOCAL	BOOLEAN		has_bconmap,
+static	BOOLEAN		has_bconmap,
 					has_drv_u;
 
-LOCAL	BYTE		*d_name[] =	{
+static	BYTE		*d_name[] =	{
 									"Modem 1",
 									"Modem 2",
 									"Serial 1",
@@ -121,7 +124,7 @@ LOCAL	BYTE		*d_name[] =	{
 									"SERIAL2",
 								};
 
-LOCAL	LONG		speeds[] =	{
+static	LONG		speeds[] =	{
 									19200L,
 									9600L,
 									4800L,
@@ -141,26 +144,26 @@ LOCAL	LONG		speeds[] =	{
 									-1L
 								};
 								
-LOCAL LONG			midi_speeds[] = { 31250, -1 };
+static LONG			midi_speeds[] = { 31250, -1 };
 
-LOCAL	DEVICES		*devices;
-LOCAL	LONG		cntrls[4];
+static	DEVICES		*devices;
+static	LONG		cntrls[4];
 
-LOCAL	VOID		(*pause_1)( VOID );
-EXTERN	VOID		(*pause_2)( VOID );
+static	void		(*pause_1)( void );
+extern void		(*pause_2)( void );
 
 /*--- prototypes            ---*/
 
-LOCAL BOOLEAN	InitStdDevices	( MAPTAB *maps, BOOLEAN has_bconmap, WORD num_devices );
-LOCAL BOOLEAN	InitRSVFDevices	( MAPTAB *maps, RSVF_DEV *dev );
-LOCAL BOOLEAN	CreateSpeedlist	( DEVICES *dev );
-LOCAL BOOLEAN	GetFcntlSpeeds	( DEVICES *dev );
-LOCAL VOID		GetFserSpeeds	( DEVICES *dev );
-LOCAL VOID		FreeSpeedlist	( DEVICES *dev );
-LOCAL VOID		SetDevFunctions	( DEVICES *dev );
-LOCAL VOID		SetPortProtokoll( DEVICES *dev );
-LOCAL BOOLEAN	DevicePickup	( DEVICES *dev );
-LOCAL BOOLEAN	DeviceSendBlock	( DEVICES *dev, BYTE *block, LONG len, BOOLEAN tst_dcd );
+static BOOLEAN	InitStdDevices	( MAPTAB *maps, BOOLEAN has_bconmap, WORD num_devices );
+static BOOLEAN	InitRSVFDevices	( MAPTAB *maps, RSVF_DEV *dev );
+static BOOLEAN	CreateSpeedlist	( DEVICES *dev );
+static BOOLEAN	GetFcntlSpeeds	( DEVICES *dev );
+static void		GetFserSpeeds	( DEVICES *dev );
+static void		FreeSpeedlist	( DEVICES *dev );
+static void		SetDevFunctions	( DEVICES *dev );
+static void		SetPortProtokoll( DEVICES *dev );
+static BOOLEAN	DevicePickup	( DEVICES *dev );
+static BOOLEAN	DeviceSendBlock	( DEVICES *dev, BYTE *block, LONG len, BOOLEAN tst_dcd );
 
 /*-----------------------------*/
 /*--- global functions      ---*/
@@ -168,7 +171,7 @@ LOCAL BOOLEAN	DeviceSendBlock	( DEVICES *dev, BYTE *block, LONG len, BOOLEAN tst
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL DEV_LIST *InitDevices( VOID *timerelease1, VOID *timerelease2 )
+DEV_LIST *InitDevices( void *timerelease1, void *timerelease2 )
 {
 	/*
 	 * Initialisiert alle vorhandenen Ports/Devices.
@@ -186,11 +189,13 @@ GLOBAL DEV_LIST *InitDevices( VOID *timerelease1, VOID *timerelease2 )
 	pause_2     = timerelease2;
 
 	atari = getcookie( '_MCH', cntrls ) ? (UWORD) (cntrls[0]>>16) : 0;
+	/* BUG1: cntrls is undefined if cookie not found */
+	/* BUG2: mega for upper bits is only valid if atari == 1 */
 	mega  = (UWORD) cntrls[0] ? TRUE : FALSE;
 	fser  = getcookie( 'FSER', cntrls ) ? (FSER_INFO *) cntrls[0] : NULL;
 	rsvf  = getcookie( 'RSVF', cntrls ) ? (RSVF_DEV  *) cntrls[0] : NULL;
 	MiNT  = getcookie( 'MiNT', cntrls ) ? (WORD)        cntrls[0] : 0;
-	MagX  = getcookie( 'MagX', cntrls ) ? (VOID *)      cntrls[0] : NULL;
+	MagX  = getcookie( 'MagX', cntrls ) ? (void *)      cntrls[0] : NULL;
 	
 	/*
 	 * Set MiNT process execution domain (to let Fread, Fwrite
@@ -237,7 +242,7 @@ GLOBAL DEV_LIST *InitDevices( VOID *timerelease1, VOID *timerelease2 )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID TermDevices( VOID )
+void TermDevices( void )
 {
 	/*
 	 * Gibt den Speicher der Device-Liste wieder frei:
@@ -245,7 +250,7 @@ GLOBAL VOID TermDevices( VOID )
 	
 	DEVICES	*dwalk;
 	
-	for( dwalk=devices; dwalk; dwalk=devices )
+	while ((dwalk = devices) != NULL)
 	{
 		CloseDevice( (DEV_LIST *) dwalk );
 		
@@ -256,7 +261,7 @@ GLOBAL VOID TermDevices( VOID )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN OpenDevice( DEV_LIST *port )
+BOOLEAN OpenDevice( DEV_LIST *port )
 {
 	/*
 	 * ™ffnet port und stellt alle entsprechenden Funktionen zusammen.
@@ -326,7 +331,7 @@ GLOBAL BOOLEAN OpenDevice( DEV_LIST *port )
 	dev->is_open = TRUE;
 	
 	SetDevFunctions( dev );
-	SetPortProtokoll( dev );
+	/* SetPortProtokoll( dev ); */
 	
 	if( !CreateSpeedlist( dev ) )
 		CloseDevice( port );
@@ -338,7 +343,7 @@ GLOBAL BOOLEAN OpenDevice( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID CloseDevice( DEV_LIST *port )
+void CloseDevice( DEV_LIST *port )
 {
 	/*
 	 * Schliežt port und gibt den Speicher wieder frei
@@ -400,21 +405,21 @@ GLOBAL VOID CloseDevice( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD GetBiosNr( DEV_LIST *dev )
+WORD GetBiosNr( DEV_LIST *dev )
 {
 	return( ((DEVICES *) dev)->bios );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL LONG *GetSpeedList( DEV_LIST *dev )
+LONG *GetSpeedList( DEV_LIST *dev )
 {
 	return( ((DEVICES *) dev)->speeds );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL LONG SetDTESpeed( DEV_LIST *port, LONG speed )
+LONG SetDTESpeed( DEV_LIST *port, LONG speed )
 {
 	DEVICES	*dev;
 	
@@ -430,7 +435,7 @@ GLOBAL LONG SetDTESpeed( DEV_LIST *port, LONG speed )
 	{
 		cntrls[0] = speed;
 		
-		if( !Fcntl( dev->dhandle, cntrls, TIOCIBAUD ) )
+		if( !Fcntl( dev->dhandle, (long)cntrls, TIOCIBAUD ) )
 			dev->device.curr_dte = speed;
 	}
 	else
@@ -483,31 +488,31 @@ GLOBAL LONG SetDTESpeed( DEV_LIST *port, LONG speed )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID StartReceiver( DEV_LIST *port )
+void StartReceiver( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
 	dev  = (DEVICES *) port;
 	
 	if( dev->dhandle>=0 )
-		Fcntl( dev->dhandle, NULL, TIOCSTART );
+		Fcntl( dev->dhandle, (long)0, TIOCSTART );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID StopReceiver( DEV_LIST *port )
+void StopReceiver( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
 	dev  = (DEVICES *) port;
 	
 	if( dev->dhandle>=0 )
-		Fcntl( dev->dhandle, NULL, TIOCSTOP );
+		Fcntl( dev->dhandle, (long)0, TIOCSTOP );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD SetTxBuffer( DEV_LIST *port, WORD size )
+WORD SetTxBuffer( DEV_LIST *port, WORD size )
 {
 	DEVICES	*dev;
 	IOREC	*iorec;
@@ -520,7 +525,7 @@ GLOBAL WORD SetTxBuffer( DEV_LIST *port, WORD size )
 		cntrls[0] = cntrls[1] = cntrls[2] = -1L;
 		cntrls[3] = (LONG) size;
 		
-		if( !Fcntl( dev->dhandle, cntrls, TIOCBUFFER ) )
+		if( !Fcntl( dev->dhandle, (long)cntrls, TIOCBUFFER ) )
 			return( (WORD) cntrls[3] );
 	}
 	
@@ -550,7 +555,7 @@ GLOBAL WORD SetTxBuffer( DEV_LIST *port, WORD size )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD GetTxBuffer( DEV_LIST *port )
+WORD GetTxBuffer( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -560,7 +565,7 @@ GLOBAL WORD GetTxBuffer( DEV_LIST *port )
 	{
 		cntrls[0] = cntrls[1] = cntrls[2] = cntrls[3] = -1L;
 		
-		if( !Fcntl( dev->dhandle, cntrls, TIOCBUFFER ) )
+		if( !Fcntl( dev->dhandle, (long)cntrls, TIOCBUFFER ) )
 			return( (WORD) cntrls[3] );
 	}
 
@@ -569,7 +574,7 @@ GLOBAL WORD GetTxBuffer( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD SetRxBuffer( DEV_LIST *port, WORD size )
+WORD SetRxBuffer( DEV_LIST *port, WORD size )
 {
 	DEVICES	*dev;
 	IOREC	*iorec;
@@ -584,7 +589,7 @@ GLOBAL WORD SetRxBuffer( DEV_LIST *port, WORD size )
 		cntrls[2] = (LONG) ((size + size + size) >> 2);
 		cntrls[3] = -1L;
 		
-		if( !Fcntl( dev->dhandle, cntrls, TIOCBUFFER ) )
+		if( !Fcntl( dev->dhandle, (long)cntrls, TIOCBUFFER ) )
 			return( (WORD) cntrls[0] );
 	}
 	
@@ -613,7 +618,7 @@ GLOBAL WORD SetRxBuffer( DEV_LIST *port, WORD size )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD GetRxBuffer( DEV_LIST *port )
+WORD GetRxBuffer( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -623,7 +628,7 @@ GLOBAL WORD GetRxBuffer( DEV_LIST *port )
 	{
 		cntrls[0] = cntrls[1] = cntrls[2] = cntrls[3] = -1L;
 		
-		if( !Fcntl( dev->dhandle, cntrls, TIOCBUFFER ) )
+		if( !Fcntl( dev->dhandle, (long)cntrls, TIOCBUFFER ) )
 			return( (WORD) cntrls[0] );
 	}
 
@@ -632,7 +637,7 @@ GLOBAL WORD GetRxBuffer( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN PortSendByte( DEV_LIST *port, BYTE c )
+BOOLEAN PortSendByte( DEV_LIST *port, BYTE c )
 {
 	DEVICES	*dev;
 	
@@ -659,7 +664,7 @@ GLOBAL BOOLEAN PortSendByte( DEV_LIST *port, BYTE c )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN PortSendBlock( DEV_LIST *port, BYTE *block, LONG len, BOOLEAN tst_dcd )
+BOOLEAN PortSendBlock( DEV_LIST *port, BYTE *block, LONG len, BOOLEAN tst_dcd )
 {
 	DEVICES	*dev;
 	
@@ -682,7 +687,7 @@ GLOBAL BOOLEAN PortSendBlock( DEV_LIST *port, BYTE *block, LONG len, BOOLEAN tst
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD PortGetByte( DEV_LIST *port )
+WORD PortGetByte( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -708,7 +713,7 @@ GLOBAL WORD PortGetByte( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL WORD PortPeekByte( DEV_LIST *port )
+WORD PortPeekByte( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -725,7 +730,7 @@ GLOBAL WORD PortPeekByte( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN OutIsEmpty( DEV_LIST *port )
+BOOLEAN OutIsEmpty( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	IOREC	*iorec;
@@ -734,7 +739,7 @@ GLOBAL BOOLEAN OutIsEmpty( DEV_LIST *port )
 	
 	if( dev->dhandle>=0 )
 	{
-		if( !Fcntl( dev->dhandle, cntrls, TIONOTSEND ) )
+		if( !Fcntl( dev->dhandle, (long)cntrls, TIONOTSEND ) )
 			return( cntrls[0]==0L );
 	}
 	
@@ -746,7 +751,7 @@ GLOBAL BOOLEAN OutIsEmpty( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN WaitOutEmpty( DEV_LIST *port, BOOLEAN tst_dcd, UWORD wait )
+BOOLEAN WaitOutEmpty( DEV_LIST *port, BOOLEAN tst_dcd, UWORD wait )
 {
 	ULONG	time_to_wait;
 	
@@ -771,7 +776,7 @@ GLOBAL BOOLEAN WaitOutEmpty( DEV_LIST *port, BOOLEAN tst_dcd, UWORD wait )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN CharAvailable( DEV_LIST *port )
+BOOLEAN CharAvailable( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -785,7 +790,7 @@ GLOBAL BOOLEAN CharAvailable( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID ClearIOBuffer( DEV_LIST *port, LONG io )
+void ClearIOBuffer( DEV_LIST *port, LONG io )
 {
 	DEVICES	*dev;
 	IOREC	*iorec;
@@ -827,7 +832,7 @@ GLOBAL VOID ClearIOBuffer( DEV_LIST *port, LONG io )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID DtrOn( DEV_LIST *port )
+void DtrOn( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -837,7 +842,7 @@ GLOBAL VOID DtrOn( DEV_LIST *port )
 	{
 		cntrls[0] = cntrls[1] = TIOCM_DTR;
 		
-		Fcntl( dev->dhandle, cntrls, TIOCCTLSET );
+		Fcntl( dev->dhandle, (long)cntrls, TIOCCTLSET );
 	}
 	else
 	if( dev->func_num )
@@ -846,7 +851,7 @@ GLOBAL VOID DtrOn( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID DtrOff( DEV_LIST *port )
+void DtrOff( DEV_LIST *port )
 {
 	DEVICES	*dev;
 	
@@ -857,7 +862,7 @@ GLOBAL VOID DtrOff( DEV_LIST *port )
 		cntrls[0] = TIOCM_DTR;
 		cntrls[1] = 0;
 		
-		Fcntl( dev->dhandle, cntrls, TIOCCTLSET );
+		Fcntl( dev->dhandle, (long)cntrls, TIOCCTLSET );
 	}
 	else
 	if( dev->func_num )
@@ -866,31 +871,40 @@ GLOBAL VOID DtrOff( DEV_LIST *port )
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL BOOLEAN IsCarrier( DEV_LIST *port )
+BOOLEAN IsCarrier( DEV_LIST *port )
 {
 	DEVICES	*dev;
+	char path[64];
+	long dhandle;
+	LONG ccntrls[4];
 	
 	dev = (DEVICES *) port;
 	
-	if( dev->dhandle>=0 &&
-		dev->ioctrlmap[0] & TIOCM_CAR )
+	/* BUG: handle is already open? */
+	strcpy(path, "U:\\DEV\\");
+	strcpy(path + 7, dev->dopen); /* BUG: dopen may be NULL */
+	if ((dhandle = Fopen(path, FO_READ)) >= 0)
 	{
-		cntrls[0] = TIOCM_CAR;
+		ccntrls[0] = TIOCM_CAR;
 		
-		Fcntl( dev->dhandle, cntrls, TIOCCTLGET );
+		Fcntl( (int)dhandle, (long)ccntrls, TIOCCTLGET );
+		Fclose((int)dhandle);
 		
-		return( (UWORD) cntrls[0] & TIOCM_CAR );
+		if (((UWORD) ccntrls[0] & TIOCM_CAR ) == 0)
+			return FALSE;
+	} else
+	{
+		if( dev->func_num )
+			/* BUG: should be != 0 */
+			return is_dcd( dev->func_num-1 ) == TRUE ? TRUE : FALSE;
 	}
-	else
-	if( dev->func_num )
-		return( is_dcd( dev->func_num-1 ) );
 	
 	return( TRUE );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-GLOBAL VOID PortParameter( DEV_LIST *port, UWORD flowctl, UWORD charlen, UWORD stopbits, UWORD parity )
+void PortParameter( DEV_LIST *port, UWORD flowctl, UWORD charlen, UWORD stopbits, UWORD parity )
 {
 	DEVICES	*dev;
 	
@@ -900,12 +914,12 @@ GLOBAL VOID PortParameter( DEV_LIST *port, UWORD flowctl, UWORD charlen, UWORD s
 	{
 		UWORD	flags;
 		
-		if( !Fcntl( dev->dhandle, &flags, TIOCGFLAGS ) )
+		if( !Fcntl( dev->dhandle, (long)&flags, TIOCGFLAGS ) )
 		{
 			flags &= ~(TF_STOPBITS|TF_CHARBITS|TF_FLAG);
 			flags |= (flowctl|charlen|stopbits|parity);
 		
-			if( !Fcntl( dev->dhandle, &flags, TIOCSFLAGS ) )
+			if( !Fcntl( dev->dhandle, (long)&flags, TIOCSFLAGS ) )
 				return;
 		}
 	}
@@ -943,7 +957,7 @@ GLOBAL VOID PortParameter( DEV_LIST *port, UWORD flowctl, UWORD charlen, UWORD s
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL BOOLEAN InitStdDevices( MAPTAB *maps, BOOLEAN has_bconmap, WORD num_devices )
+static BOOLEAN InitStdDevices( MAPTAB *maps, BOOLEAN has_bconmap, WORD num_devices )
 {
 	DEVICES	*dptr, *dwalk=NULL;
 	WORD	loop, i;
@@ -1043,7 +1057,7 @@ LOCAL BOOLEAN InitStdDevices( MAPTAB *maps, BOOLEAN has_bconmap, WORD num_device
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL BOOLEAN InitRSVFDevices( MAPTAB *maps, RSVF_DEV *dev )
+static BOOLEAN InitRSVFDevices( MAPTAB *maps, RSVF_DEV *dev )
 {
 	DEVICES		*dwalk;
 	
@@ -1104,7 +1118,7 @@ LOCAL BOOLEAN InitRSVFDevices( MAPTAB *maps, RSVF_DEV *dev )
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL BOOLEAN CreateSpeedlist( DEVICES *dev )
+static BOOLEAN CreateSpeedlist( DEVICES *dev )
 {
 	if( (dev->speeds=(LONG *) calloc( MAX_SPEEDS, sizeof( LONG * ) ))==NULL )
 		return( FALSE );
@@ -1162,7 +1176,7 @@ LOCAL BOOLEAN CreateSpeedlist( DEVICES *dev )
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL BOOLEAN GetFcntlSpeeds( DEVICES *dev )
+static BOOLEAN GetFcntlSpeeds( DEVICES *dev )
 {
 	LONG	*dte_ptr;
 	LONG	last_dte, dte;
@@ -1171,7 +1185,7 @@ LOCAL BOOLEAN GetFcntlSpeeds( DEVICES *dev )
 	 * Aktuelle DTE-Speed retten:
 	 */
 	dev->device.curr_dte = -1;
-	if( Fcntl( dev->dhandle, &dev->device.curr_dte, TIOCIBAUD )<0 )
+	if( Fcntl( dev->dhandle, (long)&dev->device.curr_dte, TIOCIBAUD )<0 )
 		return( FALSE );
 	
 	/*
@@ -1183,7 +1197,7 @@ LOCAL BOOLEAN GetFcntlSpeeds( DEVICES *dev )
 	
 	while( TRUE )
 	{
-		Fcntl( dev->dhandle, &dte, TIOCIBAUD );
+		Fcntl( dev->dhandle, (long)&dte, TIOCIBAUD );
 
 		if( dte>=last_dte )
 		{
@@ -1199,14 +1213,14 @@ LOCAL BOOLEAN GetFcntlSpeeds( DEVICES *dev )
 	/*
 	 * DTE-Speed wiederherstellen:
 	 */	
-	Fcntl( dev->dhandle, &dev->device.curr_dte, TIOCIBAUD );
+	Fcntl( dev->dhandle, (long)&dev->device.curr_dte, TIOCIBAUD );
 	
 	return( TRUE );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL VOID GetFserSpeeds( DEVICES *dev )
+static void GetFserSpeeds( DEVICES *dev )
 {
 	BAUD_INFO	*walk, *table;
 	WORD		i, nums;
@@ -1262,7 +1276,7 @@ LOCAL VOID GetFserSpeeds( DEVICES *dev )
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL VOID FreeSpeedlist( DEVICES *dev )
+static void FreeSpeedlist( DEVICES *dev )
 {
 	if( dev->speeds )
 	{
@@ -1273,15 +1287,15 @@ LOCAL VOID FreeSpeedlist( DEVICES *dev )
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL VOID SetDevFunctions( DEVICES *dev )
+static void SetDevFunctions( DEVICES *dev )
 {
 	if( dev->dhandle>=0 )
-		Fcntl( dev->dhandle, dev->ioctrlmap, TIOCCTLMAP );
+		Fcntl( dev->dhandle, (long)dev->ioctrlmap, TIOCCTLMAP );
 }
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL VOID SetPortProtokoll( DEVICES *dev )
+static void SetPortProtokoll( DEVICES *dev )
 {
 	UWORD	flow=_RTSCTS;
 	
@@ -1298,18 +1312,18 @@ LOCAL VOID SetPortProtokoll( DEVICES *dev )
 	{
 		SGTTYB tty;
 		
-		if( !Fcntl( dev->dhandle, &tty, TIOCGETP ) )
+		if( !Fcntl( dev->dhandle, (long)&tty, TIOCGETP ) )
 		{
 			tty.sg_flags = T_RAW;
-			Fcntl( dev->dhandle, &tty, TIOCSETP );
-			Fcntl( dev->dhandle, &tty, TIOCGETP );
+			Fcntl( dev->dhandle, (long)&tty, TIOCSETP );
+			Fcntl( dev->dhandle, (long)&tty, TIOCGETP );
 		}
 	}
 }
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL BOOLEAN DevicePickup( DEVICES *dev )
+static BOOLEAN DevicePickup( DEVICES *dev )
 {
 	LONG	count;
 
@@ -1334,7 +1348,7 @@ LOCAL BOOLEAN DevicePickup( DEVICES *dev )
 
 /*-------------------------------------------------------------------*/ 
 
-LOCAL BOOLEAN DeviceSendBlock( DEVICES *dev, BYTE *block, LONG len, BOOLEAN tst_dcd )
+static BOOLEAN DeviceSendBlock( DEVICES *dev, BYTE *block, LONG len, BOOLEAN tst_dcd )
 {
 	LONG	sent=0L, help;
 	LONG	timeout=0;

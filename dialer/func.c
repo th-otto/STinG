@@ -111,7 +111,7 @@ ASSOC     asso[20];
 int       num_asso, num_sport, num_slayer, masque_there, ppp_errlist = 1;
 uint32    logging[2];
 char      tcpip_version[6], *ports[21], *all_ports[20], eff_passwd[32];
-char      version[] = "01.16", masq[] = "Masquerade";
+char      version[] = "01.17", masq[] = "Masquerade";
 
 char  ppp_errors[][30] = { "No PPP problem" };
 
@@ -487,8 +487,13 @@ int  do_connect()
              cntrl_port (the_port, (uint32) & pap[0], CTL_SERIAL_SET_PAP);
            }
 
+        cntrl_port (the_port, (uint32) &ip,     CTL_GENERIC_GET_IP);
+        sprintf(line, "P:%ld", ip);
+        setvstr("SAVD_PORT_IP", line);
         for (ip = count = 0; count < 4; count++)
              ip = (ip << 8) | (uint32) ip_address[count];
+        sprintf(line, "C:%ld", ip);
+        setvstr("SAVD_CONF_IP", line);
         cntrl_port (the_port, (uint32) ip,         CTL_GENERIC_SET_IP);
         cntrl_port (the_port, (uint32) port_mtu,   CTL_GENERIC_SET_MTU);
         cntrl_port (the_port, (uint32) port_flags, CTL_SERIAL_SET_PRTCL);
@@ -560,6 +565,8 @@ int  do_disconnect()
    PORT  *port;
    int   count;
    char  *route;
+   char  *ip;
+   uint32 saved_ip;
 
    if (connected) {
         change_freestring (START, MOD_STAT, ST_PBOX, " Offline", 8);
@@ -591,7 +598,28 @@ int  do_disconnect()
                        off_port (masq);
                 }
              off_port (asso[count].port);
-           }
+	        ip = getvstr("SAVD_PORT_IP");
+	        if (*ip != '0')
+	        {
+	        	if (*ip == 'P')
+	        	{
+	        		saved_ip = atol(ip + 2);
+	        		cntrl_port(asso[count].port, saved_ip, CTL_GENERIC_SET_IP);
+	        	}
+	        	setvstr ("SAVD_PORT_IP", "0");
+	        }
+	        ip = getvstr("SAVD_CONF_IP");
+	        if (*ip != '0')
+	        {
+	        	if (*ip == 'C')
+	        		saved_ip = atol(ip + 2);
+	    		ip_address[0] = (unsigned char)saved_ip >> 24; /* BUG: missing parentheses */
+	    		ip_address[1] = (unsigned char)saved_ip >> 16;
+	    		ip_address[2] = (unsigned char)saved_ip >> 8;
+	    		ip_address[3] = (unsigned char)(saved_ip);
+	        	setvstr ("SAVD_CONF_IP", "0");
+	        }
+        }
         port_lock = TRUE;
 
         if (! OpenDevice (curr_port)) {

@@ -29,7 +29,7 @@ c:\pc\orig\lib\pcstdli2.lib
 c:\pc\orig\lib\pctoslib.lib
 
 ;dev-lib\source\device.lib
-dev-lib\source\dev_lib.c [-K]
+dev-lib\source\dev_lib.c [-K -G]
 dev-lib\source\port.s
 dev-lib\source\dev_misc.s
 
