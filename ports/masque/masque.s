@@ -129,7 +129,7 @@ dummy_IP:
 
 my_driver:
 	dc.l	my_set_state	;drv_des_set_state
-	dc.l	my_ctrl		;drv_des_ctrl
+	dc.l	my_cntrl		;drv_des_cntrl
 	dc.l	my_send		;drv_des_send
 	dc.l	my_receive	;drv_des_receive
 	dc.l	driver_name_s	;drv_des_name
@@ -189,7 +189,7 @@ stx:		ds.l	1	;STX		*stx;
 ;Start of:	Resident functions and subroutines
 ;----------------------------------------------------------------------------
 
-my_ctrl:
+my_cntrl:
 	link	   a6,#0
 	movem.l	   d3-d5/a2-a5,-(sp)
 	moveq.l    #E_PARAMETER,d0
@@ -249,7 +249,7 @@ ctrl_set_ip:
     move.l     d0,prt_des_masqed_ip(a5)
 ctrl_set_ip1:
     move.l     d0,prt_des_ip_addr(a5)
-    moveq.l    #0,d0
+    moveq.l    #E_NORMAL,d0
     rts
 
 ctrl_get_ip:
@@ -1376,6 +1376,7 @@ Cconws_sub:
 
 ;----------------------------------------------------------------------------
 
+	.even
 text_limit:
 text_size	= text_limit-text_start
 	.data
@@ -1445,6 +1446,7 @@ error_tail_s:
 	dc.b	BEL,CR,LF,NUL
 
 ;----------------------------------------------------------------------------
+;	.even BUG: .even was missing, casuing Mshrink to be called with odd argument
 data_limit:
 data_size	equ	data_limit-data_start
 	.bss

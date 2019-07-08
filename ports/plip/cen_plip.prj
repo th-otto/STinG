@@ -1,0 +1,18 @@
+cen_plip.stx
+
+.S[-I..\..\dev-kit\pasm]
+
+.C[-A-]
+.C[-P-]
+.C[-M-]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+; module has its own stack
+.L[-S=0]
+
+=
+cen_plip.s

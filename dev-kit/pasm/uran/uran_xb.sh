@@ -232,7 +232,15 @@ XB_check_defined	set	XB_check_defined+1
 XB_install_defined	set	0
 ;
 .MACRO	XB_install	xbname,root
-	ifne	XB_install_defined=0
+
+	pea	root
+	pea	xbname
+	ifne	XB_install_defined
+	bsr	XB_install_code
+	addq	#8,sp
+	.else
+	bsr.s	XB_install_code
+	addq	#8,sp
 	bra	XB_install_code_end
 ;
 XB_install_code:
@@ -275,7 +283,7 @@ XB_install_code:
 .done_search:
 	tst.l	d0
 	bpl.s	.done_install	;branch if already installed
-	lea	xb_next(a1),a1
+	addq.w  #xb_next,a1
 	move.l	(a2),(a1)+	;link new XBRA to old chain
 	move.l	a1,(a2)		;store -> new XBRA as chain root
 .done_install:
@@ -302,15 +310,12 @@ XB_install_code:
 ;
 	movem.l	(sp)+,a3/a4
 	rts	;d0=found_vector  or  (last_chain_vector+1<<31)
+
+XB_install_defined	set	1
+
 XB_install_code_end:
 	endc
 ;
-	pea	root
-	pea	xbname
-	bsr	XB_install_code
-	addq	#8,sp
-;
-XB_install_defined	set	XB_install_defined+1
 .ENDM
 ;
 ;----------------------------------------------------------------------------
@@ -318,8 +323,17 @@ XB_install_defined	set	XB_install_defined+1
 XB_remove_defined	set	0
 ;
 .MACRO	XB_remove	xbname,root
-	ifne	XB_remove_defined=0
+	pea	root
+	pea	xbname
+
+	ifne	XB_remove_defined
+	bsr	XB_remove_code
+	addq	#8,sp
+	.else
+	bsr.s	XB_remove_code
+	addq	#8,sp
 	bra	XB_remove_code_end
+
 ;
 XB_remove_code:
 	movem.l	a3/a4,-(sp)
@@ -388,16 +402,12 @@ XB_remove_code:
 ;
 	movem.l	(sp)+,a3/a4
 	rts	;d0=found_vector  or  (last_chain_vector+1<<31)
+
+XB_remove_defined	set	1
 ;
 XB_remove_code_end:
 	endc
 ;
-	pea	root
-	pea	xbname
-	bsr	XB_remove_code
-	addq	#8,sp
-;
-XB_remove_defined	set	XB_remove_defined+1
 .ENDM
 ;
 ;----------------------------------------------------------------------------

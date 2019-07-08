@@ -708,7 +708,7 @@ sl_isym	.buf_copy_lp_,uni__v
 	move.b	(src_areg)+,(dest_areg)+
 sl_isym	.buf_copy_ct_,uni__v
 	subq.sz	#1,len_dreg
-	op_isym	bge.s,.buf_copy_lp_,uni__v
+	op_isym	bcc.s,.buf_copy_lp_,uni__v
 uni__v	=	uni__v+1
 .ENDM	buf_copy_b
 ;
@@ -718,7 +718,7 @@ sl_isym	.buf_copy_lp_,uni__v
 	move.w	(src_areg)+,(dest_areg)+
 sl_isym	.buf_copy_ct_,uni__v
 	subq.sz	#2,len_dreg
-	op_isym	bge.s,.buf_copy_lp_,uni__v
+	op_isym	bcc.s,.buf_copy_lp_,uni__v
 uni__v	=	uni__v+1
 .ENDM	buf_copy_w
 ;
@@ -728,7 +728,7 @@ sl_isym	.buf_copy_lp_,uni__v
 	move.l	(src_areg)+,(dest_areg)+
 sl_isym	.buf_copy_ct_,uni__v
 	subq.sz	#4,len_dreg
-	op_isym	bge.s,.buf_copy_lp_,uni__v
+	op_isym	bcc.s,.buf_copy_lp_,uni__v
 uni__v	=	uni__v+1
 .ENDM	buf_copy_l
 ;
