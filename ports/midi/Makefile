@@ -17,6 +17,6 @@ clean distclean::
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a midi.stx $(RELEASE_DIR)/sting
+	cp -a midi.stx $(RELEASE_DIR)/sting/midi.sty
 	$(MKDIR) $(RELEASE_DIR)/doc
 	cp -a modslip.txt $(RELEASE_DIR)/doc

@@ -129,7 +129,7 @@ dummy_IP:
 
 my_driver:
 	dc.l	my_set_state	;drv_des_set_state
-	dc.l	my_ctrl		;drv_des_ctrl
+	dc.l	my_cntrl		;drv_des_ctrl
 	dc.l	my_send		;drv_des_send
 	dc.l	my_receive	;drv_des_receive
 	dc.l	driver_name_s	;drv_des_name
@@ -189,7 +189,7 @@ stx:		ds.l	1	;STX		*stx;
 ;Start of:	Resident functions and subroutines
 ;----------------------------------------------------------------------------
 
-my_ctrl:
+my_cntrl:
 	link	   a6,#0
 	movem.l	   d3-d5/a2-a5,-(sp)
 	moveq.l    #E_PARAMETER,d0
@@ -297,9 +297,9 @@ ctrl_get_stat:
     rts
 
 ctrl_clr_stat:
-    clr.w      prt_des_stat_dropped ; BUG: missing (a5)
-    clr.l      prt_des_stat_sd_data ; BUG: missing (a5)
-    clr.l      prt_des_stat_rcv_data ; BUG: missing (a5)
+    clr.w      prt_des_stat_dropped(a5)
+    clr.l      prt_des_stat_sd_data(a5)
+    clr.l      prt_des_stat_rcv_data(a5)
     moveq.l    #E_NORMAL,d0
     rts
 

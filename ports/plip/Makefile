@@ -22,6 +22,6 @@ clean distclean::
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a cen_plip.stx $(RELEASE_DIR)/sting
+	cp -a cen_plip.stx $(RELEASE_DIR)/sting/cen_plip.sty
 	$(MKDIR) $(RELEASE_DIR)/doc
 	cp -a cen_plip.hyp $(RELEASE_DIR)/doc

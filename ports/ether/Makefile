@@ -18,4 +18,4 @@ clean distclean::
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a ether.stx $(RELEASE_DIR)/sting
+	cp -a ether.stx $(RELEASE_DIR)/sting/ether.sty

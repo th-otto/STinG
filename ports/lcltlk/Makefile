@@ -17,4 +17,4 @@ clean distclean::
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a lcltlk.stx $(RELEASE_DIR)/sting
+	cp -a lcltlk.stx $(RELEASE_DIR)/sting/lcltlk.sty

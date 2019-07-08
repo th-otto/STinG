@@ -22,6 +22,6 @@ clean distclean::
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a masque.stx $(RELEASE_DIR)/sting
+	cp -a masque.stx $(RELEASE_DIR)/sting/masque.sty
 	$(MKDIR) $(RELEASE_DIR)/doc
 	cp -a masque.hyp masque.txt $(RELEASE_DIR)/doc
