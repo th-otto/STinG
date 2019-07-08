@@ -1,0 +1,17 @@
+-----------------------------------------------------------------------------
+File name:	DEVPHEAD.TXT			Revision date:	2000.06.15
+Revised by:	Ronald Andersson		Creation date:	2000.06.15
+Created by	Ronald Andersson
+-----------------------------------------------------------------------------
+The header files in this folder are intended for use with DevPac 3, and also
+rely on my STNGDEVP macro collection which is available on the STinG homepage.
+(You need that package for these API macros to work.)
+
+That package is what I use for most of my software development, so it has
+not only macros for STinG support, but contains extensive support for most
+system features available to Atari computers.
+
+It is under constant development, and will so remain...
+-----------------------------------------------------------------------------
+End of file:	DEVPHEAD.TXT
+-----------------------------------------------------------------------------

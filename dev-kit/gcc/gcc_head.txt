@@ -1,0 +1,21 @@
+-----------------------------------------------------------------------------
+File name:	GCC_HEAD.TXT			Revision date:	2000.06.15
+Revised by:	Ronald Andersson		Creation date:	2000.06.15
+Created by	Ronald Andersson
+-----------------------------------------------------------------------------
+The header files in this folder (currently only TRANSPRT.H) are primarily
+intended for use with 'Gnu C' version 2.8.1, with which they have been
+tested.  They differ from older versions in that STinG calls will be
+compiled properly even when the default 'int' size of GCC is 'long'.
+
+As yet this has only been used for the STinG network routines of the DOOM
+engine developed by Patrice Mandin (version 0.25 and later), so it is
+possible that some 'typos' and/or other bugs remain which I have missed.
+Please contact me if you find any such. (Contact info is in STING.HYP)
+
+You should also contact me if you need other STING header files fixed for
+GCC compatibility.  At present PureC is the main compiler for STinG, and
+therefore I do not need GCC headers for STinG module development yet.
+-----------------------------------------------------------------------------
+End of file:	GCC_HEAD.TXT
+-----------------------------------------------------------------------------

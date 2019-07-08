@@ -1,0 +1,16 @@
+-----------------------------------------------------------------------------
+File name:	PASMHEAD.TXT			Revision date:	2000.06.15
+Revised by:	Ronald Andersson		Creation date:	2000.06.15
+Created by	Ronald Andersson
+-----------------------------------------------------------------------------
+The header files in this folder are intended for use with PASM, the PureC
+assembler, and also rely on my STNGPASM macro collection which is available
+on the STinG homepage. (You need that package for these API macros to work.)
+
+Due to bugs discovered in PASM, I have switched to DevPac for most of my
+assembly projects, and no longer develop the STNGPASM macros further.
+But I will keep updating these header files as needed, since some others
+may need them.
+-----------------------------------------------------------------------------
+End of file:	PASMHEAD.TXT
+-----------------------------------------------------------------------------
