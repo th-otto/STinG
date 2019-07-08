@@ -145,12 +145,12 @@ get  indirect access to  internet (requires Masque.Stx), you do not need any
 other entries than the one for  PLIP, which should then have  0.0.0.0 in all
 the IP number/network fields.  Like this:
 
-0.0.0.0     0.0.0.0     Centr. PLIP 0.0.0.0
+0.0.0.0         0.0.0.0         Centr. PLIP     0.0.0.0
 
 For the master unit the "Centr. PLIP" entry needs to be a small subnet spec,
 and could look like this:
 
-1.0.255.0   255.255.255.0   Centr. PLIP 0.0.0.0
+1.0.255.0       255.255.255.0   Centr. PLIP     0.0.0.0
 
 Remember that this line must come before the default route, used for the
 internet connection, since the file may not be processed below that line.
@@ -184,8 +184,8 @@ too, to minimize grounding problems, but that is up to you.
 The necessary connections are specified as one connecting line per character
 row in the diagram below:
 
-        DB-25           DB-25
-        Unit A          Unit B
+        DB-25               DB-25
+        Unit A              Unit B
     ---------------     ---------------
       pin   name          pin   name
       ---   ----          ---   ----
@@ -262,10 +262,10 @@ implement the new @{"API" LINK "API"} function '@{"cntrl_port" LINK "The `cntrl_
 
 Cen_PLIP currently supports the following @{"cntrl_port" LINK "The `cntrl_port' Function"} opcodes:
 
-CTL_GENERIC_SET_IP  =>  Set IP number of the port
-CTL_GENERIC_GET_IP  =>  Get IP number of the port
-CTL_GENERIC_SET_MTU =>  Set MTU size of the port
-CTL_GENERIC_GET_MTU =>  Get MTU size of the port
+CTL_GENERIC_SET_IP      =>  Set IP number of the port
+CTL_GENERIC_GET_IP      =>  Get IP number of the port
+CTL_GENERIC_SET_MTU     =>  Set MTU size of the port
+CTL_GENERIC_GET_MTU     =>  Get MTU size of the port
 CTL_GENERIC_GET_MMTU    =>  Get Max MTU size of the port
 CTL_GENERIC_GET_TYPE    =>  Get port link type of the port
 CTL_GENERIC_GET_STAT    =>  Get port transfer statistics
@@ -340,7 +340,7 @@ Cen_PLIP : Development History                                     STinG
         After 48 hours nearly continuous work at speed optimization
         this version has now achieved bulk transfer rates averaging
         at 6100 cps (equivalent to serial 61000 bps), when browsing
-        from a 16 MHz Mega ST4 running @{"CAB" LINK "CAB"} 2.7 + CAB.OVL 1.2805 to
+        from a 16 MHz Mega ST4 running CAB 2.7 + CAB.OVL 1.2805 to
         access pages/files on a 16 MHz falcon running SHTTPD 2.2.
         This is good enough to release, though I still expect more!
 
@@ -354,7 +354,7 @@ Cen_PLIP : Development History                                     STinG
         is not released.  Who wants PLIP at 1000 cps...?  :-(
 
  1.05       1997 October 25
-        Added module basepage pointer to @{"DRIVER" LINK "DRIVER"} structure.
+        Added module basepage pointer to DRIVER structure.
         This is a new standard defined to ease debugging.
 
 

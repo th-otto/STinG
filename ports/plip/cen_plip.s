@@ -1,5 +1,5 @@
 ;----------------------------------------------------------------------------
-;File name:	CEN_PLIP.S			Revision date:	1997.02.12
+;File name:	CEN_PLIP.S			Revision date:	1999.10.17
 ;Creator:	Ulf Ronald Andersson		Creation date:	1997.08.18
 ;(c)1997 by:	Ulf Ronald Andersson		All rights reserved
 ;Feedback to:	dlanor@oden.se			Released as FREEWARE
@@ -12,6 +12,9 @@
 	.include	"uran\uran_dos.sh"	;GEMDOS, BIOS, XBIOS
 	.include	"uran\uran_jar.sh"	;Cookie jar handling
 	.include	"uran\uran_xb.sh"	;XBRA protocol
+	.include	"uran\uran_ram.sh"	;RAM allocation
+
+RAM_chunk	=	80038
 
 XB_cpu_mode	set	1	;never test mode or call Super in XB-macros
 
@@ -28,16 +31,16 @@ XB_cpu_mode	set	1	;never test mode or call Super in XB-macros
 USE_TIMER	equ	0	;1 enables 'my_timer_func', 0 disables it.
 USE_LOOPING	equ	1	;1 enables multipacket sending, 0 disables it
 
-M_YEAR	equ	1998
-M_MONTH	equ	2
-M_DAY	equ	12
+M_YEAR	equ	1999
+M_MONTH	equ	10
+M_DAY	equ	17
 
 .MACRO	M_TITLE
 	dc.b	'Centr. PLIP'
 .ENDM	M_TITLE
 
 .MACRO	M_VERSION
-	dc.b	'01.07'
+	dc.b	'01.19'
 .ENDM	M_VERSION
 
 .MACRO	M_AUTHOR
@@ -50,12 +53,12 @@ M_DAY	equ	12
 
 MAX_mtu		equ	4096	;mtu may not be raised above this level
 MAX_resend	equ	5	;at most 10 attempts per packet
-MAX_buffers	equ	20	;at most 10 buffers used in plip_tx_q
+MAX_buffers	equ	10	;at most 10 buffers used in plip_tx_q
 
-MAX_portwork	equ	20/5	;For high level STinG ports
+MAX_portwork	equ	10/5	;For high level STinG ports
 MAX_shake	equ	10/5	;Handshakes should be faster
 MAX_work	equ	25/5	;Continuous work must last less
-MAX_delay	equ	200/5	;tween-interrupt delays must be less
+MAX_delay	equ	100/5	;tween-interrupt delays must be less
 
 /*
  * SLIP/PLIP special character codes
@@ -108,6 +111,7 @@ my_port:
 
 my_driver:
 	dc.l	my_set_state	;drv_des_set_state
+	dc.l	my_cntrl		;drv_des_cntrl
 	dc.l	my_send		;drv_des_send
 	dc.l	my_receive	;drv_des_receive
 	dc.l	driver_name_s	;drv_des_name
@@ -138,22 +142,28 @@ sting_drivers:	ds.l	1	;DRV_LIST	*sting_drivers;
 tpl:		ds.l	1	;TPL		*tpl;
 stx:		ds.l	1	;STX		*stx;
 
-mode_vect:	dc.l	cv_ExitRout	;-> Interrupt mode code routines
+mode_vect:	dc.l	cv_ExitRout1	;-> Interrupt mode code routines
 maintime:	dc.l	0	;long timer for total work per interrupt
-shaketime:	dc.w	0	;word timer for handshakes
+shaketime:	dc.l	0	;long timer for handshakes
+
+pl_open_sema:			dc.w 0
 
 plip_rx_q:	dc.l	0	;-> queue of raw plip datagrams received
 recv_buf_p:	dc.l	0	;-> current raw plip datagram being received
 recv_pos_p:	dc.l	0	;-> current receive position in datagram
 recv_max_p:	dc.l	0	;-> receive position of datagram end
 
-send_need_f:			;both words below, as combined longword
 plip_tx_q_ct:	dc.w	0	;counts buffers in plip_tx_q
-plip_resend_ct:	dc.w	0	;counts need to resend buffer in send_buf_p
 plip_tx_q:	dc.l	0	;-> queue of raw plip datagrams to send
 send_buf_p:	dc.l	0	;-> current raw plip datagram to send
 send_pos_p:	dc.l	0	;-> current send position in datagram
 send_max_p:	dc.l	0	;-> send position of datagram end
+
+plip_resend_ct:	dc.l 0
+				dc.w 0
+busy_flag:		dc.w 0xff00
+interrupt_sema:	dc.w 0
+allocate_sema:	dc.w 0
 
 reg_save:	ds.l	16
 
@@ -258,13 +268,16 @@ uni__v	=		uni__v+1
 
 ;-------------------------------------
 
-.MACRO	pl_send_ack	temp
+.MACRO	pl_send_ack	temp,temp2
 	move.b		#14,(hw_psgsel).w
 	move.b		(hw_psgrd).w,temp
+	move.b		temp,temp2
 	bclr		#5,temp
+	bset		#5,temp2
 	move.b		temp,(hw_psgwr).w
-	bset		#5,temp
 	move.b		temp,(hw_psgwr).w
+	move.b		temp2,(hw_psgwr).w
+	move.b		temp2,(hw_psgwr).w
 .ENDM	pl_send_ack
 
 ;-------------------------------------
@@ -295,50 +308,113 @@ uni__v	=		uni__v+1
 	move.l		#cv_InitRecv,mode_vect	;set mode vector
 .ENDM	pl_abort_recv
 
-;-------------------------------------
-
-.MACRO	pl_handshake	suffix
-	move.l		#cv_&suffix,mode_vect	;set mode vector
-shake_&suffix:
-	move		(_hz_200+2).w,shaketime	 ;memorize shake time
-.loop:
-	pl_interrupt	(sp)			;poll system interrupts
-.REPT	6				;Repeat inline test 6 times
-	pl_take_ack				;byte arrived yet ?
-	bne		cv_&suffix		;go handle data
-.ENDM	6				;End of repeated inline test	
-	move		(_hz_200+2).w,d0	;d0 = current time
-	sub		shaketime(pc),d0	;d0 = time diff
-	cmp		#MAX_shake,d0		;timeout ?
-	blo		.loop			;loop back unless timed out
-	bra		cv_ExitRout		;go exit from interrupt
-
-cv_&suffix:
-.ENDM	pl_handshake
-
-;-------------------------------------
-
-.MACRO	pl_timejump	suffix,opt_flag
-.IFNB	opt_flag
-	move.l		#cv_&suffix,mode_vect	;set mode vector
-.ENDIF
-	addq.b		#8,byte_watch
-	bcc		shake_&suffix
-	move		(_hz_200+2).w,d0	;d0 = current time
-	sub		maintime+2(pc),d0	;d0 = time diff
-	cmp		#MAX_work,d0		;timeout ?
-	blo		shake_&suffix		;loop back unless timed out
-	bra		cv_ExitRout		;go exit from interrupt
-.ENDM	pl_timejump
 ;----------------------------------------------------------------------------
 ;Start of:	Port driver functions
 ;----------------------------------------------------------------------------
-;void	my_timer_func(void);
 
-.IF	USE_TIMER
-.ENDIF	USE_TIMER
+;----------------------------------------------------------------------------
+;void	my_cntrl(PORT *port, uint32, int16);
+;
+my_cntrl:
+	link	   a6,#0
+	movem.l	   d3-d5/a2-a5,-(sp)
+	moveq.l    #E_PARAMETER,d0
+	lea	my_port(pc),a5			;a5 -> my_port
+	cmpa.l	8(a6),a5			;argument correct
+	bne.s      exit_ctrl				;exit if argument incorrect
+	moveq.l    #E_FNAVAIL,d0
+	move.w     16(a6),d2        ; get type
+	lea        ctrl_tab(pc),a0
+ctrl_loop:
+	move.w     (a0)+,d1
+	ble.s      exit_ctrl
+	movea.l    (a0)+,a1
+	cmp.w      d2,d1
+	bne.s      ctrl_loop
+	move.l     12(a6),d0        ; get argument
+	movea.l    d0,a0
+	jsr        (a1)
+exit_ctrl:
+	movem.l	   (sp)+,d3-d5/a2-a5
+	unlk	   a6
+	rts
 
-;end of my_timer_func
+ctrl_tab:
+	dc.w    CTL_GENERIC_SET_IP
+	dc.l	ctrl_set_ip
+	dc.w    CTL_GENERIC_GET_IP
+	dc.l	ctrl_get_ip
+	dc.w    CTL_GENERIC_SET_MTU
+	dc.l	ctrl_set_mtu
+	dc.w    CTL_GENERIC_GET_MTU
+	dc.l	ctrl_get_mtu
+	dc.w    CTL_GENERIC_GET_MMTU
+	dc.l	ctrl_get_mmtu
+	dc.w    CTL_GENERIC_GET_TYPE
+	dc.l	ctrl_get_type
+	dc.w    CTL_GENERIC_GET_STAT
+	dc.l	ctrl_get_stat
+	dc.w    CTL_GENERIC_CLR_STAT
+	dc.l	ctrl_clr_stat
+	dc.w    0
+
+ctrl_set_ip:
+    move.l     d0,prt_des_ip_addr(a5)
+    moveq.l    #0,d0
+    rts
+
+ctrl_get_ip:
+    move.l     prt_des_ip_addr(a5),(a0)
+    moveq.l    #E_NORMAL,d0
+    rts
+
+ctrl_set_mtu:
+    clr.l      d1
+    move.w     prt_des_max_mtu(a5),d1
+    cmp.l      d1,d0
+    bhi.s      ctrl_set_mtu1
+    cmp.w      #48,d0
+    bcc.s      ctrl_set_mtu2
+ctrl_set_mtu1:
+    moveq.l    #E_PARAMETER,d0
+    rts
+ctrl_set_mtu2:
+    move.w     d0,prt_des_mtu(a5)
+    moveq.l    #E_NORMAL,d0
+    rts
+
+ctrl_get_mtu:
+    move.w     prt_des_mtu(a5),(a0)
+    moveq.l    #E_NORMAL,d0
+    rts
+
+ctrl_get_mmtu:
+    move.w     prt_des_max_mtu(a5),(a0)
+    moveq.l    #E_NORMAL,d0
+    rts
+
+ctrl_get_type:
+    move.w     prt_des_type(a5),(a0)
+    moveq.l    #E_NORMAL,d0
+    rts
+
+ctrl_get_stat:
+    clr.l      d0
+    move.w     prt_des_stat_dropped(a5),d0
+    move.l     d0,(a0)+
+    move.l     prt_des_stat_sd_data(a5),(a0)+
+    move.l     prt_des_stat_rcv_data(a5),(a0)+
+    moveq.l    #E_NORMAL,d0
+    rts
+
+ctrl_clr_stat:
+    clr.w      prt_des_stat_dropped(a5)
+    clr.l      prt_des_stat_sd_data(a5)
+    clr.l      prt_des_stat_rcv_data(a5)
+    moveq.l    #E_NORMAL,d0
+    rts
+
+
 ;----------------------------------------------------------------------------
 ;void	my_send(PORT *port);
 
@@ -425,13 +501,12 @@ my_receive:
 	set_dgram_ttl	(a3)			;init time-to-live data
 
 	lea		prt_des_receive(a5),a0	;a0 -> receive queue root ptr
-	move.l		(a0),a1			;a1 -> receive queue root
 	bra		.store_test
 
 .store_loop:
-	move.l		a1,a0			;a0 -> last tested datagram
-	move.l		IPDG_next(a1),a1	;a1 -> next datagram or is NULL
+	lea.l		IPDG_next(a1),a0	;a1 -> next datagram or is NULL
 .store_test:
+	move.l		(a0),a1			;a1 -> receive queue root
 	move.l		a1,d0			;test next datagram
 	bne		.store_loop		;loop until queue end found
 	move.l		a3,(a0)			;store new dgram at queue end
@@ -443,7 +518,9 @@ my_receive:
 .error:
 	addq		#1,prt_des_stat_dropped(a5)	;increment drop count
 .release:
-	KRfree		(a4)			;release used datagram buffer
+    ori.w      #$0700,sr
+    R_free	(a4)		;release used datagram buffer
+    move.w     32(a7),sr
 .IF	USE_LOOPING
 	move.l		plip_rx_q(pc),d3	;d3 -> Tx queue, empty ?
 	ble		.exit			;exit when queue empty
@@ -513,10 +590,12 @@ pass_send_pkt:
 	add		IPDG_pkt_length(a4),d3	;d3 = PLIP buffer size
 	moveq		#sizeof_PLIP,d0		;d0 = PLIP header size
 	add		d3,d0			;d0 = total size of PLIP struct
-	KRmalloc	d0			;allocate STinG RAM
+    move.w     sr,-(a7)
+    ori.w      #$0700,sr
+	R_alloc	d0			;allocate STinG RAM
+    move.w     (a7)+,sr
 	tst.l		d0			;did we get any ?
 	ble		.exit_direct		;exit if no RAM available
-	addq		#1,plip_tx_q_ct
 
 	move.l		d0,a2			;a2 -> PLIP buffer
 	clr.l		(a2)			;init link to next buffer
@@ -543,6 +622,7 @@ pass_send_pkt:
 	move.l		(a0),d0			;d0 -> next datagram or is NULL
 	bne		.store_loop		;loop until queue end reached
 	move.l		a2,(a0)
+	addq		#1,plip_tx_q_ct
 	move		d2,sr			;restore interrupt mask
 	move.l		d3,d0			;return PLIP packet length
 .exit_direct:
@@ -552,44 +632,35 @@ pass_send_pkt:
 ;----------------------------------------------------------------------------
 
 retrigger_plip:
-	btst		#0,(hw_isrb).w		;has STinG interrupted PLIP ?
-	bne		.exit_direct		;refuse such reentrancy
 	move		sr,-(sp)
 	or		#$0700,sr		;disable interrupts
 	move.l		mode_vect(pc),d0	;d0 -> current mode routine
 	cmp.l		#cv_InitRecv,d0		;are we in an initial mode ?
-	bls		.try_more_sending	;try sending when resting
-	move.l		(_hz_200).w,d1		;d1 = current time
-	sub.l		maintime(pc),d1		;d1 = current time - maintime
-	cmpi.l		#MAX_delay,d1		;timeout yet ?
-	bhs		.abort_old_stuff	;abort old traffic at timeout
-	move		(sp)+,sr		;restore entry interrupt mask
-	rts					;return to caller
+	bls		try_more_sending	;try sending when resting
+	move.l		(_hz_200).w,d0		;d0 = current time
+	sub.l		maintime(pc),d0		;d0 = current time - maintime
+	cmp.l		#MAX_delay,d0		;timeout yet ?
+	bcc		abort_old_stuff	;abort old traffic at timeout
+	bra	retrigger_exit
 
-.abort_old_stuff:
-	cmp.l		#cv_Shake_RTS,d0	;Are we in a sending mode
-	blo		.abort_recv
-.abort_send:
-	movem.l		d2/a2,-(sp)
-	pl_abort_send
-	movem.l		(sp)+,d2/a2
-	bra		.try_more_sending
-
-.abort_recv:
-	movem.l		d2/a2,-(sp)
-	pl_abort_recv
-	movem.l		(sp)+,d2/a2
-.try_more_sending:
-	move.l		send_need_f(pc),d0	;Is there anything to send ?
-	beq		.exit
-.send_stuff:
+abort_old_stuff:
+	move.l		(_hz_200).w,d0		;d0 = current time
+	sub.l		shaketime(pc),d0		;d0 = current time - shaketime
+	cmp.l		#MAX_delay,d0		;timeout yet ?
+	bcc		    abort_recv
+	bra	retrigger_exit
+abort_recv:
+	bsr allocate_buffers
+try_more_sending:
+	move.w		plip_tx_q_ct(pc),d0	;Is there anything to send ?
+	ble		retrigger_exit
+send_stuff:
 	pl_set_strobe	1,d0			;normalize strobe
 	move.l		(_hz_200).w,maintime	;memorize time
-	move.l		#cv_Shake_RTS,mode_vect	;set mode vector
-	pl_send_ack	d0			;send ack as initial RTS
-.exit:
+	pl_send_ack	d0,d1			;send ack as initial RTS
+	move.l		#cv_Recv_Pkt,mode_vect	;set mode vector
+retrigger_exit:
 	move		(sp)+,sr		;restore entry interrupt mask
-.exit_direct:
 	rts					;return to caller
 
 ;ends	retrigger_plip
@@ -616,12 +687,12 @@ make_IP_dgram:
 	cmp		IPDG_hdr+IPHD_length(a3),d5
 	blo		.free_a3		;if (temp->hdr.length > buff_len
 	move.b		IPDG_hdr+IPHD_verlen_f(a3),d0
-	and.l		#amask_IPHD_f_hd_len,d0
+	andi.l		#amask_IPHD_f_hd_len,d0
 	asl		#2,d0
 	cmp		d5,d0
 	bhi		.free_a3		;|| (temp->hdr.hd_len << 2) > buff_len
 	move		d0,d3			;d3 = (temp->hdr.hd_len << 2)
-	sub		#sizeof_IPHD,d0
+	subi		#sizeof_IPHD,d0
 	blt		.free_a3		;|| temp->hdr.hd_len < 5) {KRfree (temp); return;}
 	move		d0,IPDG_opt_length(a3)
 	KRmalloc	d0
@@ -665,6 +736,11 @@ make_IP_dgram:
 ;void  pl_open(void);
 
 pl_open:
+    tst.b      pl_open_sema
+    beq.s      pl_open1
+    bsr        pl_close
+pl_open1:
+    bsr        release_buffers
 
 	move.b		(hw_imrb).w,d3		;d3 = entry hw_imrb
 	pl_cli					;mask reception interrupt
@@ -686,12 +762,11 @@ pl_open:
 	bset		#0,(hw_ierb).w		;enable BUSY interrupt
 	bclr		#0,(hw_aer).w		;set BUSY edge sense to falling
 	pl_take_ack				;clear pending ACK if present
-	bsr		allocate_recv_buf
 	move.l		#cv_InitRecv,mode_vect	;set mode vector
 	move		(sp)+,sr		;reenable interrupts
-	bsr		release_buffers		;release buffers
 	pl_take_ack				;clear pending ACK if present
 	pl_sti					;unmask reception interrupt
+	st pl_open_sema
 	rts
 
 ;ends	pl_open
@@ -701,7 +776,7 @@ pl_open:
 pl_close:
 	move		sr,-(sp)		;push interrupt mask
 	or		#$0700,sr		;disable interrupts
-	move.l		#cv_ExitRout,mode_vect	;set mode vector
+	move.l		#cv_ExitRout1,mode_vect	;set mode vector
 
 	move.b		(hw_imrb).w,d3		;d3 = entry hw_imrb
 	pl_cli					;mask reception interrupt
@@ -746,6 +821,8 @@ pl_close:
 	bclr		#0,(hw_imrb).w
 .done_imrb:
 
+	sf pl_open_sema
+
 	move		(sp)+,sr		;pull interrupt mask
 release_buffers:
 	move		sr,-(sp)		;push interrupt mask
@@ -754,7 +831,7 @@ release_buffers:
 	pl_set_direct	0,d0			;set port for input
 	move.l		recv_buf_p(pc),d0
 	ble		.recv_buf_released
-	KRfree.i	d0
+	R_free.i	d0
 	clr.l		recv_buf_p
 .recv_buf_released:
 .release_rx_queue:
@@ -763,14 +840,13 @@ release_buffers:
 	beq		.rx_queue_released
 	move.l		d0,a0			;a0 -> raw datagram
 	move.l		(a0),plip_rx_q		;unlink this raw datagram
-	KRfree		(a0)			;release allocated buffer
+	R_free		(a0)			;release allocated buffer
 	bra		.release_rx_queue
 
 .rx_queue_released:
-	move		plip_resend_ct(pc),d0
-	beq.s		.send_buf_released
-	clr		plip_resend_ct
-	KRfree.i	send_buf_p(pc)
+	move.l		send_buf_p(pc),d0
+	ble.s		.send_buf_released
+	R_free.i	send_buf_p(pc)
 	clr.l		send_buf_p
 .send_buf_released:
 .release_tx_queue:
@@ -779,7 +855,7 @@ release_buffers:
 	beq		.tx_queue_released
 	move.l		d0,a0			;a0 -> raw datagram
 	move.l		(a0),plip_tx_q		;unlink this raw datagram
-	KRfree		(a0)			;release allocated buffer
+	R_free		(a0)			;release allocated buffer
 	bra		.release_tx_queue
 
 .tx_queue_released:
@@ -793,7 +869,7 @@ release_buffers:
 allocate_recv_buf:
 	move.l		recv_buf_p(pc),d0	;is there an old buffer ?
 	bgt		.have_buffer		;keep old buffer if present
-	KRmalloc	#sizeof_PLIP+MAX_mtu	;allocate raw datagram buffer
+	R_alloc	#sizeof_PLIP+2+MAX_mtu	;allocate raw datagram buffer
 	tst.l		d0			;did we get any ?
 	ble		.exit			;exit on allocation failure
 	move.l		d0,recv_buf_p
@@ -809,6 +885,49 @@ allocate_recv_buf:
 .exit:
 	rts
 
+allocate_buffers:
+	clr.w      -(a7)
+	move.w     sr,-(a7)
+	ori.w      #$0700,sr
+	move.w     allocate_sema(pc),d0
+	beq        allocate4
+	move.b     allocate_sema+1(pc),d0
+	beq.s      allocate2
+	movem.l    d2/a2,-(a7)
+	move.l     send_buf_p(pc),d0
+	ble.s      allocate1
+	movea.l    d0,a0
+	move.l     plip_tx_q(pc),(a0)
+	move.l     a0,plip_tx_q
+	addq.w     #1,plip_tx_q_ct
+	clr.l      send_buf_p
+	addq.w     #1,my_port+prt_des_stat_dropped
+allocate1:
+	pl_set_strobe	1,d0			;normalize strobe
+	pl_set_direct	0,d0			;set port for input
+    sf         allocate_sema+1
+    move.l     #cv_InitRecv,mode_vect
+    movem.l    (a7)+,d2/a2
+allocate2:
+	move.b     allocate_sema(pc),d0
+	beq.s      allocate4
+	movem.l    d2/a2,-(a7)
+	tst.b      allocate_sema
+	beq.s      allocate3
+	addq.w     #1,my_port+prt_des_stat_dropped
+allocate3:
+	pl_set_strobe	1,d0			;normalize strobe
+	pl_set_direct	0,d0			;set port for input
+    sf         allocate_sema
+	move.l     #cv_InitRecv,mode_vect
+	movem.l    (a7)+,d2/a2
+allocate4:
+	move.l     #cv_InitRecv,mode_vect
+	move.w     (a7)+,sr
+	move.w     (a7)+,d0
+	ext.l      d0
+	rts
+
 ;----------------------------------------------------------------------------
 ;End of:	Resident subroutines
 ;----------------------------------------------------------------------------
@@ -816,81 +935,205 @@ allocate_recv_buf:
 ;----------------------------------------------------------------------------
 
 	XB_define	cent_busy_XB,'plip'	;XBRA header
+	tas interrupt_sema+1
+	bmi halt
 	or		#$0700,sr		;disable all interrupts
 interrupt_loop:
 	movem.l		d0-d2/a0-a2,reg_save	;save entry regs d0-d2/a0-a2
-	move		(sp),d0			;d0 = old SR  (unknown mode)
-	ori		#$F8FF,d0		;d0 = masked for intmask
-	cmp		#$F4FF,d0		;int level > 4 ?
-	bhi.s		.done_intmask		;if higher, keep same level
-.force_intmask:
-	move		#$F4FF,d0		;enfore interrupt level 4
-.done_intmask:
-	move		sr,-(sp)		;push SR as prel polling SR
-	and		d0,(sp)			;mask polling SR intmask >= 4
+	move.w     (a7),-(a7)
+	clr.w      d0
+	move.b     (a7),d0
+	move.b     int_mask_table(pc,d0.w),(a7)
 	move.l		(_hz_200).w,maintime	;memorize initial time
-	move.l		mode_vect(pc),a0	;get current mode vector
-	jmp		(a0)			;go to current mode code
+	pl_take_ack				;clear pending ACK if present
+	bra cv_GoRout
+
+halt:
+	dc.w 0x4afc
+	bra halt
+
+int_mask_table:
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27,0x24,0x24,0x24,0x24,0x24,0x25,0x26,0x27
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
+	.dc.b 0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7,0xa4,0xa4,0xa4,0xa4,0xa4,0xa5,0xa6,0xa7
 
 ;----------------------------------------------------------------------------
 
+cv_GoRout:
+	pl_set_strobe	1,d0			;raise strobe to complete CTS
+	pl_set_direct	0,d0			;set port for input
+	pl_test_busy
+	sne busy_flag
+    move.b     #$0F,(hw_psgsel).w
+    move.b     (hw_psgsel).w,busy_flag+1
+    move.w     busy_flag(pc),d0
+	move.l		mode_vect(pc),a0	;get current mode vector
+	jmp		(a0)			;go to current mode code
+
+cv_ExitRecv:
+	move.l     (_hz_200).w,shaketime
+	addq.b     #4,byte_watch
+	bcs        cv_ExitRout
+	btst       #0,(hw_iprb).w
+	beq.s      cv_ExitRout
+	move.b     #$FE,(hw_iprb).w
+	btst       #0,(hw_iprb).w
+	beq.s      cv_ExitRecv1
+	move.b     #$FE,(hw_iprb).w
+cv_ExitRecv1:
+	move.w     (a7),sr
+	ori.w      #$0700,sr
+	bra        cv_GoRout
+
 cv_ExitRout:
-	move.l		(_hz_200).w,maintime	 ;memorize exit time
+    sf          interrupt_sema+1
 	addq		#2,sp			 ;pop polling SR
 	movem.l		reg_save(pc),d0-d2/a0-a2 ;pull entry regs d0-d2/a0-a2
-	move.b		#$FE,(hw_isrb).w	 ;flag service to hardware
+	move.b		#$FE,(hw_isrb).w		;flag service to hardware
 	rte
+cv_ExitRout1:
+	bra cv_ExitRecv
 
 ;----------------------------------------------------------------------------
 
 cv_InitRecv:
-	pl_take_ack				;multiple ACK ?
-	bne		cv_ExitRout		;abort on multiple ACK
-	pl_test_busy				;overlong ACK ?
-	beq		cv_ExitRout		;abort on overlong ACK
-	pl_set_strobe	0,d0			;lower strobe as initial CTS
-	pl_handshake	Recv_RTS
-	pl_set_strobe	1,d0			;raise strobe to complete CTS
+	bpl		cv_ExitRout		;abort on overlong ACK
 	bsr		allocate_recv_buf	;ensure buffer allocation
-	move.l		recv_buf_p(pc),d0	;test buffer pointer
-	ble		abort_Recv_Pkt		;abort if no buffer present
-	pl_take_ack				;multiple ACK ?
-	bne		abort_Recv_Pkt		;abort on multiple ACK
-	pl_test_busy				;overlong ACK ?
-	beq		abort_Recv_Pkt		;abort on overlong ACK
-	pl_send_ack	d0			;send ACK to request data
-back_Recv_Pkt:
-	pl_handshake	Recv_Pkt
-	pl_recv_byte	d0			;d0 = PLIP packet byte
-	cmp.b		#slip_ch_END,d0		;END code ?
-	beq		fix_recv_END		;go handle END when needed
+	ble		cv_ExitRout
+	pl_set_strobe	0,d0			;lower strobe as initial CTS
+	move.l #cv_InitRecv1,mode_vect
+	bra cv_ExitRecv
+
+cv_InitRecv1:
+	bpl go_InitRecv
+	pl_send_ack d0,d1
+	move.l #cv_InitRecv2,mode_vect
+	bra cv_ExitRecv
+
+cv_InitRecv2:
+	bpl go_InitRecv
+	cmp.b #slip_ch_END,d0
+	beq go_InitRecv
+
 	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
 	cmpa.l		recv_max_p(pc),a0	;is it too high ?
-	bhs		abort_Recv_Pkt		;if too high, abort reception
+	bhs		go_InitRecv		;if too high, abort reception
+shake_Recv_Pkt:
+	pl_send_ack	d1,d2			;acknowledge data received
 	cmp.b		#slip_ch_ESC,d0
-	beq		back_Recv_ESC		;go handle ESC when needed
-	pl_send_ack	d1			;acknowledge data received
+	beq		abort_Recv_Pkt		;go handle ESC when needed
 	move.b		d0,(a0)+		;store IP packet byte
 	move.l		a0,recv_pos_p		;update position pointer
-	pl_timejump	Recv_Pkt
+	st allocate_sema
+	move.l		#fix_recv_END,mode_vect	;set mode vector
+	bra		cv_ExitRecv		;go exit from interrupt
+
+go_InitRecv:
+	move.l		#cv_InitRecv,mode_vect	;set mode vector
+	bra		cv_ExitRecv		;go exit from interrupt
 
 abort_Recv_Pkt:
-	pl_abort_recv				;abort reception
-	bra		back_InitRecv		;set mode vector
+	move.l #back_Recv_ESC,mode_vect
+	bra		cv_ExitRecv
+
+;----------------------------------------------------------------------------
+
+back_Recv_ESC:
+	bpl go_InitRecv
+	cmp.b		#slip_ch_ESC_END,d0	;is this ESC_END
+	bne		.not_ESC_END		;go handle other ESCs than END
+	pl_send_ack	d1,d2			;acknowledge data received
+	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
+	move.b		#slip_ch_END,(a0)+	;store END as IP packet byte
+	move.l		a0,recv_pos_p		;update position pointer
+	st allocate_sema
+	move.l #fix_recv_END,mode_vect
+	bra		cv_ExitRecv
+
+.not_ESC_END:
+	cmp.b		#slip_ch_ESC_ESC, d0	;is this ESC_ESC
+	bne		go_InitRecv		;refuse unknown escaped char
+	pl_send_ack	d1,d2			;acknowledge data received
+	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
+	move.b		#slip_ch_ESC,(a0)+	;store IP packet byte
+	move.l		a0,recv_pos_p		;update position pointer
+	st allocate_sema
+	move.l #fix_recv_END,mode_vect
+	bra		cv_ExitRecv
 
 ;-------------------------------------
 
 fix_recv_END:
-	pl_send_ack	d0			;acknowledge data received
+	bpl back_InitRecv
+	cmp.b #slip_ch_END,d0
+	beq fix_recv_END2
+	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
+	cmpa.l		recv_max_p(pc),a0	;is it too high ?
+	bhs		back_InitRecv		;if too high, abort reception
+
+	pl_send_ack	d1,d2			;acknowledge data received
+	cmp.b		#slip_ch_ESC, d0	;is this ESC ?
+	beq		back_recv_END		;go handle ESC when needed
+	move.b d0,(a0)+
+	move.l		a0,recv_pos_p		;update position pointer
+	bra cv_ExitRecv
+	
+back_InitRecv:
+	tst.b allocate_sema
+	beq back_InitRecv1
+	addq.w #1,my_port+prt_des_stat_dropped
+back_InitRecv1:
+	pl_set_strobe	1,d0
+	pl_set_direct	0,d0			;set port for input
+	sf allocate_sema
+	move.l #cv_InitRecv,mode_vect
+	move.l #cv_InitRecv,mode_vect
+	bra cv_ExitRecv
+
+back_recv_END:
+	move.l #back_recv_END1,mode_vect
+	bra cv_ExitRecv
+
+back_recv_END1:
+	bpl back_InitRecv
+	cmp.b #slip_ch_ESC_END,d0
+	bne back_recv_END2
+	pl_send_ack	d1,d2			;acknowledge data received
+	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
+	move.b #slip_ch_END,(a0)+
+	move.l		a0,recv_pos_p		;update position pointer
+	move.l #fix_recv_END,mode_vect
+	bra cv_ExitRecv
+	
+back_recv_END2:
+	cmp.b #slip_ch_ESC_ESC,d0
+	bne back_InitRecv
+	pl_send_ack	d1,d2			;acknowledge data received
+	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
+	move.b #slip_ch_ESC,(a0)+
+	move.l		a0,recv_pos_p		;update position pointer
+	move.l #fix_recv_END,mode_vect
+	bra cv_ExitRecv
+
+fix_recv_END2:
+	pl_send_ack	d1,d2			;acknowledge data received
 	move.l		recv_buf_p(pc),a0	;a0 -> recv buffer struct
 	move.l		recv_pos_p(pc),d0	;d0 -> end of received data
 	lea		PLIP_data(a0),a1	;a1 -> start of received data
 	sub.l		a1,d0			;d0 = received data length
-	beq		shake_Recv_Pkt		;is the data length zero ?
-;The test above allows slip_ch_END to be used at both ends of a packet,
-;to make sure that the new packet is not mistaken as part of an old one.
-;This conforms with MintNet plip, although they do not use this in the
-;sending code, but only in receiving...
 	move		d0,PLIP_length(a0)	;store real data length
 	lea		plip_rx_q(pc),a0	;a0 -> receive queue root ptr
 	move.l		a0,d0			;d0 -> receive queue root ptr
@@ -900,116 +1143,131 @@ fix_recv_END:
 	bne		.store_loop		;loop until queue end reached
 	move.l		recv_buf_p(pc),(a0)	;store new dgram at queue end
 	clr.l		recv_buf_p		;erase buffer pointer
-	bsr		allocate_recv_buf	;get a new buffer for future
-back_InitRecv:
-	pl_set_direct	0,d0			;set port for input
+	sf allocate_sema
+	st interrupt_sema
 	move.l		#cv_InitRecv,mode_vect	;set mode vector
-	bra		cv_ExitRout		;go exit from interrupt
+	bra		cv_ExitRecv		;go exit from interrupt
 
 ;----------------------------------------------------------------------------
 
-back_Recv_ESC:
-	pl_send_ack	d1			;acknowledge data received
-	pl_handshake	Recv_ESC
-	pl_recv_byte	d0			;d0 = PLIP packet byte
-	cmp.b		#slip_ch_ESC_END,d0	;is this ESC_END
-	bne		.not_ESC_END		;go handle other ESCs than END
-	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
-	move.b		#slip_ch_END,(a0)+	;store END as IP packet byte
-	move.l		a0,recv_pos_p		;update position pointer
-	pl_send_ack	d1			;acknowledge data received
-	pl_timejump	Recv_Pkt,new_target	;loop back for more data
-
-.not_ESC_END:
-	cmp.b		#slip_ch_ESC_ESC, d0	;is this ESC_ESC
-	bne		abort_Recv_Pkt		;refuse unknown escaped char
-	move.l		recv_pos_p(pc),a0	;a0 -> IP packet position
-	move.b		#slip_ch_ESC,(a0)+	;store IP packet byte
-	move.l		a0,recv_pos_p		;update position pointer
-	pl_send_ack	d1			;acknowledge data received
-	pl_timejump	Recv_Pkt,new_target	;loop back for more data
-
-;----------------------------------------------------------------------------
-
-cv_Shake_RTS:
-	.REPT		50			;MintNet uses 50
+cv_Recv_Pkt:
+	bmi go_InitRecv
+	
+	.REPT		25			;MintNet uses 50
 	nop					;NOP delays here
-	.ENDM		50			;so CTS != ACK
+	.ENDM					;so CTS != ACK
 	pl_test_busy				;ACK lost now ?
-	bne		back_InitRecv		;abort on send collission
+	bne		go_InitRecv		;abort on send collission
 	pl_take_ack				;was it really the same ?
-	bne		back_InitRecv		;abort on send collission
+	bne		go_InitRecv		;abort on send collission
 ;Here we have initial CTS from opponent, and can complete our RTS.
-	pl_send_ack	d0			;send ack to confirm RTS
+	pl_send_ack	d0,d1			;send ack to confirm RTS
 ;But before sending any actual data, we must first init some stuff
-	move.l		send_buf_p(pc),d0	;resend old buffer ?
-	bgt		back_Send_Pkt		;go resend old buffer as needed
 	move.l		plip_tx_q(pc),d0	;d0 -> next buffer in plip_tx_q
-	ble		back_InitRecv		;abort if no buffer left
+	ble		go_InitRecv		;abort if no buffer left
+	move.l		d0,send_buf_p		;send_buf_p -> that buffer
 	move.l		d0,a0			;a0 -> the buffer found
-	move.l		a0,send_buf_p		;send_buf_p -> that buffer
 	move.l		(a0),plip_tx_q		;unlink it from plip_tx_q
 	subq		#1,plip_tx_q_ct		;decrement buffer count
 	move		PLIP_length(a0),d0	;d0 = data length of packet
-	lea		PLIP_data(a0),a0	;a0 -> data start in packet
+	addq.w		#PLIP_data,a0	;a0 -> data start in packet
 	move.l		a0,send_pos_p		;send_pos_p -> data start
 	lea		(a0,d0.w),a0		;A0 -> data end in packet
 	move.l		a0,send_max_p		;send_max_p -> data end
 back_Send_Pkt:
-	pl_set_direct	1,d0			;set port for output
-	pl_handshake	Send_Pkt
+	st allocate_sema+1
+	move.l #cv_Shake_RTS,mode_vect
+	bra cv_ExitRecv
+
+cv_Shake_RTS:
+	bpl cv_Shake_RTS1
 	move.l		send_pos_p(pc),a0	;a0 -> next character to send
 	cmpa.l		send_max_p(pc),a0	;is it at or beyond packet end
 	bhs		back_Send_EOF		;go handle packet end
+	move.b		(a0),d0		;d0 = IP byte to send
 	move.b		(a0)+,d0		;d0 = IP byte to send
 	move.l		a0,send_pos_p		;update pointer
 	cmp.b		#slip_ch_ESC, d0	;is this ESC ?
 	beq		back_Send_ESC		;go handle ESC when needed
 	cmp.b		#slip_ch_END,d0		;is this END ?
 	beq		back_Send_END		;go handle END when needed
+	pl_set_direct	1,d1			;set port for output
 	pl_send_byte	d0			;send PLIP byte
-	pl_send_ack	d0			;send ACK as data strobe
-	pl_timejump	Send_Pkt
+	pl_send_ack	d1,d2			;send ACK as data strobe
+	bra	cv_ExitRecv
 
-abort_Send_Pkt:
-	pl_abort_send				;abort reception
-	bra		back_InitRecv		;set mode vector
+cv_Shake_RTS1:
+	move.l		send_buf_p(pc),d0
+	ble		cv_Shake_RTS2
+	move.l	d0,a0
+	move.l plip_tx_q(pc),(a0)
+	move.l a0,plip_tx_q
+	addq.w		#1,plip_tx_q_ct
+	clr.l send_buf_p
+	addq		#1,prt_des_stat_dropped+my_port	;increment drop count
+cv_Shake_RTS2:
+	pl_set_strobe	1,d0			;normalize strobe
+	pl_set_direct	0,d0			;set port for input
+	sf allocate_sema+1
+	move.l		#cv_InitRecv,mode_vect	;set mode vector
+	move.l		#cv_InitRecv,mode_vect	;set mode vector
+	bra		cv_ExitRecv
 
 ;----------------------------------------------------------------------------
 
 back_Send_ESC:
+	pl_set_direct	1,d1			;set port for output
 	pl_send_byte	#slip_ch_ESC		;send ESC prefix byte
-	pl_send_ack	d0			;send ACK as data strobe
-	pl_handshake	Send_ESC
+	pl_send_ack	d1,d2			;send ACK as data strobe
+	move.l #back_Send_ESC1,mode_vect
+	bra cv_ExitRecv
+
+back_Send_ESC1:
+	bpl cv_Shake_RTS1
+	pl_set_direct	1,d1			;set port for output
 	pl_send_byte	#slip_ch_ESC_ESC	;send ESC_ESC suffix
-	pl_send_ack	d0			;send ACK as data strobe
-	pl_timejump	Send_Pkt,new_target	;loop back to send more data
+	pl_send_ack	d1,d2			;send ACK as data strobe
+	move.l #cv_Shake_RTS,mode_vect
+	bra cv_ExitRecv
 
 ;----------------------------------------------------------------------------
 
 back_Send_END:
+	pl_set_direct	1,d1			;set port for output
 	pl_send_byte	#slip_ch_ESC		;send ESC prefix byte
-	pl_send_ack	d0			;send ACK as data strobe
-	pl_handshake	Send_END
+	pl_send_ack	d1,d2			;send ACK as data strobe
+	move.l #back_Send_END1,mode_vect
+	bra cv_ExitRecv
+
+back_Send_END1:
+	bpl cv_Shake_RTS1
+	pl_set_direct	1,d1			;set port for output
 	pl_send_byte	#slip_ch_ESC_END	;send ESC_END suffix
-	pl_send_ack	d0			;send ACK as data strobe
-	pl_timejump	Send_Pkt,new_target	;loop back to send more data
+	pl_send_ack	d1,d2			;send ACK as data strobe
+	move.l #cv_Shake_RTS,mode_vect
+	bra cv_ExitRecv
 
 ;----------------------------------------------------------------------------
 
 back_Send_EOF:
+	pl_set_direct	1,d1			;set port for output
 	pl_send_byte	#slip_ch_END		;send END code
-	pl_send_ack	d0			;send ACK as data strobe
-	pl_handshake	Send_EOF
-	KRfree.i	send_buf_p(pc)
+	pl_send_ack	d1,d2			;send ACK as data strobe
+	move.l #back_Send_EOF1,mode_vect
+	bra cv_ExitRecv
+
+back_Send_EOF1:
+	bpl cv_Shake_RTS1
+	sf interrupt_sema
+	R_free.i send_buf_p(pc)
 	clr.l		send_buf_p
-	clr		plip_resend_ct
-	move.l		send_need_f(pc),d0	;any more to send ?
-	beq		back_InitRecv		;go to initial state if no more
+	sf allocate_sema+1
+	move.w		plip_tx_q_ct(pc),d0	;any more to send ?
+	beq		go_InitRecv		;go to initial state if no more
 back_Shake_RTS:
-	move.l		#cv_Shake_RTS,mode_vect	;indicate RTS handshake mode
-	pl_send_ack	d0			;send ack as initial RTS
-	bra		cv_ExitRout		;go exit from interrupt
+	pl_send_ack	d1,d2			;send ack as initial RTS
+	move.l		#cv_Recv_Pkt,mode_vect	;indicate RTS handshake mode
+	bra		cv_ExitRecv		;go exit from interrupt
 
 ;ends	cent_busy_XB
 ;----------------------------------------------------------------------------
@@ -1030,6 +1288,8 @@ dumb_cenbusy:
 	make		JAR_links
 	make		TCON_links
 	make		DOMAIN_links
+	_uniref RAM_own
+	make		RAM_links
 
 ;----------------------------------------------------------------------------
 resident_end:
@@ -1050,7 +1310,17 @@ start_1:
 	move.l		a5,basepage_p
 	tst.b		d7
 	bne		.ACC_launch
-	gemdos		Mshrink,#0,(a5),#initial_size
+
+	; gemdos		Mshrink,#0,(a5),#initial_size
+	; using the equ (text_size+data_size+bss_size) here is not reliable;
+	; seems PASM evaluates them only once during the 1st pass
+	move.l #((text_limit-text_start)+(data_limit-data_start)+(bss_limit-bss_start)+$100),-(a7)
+	pea.l      (a5)
+	move.w     #0,-(a7)
+	move.w     #$004A,-(a7)
+	trap       #1
+	lea.l      12(a7),a7
+
 	lea		bp_arglen(a5),a0
 	lea		STinG_Load_s(pc),a1
 	str_comp	a0,a1
@@ -1119,9 +1389,15 @@ start_1:
 	move.l		#my_port,prt_des_next(a3)
 	move.l		#my_driver,drv_des_next(a4)
 
+	gemdos		Super,0.w
+	move.l		d0,d4
+	RAM_own #1
+	RAM_set	resident_end(pc),#RAM_chunk+2042
+	gemdos		Super|_ind,d4
+
 	;gemdos		Ptermres,#resident_size,#0
 	move.w #0,-(a7)
-	move.l #resident_size,-(a7)
+	move.l #resident_size+RAM_chunk+1572,-(a7)
 	move.w #0x31,-(a7)
 	trap #1
 
@@ -1181,7 +1457,7 @@ start_1:
 .layer_not_valid:
 	lea		layer_not_valid_s(pc),a0
 .error_exit:
-	bsr		report_error
+	bsr.s		report_error
 	;gemdos		Pterm,#-1
 	move.w #-1,-(a7)
 	move.w #0x4c,-(a7)
@@ -1224,9 +1500,9 @@ know_iv_cenbusy:
 report_error:
 	move.l		a0,-(sp)
 	lea		error_title_s(pc),a0
-	bsr		Cconws_sub
+	bsr.s	Cconws_sub
 	move.l		(sp)+,a0
-	bsr		Cconws_sub
+	bsr.s	Cconws_sub
 	lea		error_tail_s(pc),a0
 Cconws_sub:
 	gemdos		Cconws,(a0)
@@ -1240,6 +1516,7 @@ Cconws_sub:
 	make	JAR_links
 	make	TCON_links
 	make	DOMAIN_links
+	make		RAM_links
 
 ;----------------------------------------------------------------------------
 
@@ -1317,6 +1594,7 @@ error_tail_s:
 	dc.b	BEL,CR,LF,NUL
 
 ;----------------------------------------------------------------------------
+	.even
 data_limit:
 data_size	equ	data_limit-data_start
 	.bss
@@ -1327,6 +1605,8 @@ bss_start:
 mystack:	ds.l	1		;top of subroutine stack
 
 ;----------------------------------------------------------------------------
+	ds.b RAM_chunk
+
 bss_limit:
 bss_size	equ	bss_limit-bss_start
 ;----------------------------------------------------------------------------
