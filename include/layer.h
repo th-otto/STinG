@@ -1,16 +1,19 @@
-/*
- *      layer.h             (c) Peter Rottengatter  1996
- *                              perot@pallas.amp.uni-hannover.de
- *
- *      Include this file to provide high level protocol interfacing to STinG
- */
+/*--------------------------------------------------------------------------*/
+/*	File name:	LAYER.H							Revision date:	1999.09.25	*/
+/*	Revised by:	Ulf Ronald Andersson			Revision start:	1999.09.21	*/
+/*	Created by:	Peter Rottengatter				Creation date:	1996.xx.xx	*/
+/*--------------------------------------------------------------------------*/
+/*	Header file for STinG protocol module source files.						*/
+/*--------------------------------------------------------------------------*/
+/*	Copyright:	(c) Peter Rottengatter  1996                                */
+/*	Released as FREEWARE for use and distribution, but not as Public Domain	*/
+/*--------------------------------------------------------------------------*/
 
 #ifndef STING_LAYER_H
 #define STING_LAYER_H
 
 #include "stx.h"
 #include "port.h"
-
 
 /*--------------------------------------------------------------------------*/
 
@@ -31,8 +34,6 @@ struct lay_desc {
 };
 
 
-
 /*--------------------------------------------------------------------------*/
-
 
 #endif /* STING_LAYER_H */

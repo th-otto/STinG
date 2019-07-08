@@ -5,13 +5,10 @@
 #ifndef MOD_DRIVER
 #define MOD_DRIVER
 
-#ifndef MODULE_DRIVER
-#define MODULE_DRIVER	 "MODULE_LAYER"
-#endif
-
 typedef struct lay_desc LAYER;
 typedef struct port_desc PORT;
 
+#define MODULE_DRIVER "MODULE_LAYER"
 
 #undef set_dgram_ttl
 #undef check_dgram_ttl
@@ -35,12 +32,8 @@ typedef struct port_desc PORT;
 #undef set_route_entry
 
 /*--------------------------------------------------------------------------*/
-
-
-/*
- *	 CN functions structure for TCP and UDP
- */
-
+/*	CN functions structure for TCP and UDP									*/
+/*--------------------------------------------------------------------------*/
 typedef struct cn_funcs {
 	int16  cdecl  (* CNkick) (void *);
 	int16  cdecl  (* CNbyte_count) (void *);
@@ -56,43 +49,46 @@ typedef struct cn_funcs {
  */
 
 typedef  struct drv_desc {
-	int16 cdecl  (* set_state) (PORT *, int16); 	  /* Setup and shutdown */
-	int16 cdecl  (* cntrl) (PORT *, uint32, int16);   /* Control functions	*/
-	void  cdecl  (* send) (PORT *); 				  /* Send packets		*/
-	void  cdecl  (* receive) (PORT *);				  /* Receive packets	*/
-	const char		 *name; 	/* Name of driver							*/
-	const char		 *version;	/* Version of driver in "xx.yy" format		*/
-	uint16			 date;		/* Compile date in GEMDOS format			*/
-	const char		 *author;	/* Name of programmer						*/
-	struct drv_desc  *next; 	/* Next driver in driver chain				*/
-	BASPAG			 *basepage; /* Basepage of this module					*/
+	int16 cdecl (* set_state) (PORT *, int16); /* Setup and shutdown		*/
+	int16 cdecl (* cntrl) (PORT *, uint32, int16); /* Control functions		*/
+	void  cdecl (* send) (PORT *);  /* Send packets							*/
+	void  cdecl (* receive) (PORT *); /* Receive packets					*/
+	const char *name;			/* Name of driver							*/
+	const char *version;		/* Version of driver in "xx.yy" format		*/
+	uint16 date;				/* Compile date in GEMDOS format			*/
+	const char *author;			/* Name of programmer						*/
+	struct drv_desc *next;		/* Next driver in driver chain				*/
+	BASPAG *basepage;			/* Basepage of this module					*/
 } DRIVER;
 
 
+/*--------------------------------------------------------------------------*/
+/*	Module driver structure / functions										*/
+/*--------------------------------------------------------------------------*/
 typedef struct stx {
 	const char * module;	  /* Specific string that can be searched for	  */
 	const char * author;	  /* Any string 								  */
 	const char * version;	  /* Format `00.00' Version:Revision			  */
-	void	   cdecl  (* set_dgram_ttl) (IP_DGRAM *datagram);
-	int16	   cdecl  (* check_dgram_ttl) (IP_DGRAM *datagram);
-	int16	   cdecl  (* load_routing_table) (void);
-	int32	   cdecl  (* set_sysvars) (int16 new_act, int16 new_frac);
-	void	   cdecl  (* query_chains) (PORT ** port, DRIVER ** drv, LAYER ** layer);
-	int16	   cdecl  (* IP_send) (uint32 src, uint32 dest, uint8 tos, uint16 frg, uint8 ttl, uint8 prctl, uint16 id, void *data, uint16 dlen, void *opt, uint16 olen);
-	IP_DGRAM * cdecl  (* IP_fetch) (int16 prtcl);
-	int16	   cdecl  (* IP_handler) (int16 prtctl, int16 cdecl (*handleler) (IP_DGRAM *), int16 flag);
-	void	   cdecl  (* IP_discard) (IP_DGRAM *datagram, int16 all_flag);
-	int16	   cdecl  (* PRTCL_announce) (int16 protocol);
-	int16	   cdecl  (* PRTCL_get_parameters) (uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu);
-	int16	   cdecl  (* PRTCL_request) (void *anonymous, CN_FUNCS *cn_functions);
-	void	   cdecl  (* PRTCL_release) (int16 handle);
-	void *	   cdecl  (* PRTCL_lookup) (int16, CN_FUNCS *);
-	int16	   cdecl  (* TIMER_call) (int16 cdecl (*handler) (IP_DGRAM *), int16);
-	int32	   cdecl  (* TIMER_now) (void);
-	int32	   cdecl  (* TIMER_elapsed) (int32 then);
-	int32	   cdecl  (* protect_exec) (void *parameter, int32 cdecl (*handler) (void *));
-	int16	   cdecl  (* get_route_entry) (int16 no, uint32 *tmplt, uint32 *mask, PORT **port, uint32 *gateway);
-	int16	   cdecl  (* set_route_entry) (int16 no, uint32 tmplt, uint32 mask, PORT *port, uint32 gateway);
+	void		cdecl (* set_dgram_ttl) (IP_DGRAM *datagram);
+	int16		cdecl (* check_dgram_ttl) (IP_DGRAM *datagram);
+	int16		cdecl (* load_routing_table) (void);
+	int32		cdecl (* set_sysvars) (int16 new_act, int16 new_frac);
+	void		cdecl (* query_chains) (PORT **port, DRIVER **drv, LAYER **layer);
+	int16		cdecl (* IP_send) (uint32 src, uint32 dest, uint8 tos, uint16 frg, uint8 ttl, uint8 prctl, uint16 id, void *data, uint16 dlen, void *opt, uint16 olen);
+	IP_DGRAM *  cdecl (* IP_fetch) (int16 prtcl);
+	int16		cdecl (* IP_handler) (int16 prtctl, int16 cdecl (*handleler) (IP_DGRAM *), int16 flag);
+	void		cdecl (* IP_discard) (IP_DGRAM *datagram, int16 all_flag);
+	int16		cdecl (* PRTCL_announce) (int16 protocol);
+	int16		cdecl (* PRTCL_get_parameters) (uint32 rem_host, uint32 *src_ip, int16 *ttl, uint16 *mtu);
+	int16		cdecl (* PRTCL_request) (void *anonymous, CN_FUNCS *cn_functions);
+	void		cdecl (* PRTCL_release) (int16 handle);
+	void *		cdecl (* PRTCL_lookup) (int16, CN_FUNCS *);
+	int16		cdecl (* TIMER_call) (int16 cdecl (*handler) (IP_DGRAM *), int16);
+	int32		cdecl (* TIMER_now) (void);
+	int32		cdecl (* TIMER_elapsed) (int32 then);
+	int32		cdecl (* protect_exec) (void *parameter, int32 cdecl (*handler) (void *));
+	int16		cdecl (* get_route_entry) (int16 no, uint32 *tmplt, uint32 *mask, PORT **port, uint32 *gateway);
+	int16		cdecl (* set_route_entry) (int16 no, uint32 tmplt, uint32 mask, PORT *port, uint32 gateway);
 	/* reserved fields; since LAYER_VERSION >= 1.06 */
 	void *reserved1;
 	void *reserved2;
@@ -103,10 +99,9 @@ typedef struct stx {
 extern STX *stx;
 
 
-/*
- *	 Definitions of module driver functions for direct use
- */
-
+/*--------------------------------------------------------------------------*/
+/*	Definitions of module driver functions for direct use					*/
+/*--------------------------------------------------------------------------*/
 #define set_dgram_ttl(x)				 (*stx->set_dgram_ttl)(x)
 #define check_dgram_ttl(x)				 (*stx->check_dgram_ttl)(x)
 #define load_routing_table()			 (*stx->load_routing_table)()
