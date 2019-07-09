@@ -469,18 +469,21 @@ void network_event(SERIAL_PORT *port, MACHINE *machine)
 		do_automaton(port, &port->ppp.lcp, flag);
 		break;
 	case PPP_ECHO_REQU:
-		if (*(uint32 *) (data + 4) != port->ppp.remote_magic)
+		if ((((uint32)((data[4] << 8) | data[5]) << 16) | (uint32)(uint16)((data[6] << 8) | data[7])) != port->ppp.remote_magic)
 		{
 			port->generic.stat_dropped++;
 		} else
 		{
-			*(uint32 *) (data + 4) = port->ppp.local_magic;
+			data[4] = (uint8)(port->ppp.local_magic >> 24);
+			data[5] = (uint8)(port->ppp.local_magic >> 16);
+			data[6] = (uint8)(port->ppp.local_magic >> 8);
+			data[7] = (uint8)(port->ppp.local_magic);
 			send_cp(port, PPP_LCP, PPP_ECHO_REPLY, data[1], length - 4, data + 4);
 		}
 		break;
 	case PPP_ECHO_REPLY:
 	case PPP_DISC_REQU:
-		if (*(uint32 *) (data + 4) != port->ppp.remote_magic)
+		if ((((uint32)((data[4] << 8) | data[5]) << 16) | (uint32)(uint16)((data[6] << 8) | data[7])) != port->ppp.remote_magic)
 			port->generic.stat_dropped++;
 		break;
 	}

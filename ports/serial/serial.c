@@ -21,10 +21,10 @@
 #include "serial.h"
 
 
-#define  M_YEAR    1999
-#define  M_MONTH   11
-#define  M_DAY     10
-#define  M_VERSION "01.20"
+#define  M_YEAR    2000
+#define  M_MONTH   8
+#define  M_DAY     31
+#define  M_VERSION "01.21"
 #define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 
