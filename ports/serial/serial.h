@@ -340,6 +340,7 @@ typedef  struct serial_port  {
      int16     send_length, send_index;
      uint8     *recve_buffer;
      int16     recve_length, recve_index;
+     int16     is_magx;
  } SERIAL_PORT;
 
 

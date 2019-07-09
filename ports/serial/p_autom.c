@@ -108,7 +108,7 @@ MACHINE      *machine;
    char    string[10], *diag;
 
    data = port->ppp.data;
-   length = * (uint16 *) (data + 2);
+   length = (data[2] << 8) | data[3];
 
    offs = machine->offset;   xtra = machine->xtra;
 
@@ -174,7 +174,7 @@ MACHINE      *machine;
         do_automaton (port, machine, flag);
         break;
       case PPP_PRTCL_REJCT :
-        switch (* (uint16 *) (data + 4)) {
+        switch ((data[4] << 8) | data[5]) {
            case PPP_LCP :
            case PPP_IPCP :
            case PPP_IP :
@@ -466,7 +466,7 @@ int16        event;
    uint16  length;
 
    data = port->ppp.data;
-   last = data + (length = * (uint16 *) (data + 2));
+   last = data + (length = (data[2] << 8) | data[3]);
 
    ppp_log_it (port, machine, doing, log_text[machine->flags & 15], data[1]);
    ppp_log_options (port, data + 4, length - 4, machine->offset, machine->xtra);
@@ -517,5 +517,5 @@ int16        event;
    ppp_log_it (port, machine, doing, log_text[PPP_TERM_ACK], port->ppp.data[1]);
 
    send_cp (port, machine->protocol, PPP_TERM_ACK, port->ppp.data[1],
-                  * (uint16 *) (port->ppp.data + 2) - 4, port->ppp.data + 4);
+                  ((port->ppp.data[2] << 8) | port->ppp.data[3]) - 4, port->ppp.data + 4);
  }

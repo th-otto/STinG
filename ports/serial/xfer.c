@@ -21,10 +21,10 @@
 #include "serial.h"
 #include "ppp_fcs.h"
 
+#define		FIONREAD		(('F' << 8) | 1)
+#define		FIONWRITE		(('F' << 8) | 2)
 
 int          execute (int cdecl status());
-int   cdecl  send (void cdecl out(), uint8 **walk, int16 *rem, int cdecl stat());
-int   cdecl  receive (long cdecl in(), uint8 **walk, int16 *rem, int cdecl stat(), uint16 mark);
 
 int          vjhc_compress (IP_DGRAM *datagram, VJHC *vjhc);
 int          vjhc_uncompress (uint8 *buff, int16 len, int16 type, VJHC *vjhc, IP_DGRAM **dgram);
@@ -42,6 +42,10 @@ void         process_datagram (SERIAL_PORT *port);
 void         make_IP_dgram (uint8 *buffer, int16 buff_len, IP_DGRAM **dgram);
 int16        slip_unwrap (SERIAL_PORT *port, int16 *type);
 int16        ppp_unwrap (SERIAL_PORT *port, uint16 *prtcl, uint8 **data);
+long bconmap_bcostat(MAPTAB *handler);
+long bconmap_bconstat(MAPTAB *handler);
+long bconmap_read(MAPTAB *handler, long count, uint8 *buffer);
+long bconmap_write(MAPTAB *handler, long count, const uint8 *buffer);
 
 
 extern  DRIVER  my_driver;
@@ -55,21 +59,29 @@ void  cdecl  my_send (port)
 PORT  *port;
 
 {
-   int   cdecl  (* co_stat) (int);
-   void  cdecl  (* con_out) (int, int);
    SERIAL_PORT  *serial;
    uint8        *walk;
    int16        remain;
-
+   int32 ready;
+   int32 ret;
+   
    if (port->driver != & my_driver || ! port->active)
         return;
 
    serial = (SERIAL_PORT *) port;
-   walk   = serial->send_buffer + serial->send_index;
-   remain = serial->send_length - serial->send_index;
 
-   if (execute (co_stat = serial->handler->Bcostat) != 0) {
-        con_out = serial->handler->Bconout;
+   if (serial->is_magx)
+   {
+      /* BUG: ready is undefined if Fcntl returns error */
+      Fcntl(serial->handle, (long)&ready, FIONWRITE);
+   } else
+   {
+      ready = bconmap_bcostat(serial->handler);
+   }
+   if (ready != 0)
+   {
+	    walk   = serial->send_buffer + serial->send_index;
+	    remain = serial->send_length - serial->send_index;
         do {
              if (remain == 0) {
                   if (! fetch_datagram (serial))
@@ -77,12 +89,17 @@ PORT  *port;
                   walk = serial->send_buffer;   serial->send_index = 0;
                   remain = serial->send_length;
                 }
-          } while (send (con_out, & walk, & remain, co_stat) != 0);
+            if (serial->is_magx)
+            	ret = Fwrite(serial->handle, remain, walk);
+            else
+            	ret = bconmap_write(serial->handler, remain, walk);
+            if ((short) ret <= 0)
+            	break;
+           	walk += (short)ret;
+          } while ((remain -= (short)ret) >= 0);
+        serial->send_index = serial->send_length - remain;
       }
-
-   serial->send_index = serial->send_length - remain;
  }
-
 
 int16  fetch_datagram (port)
 
@@ -300,45 +317,77 @@ uint32  send_accm;
  }
 
 
-void  cdecl  my_receive (port)
-
-PORT  *port;
-
+void cdecl my_receive(port)
+PORT *port;
 {
-   int   cdecl  (* con_stat) (int);
-   long  cdecl  (* con_in) (int);
-   SERIAL_PORT  *serial;
-   uint8        *walk, mark;
-   int16        remain, status;
+	SERIAL_PORT *serial;
+	uint8 *walk, mark;
+	uint8 *end, *recve_buffer;
+	int32 remain;
 
-   if (port->driver != & my_driver || ! port->active)
-        return;
+	if (port->driver != &my_driver || !port->active)
+		return;
 
-   serial = (SERIAL_PORT *) port;
-   walk   = serial->recve_buffer + serial->recve_index;
-   remain = serial->recve_buffer + 8190 - walk;
-   mark   = ((serial->generic.flags & FLG_PRTCL) == 0) ? SLIP_END : PPP_FLAG;
+	serial = (SERIAL_PORT *) port;
 
-   if (execute (con_stat = serial->handler->Bconstat) != 0) {
-        con_in = serial->handler->Bconin;
-        do {
-             status = receive (con_in, & walk, & remain, con_stat, (uint16) mark);
-             if (remain == 0) {
-                  serial->generic.stat_dropped++;
-                  walk = serial->recve_buffer;   serial->recve_index = 0;   remain = 8190;
-                }
-             if (walk[-1] == mark) {
-                  if (--walk != serial->recve_buffer) {
-                       serial->recve_length = walk - serial->recve_buffer;
-                       process_datagram (serial);
-                       walk = serial->recve_buffer;   serial->recve_index = 0;   remain = 8190;
-                     }
-                }
-          } while (status != 0);
-      }
+	if (serial->is_magx)
+	{
+		/* BUG: remain is undefined if Fcntl returns error */
+		Fcntl(serial->handle, (long) &remain, FIONREAD);
+	} else
+	{
+		remain = bconmap_bconstat(serial->handler);
+	}
 
-   serial->recve_index = (int) (walk - serial->recve_buffer);
- }
+	if (remain != 0)
+	{
+		walk = serial->recve_buffer + serial->recve_index;
+		remain = serial->recve_buffer + 8190 - walk;
+		
+		if (serial->is_magx)
+			remain = Fread(serial->handle, remain, walk);
+		else
+			remain = bconmap_read(serial->handler, remain, walk);
+
+		if (remain <= 0)
+			return;
+		mark = ((serial->generic.flags & FLG_PRTCL) == 0) ? SLIP_END : PPP_FLAG;
+		end = walk + remain;
+		recve_buffer = serial->recve_buffer;
+		do {
+			if (*walk++ == mark)
+			{
+				if ((walk - serial->recve_buffer) > 1)
+				{
+					serial->recve_length = (int)(walk - serial->recve_buffer - 1);
+					process_datagram(serial);
+				}
+				serial->recve_buffer = walk;
+			}
+		} while (walk < end);
+		if (recve_buffer < serial->recve_buffer)
+		{
+			int count;
+			
+			serial->recve_index = (int) (walk - serial->recve_buffer);
+			if (serial->recve_index != 0)
+			{
+				count = serial->recve_index;
+				walk = recve_buffer;
+				end = serial->recve_buffer;
+				while (--count >= 0)
+					*walk++ = *end++;
+			}
+			serial->recve_buffer = recve_buffer;
+			return;
+		}
+		if ((serial->recve_index = (int) (walk - recve_buffer)) >= 8190)
+		{
+			serial->generic.stat_dropped++;
+			serial->recve_index = 0;
+		}
+	}
+}
 
 
 void  process_datagram (port)
@@ -373,8 +422,8 @@ SERIAL_PORT  *port;
            }
       }
      else {
-        len = slip_unwrap (port, & type);
         data = port->recve_buffer;
+        len = slip_unwrap (port, & type);
       }
 
    if ((port->generic.flags & FLG_PRTCL) != 0 && port->ppp.ipcp.state != PPP_OPENED) {

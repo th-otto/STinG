@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     Low Level Port : Serielle Schnittstellen                      */
@@ -21,9 +20,11 @@
 #include "serial.h"
 
 
-#define  M_YEAR    18
-#define  M_MONTH   6
-#define  M_DAY     18
+#define  M_YEAR    1999
+#define  M_MONTH   11
+#define  M_DAY     10
+#define  M_VERSION "01.20"
+#define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 
 void  cdecl   my_send (PORT *port);
@@ -58,6 +59,7 @@ int16  cdecl  my_cntrl (PORT *port, uint32 argument, int16 code);
 
 extern BASPAG  *_BasPag;
 
+int magx;
 DRV_LIST     *sting_drivers;
 TPL          *tpl;
 STX          *stx;
@@ -65,8 +67,8 @@ PORT         init_dummy = {  "", L_SER_PTP, FALSE, 0L, 0xffffffffUL, 0xffffffffU
                              4096, 4096, 0L, NULL, 0L, NULL, 0, NULL, NULL  };
 SERIAL_PORT  *my_ports = NULL;
 RSVF_DEV     *rsvf_head;
-DRIVER       my_driver = {  my_set_state, my_cntrl, my_send, my_receive, "Serial", "01.15",
-                            (M_YEAR << 9) | (M_MONTH << 5) | M_DAY, "Peter Rottengatter",
+DRIVER       my_driver = {  my_set_state, my_cntrl, my_send, my_receive, "Serial", M_VERSION,
+                            ((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY, M_AUTHOR,
                             NULL, NULL   };
 MAPTAB       *do_flush;
 int          space, ck_flag, scc, has_drv_u;
@@ -147,7 +149,10 @@ int  install()
    PORT    *ports;
    DRIVER  *driver;
    int     count;
-
+   long value;
+   
+   magx = get_cookie(0x4d616758L, &value) ? TRUE : FALSE; /* 'MagX' */
+      
    if (Bconmap (0) != 0)   return (FALSE);
 
    add_standard_ports();
@@ -220,29 +225,30 @@ void  add_standard_ports()
         return;
 
    switch (machine >> 16) {
-      case 0 :
+      case 0 : /* ST */
         init_port (0, "Modem 1",   6, "MODEM1",  map_ptr->maptab);
         break;
-      case 1 :
+      case 1 : /* STE/MSTE */
         if ((machine & 0xffffL) == 16) {
              init_port (1, "Modem 2",   7, "MODEM2",  map_ptr->maptab + 1);
              init_port (2, "Ser.2/LAN", 8, "SERIAL2", map_ptr->maptab + 2);
            }
         init_port (0, "Modem 1",   6, "MODEM1",  map_ptr->maptab);
         break;
-      case 2 :
+      case 2 : /* TT */
         init_port (0, "Modem 1",   6, "MODEM1",  map_ptr->maptab + 0);
         init_port (1, "Modem 2",   7, "MODEM2",  map_ptr->maptab + 1);
         init_port (2, "Serial 1",  8, "SERIAL1", map_ptr->maptab + 2);
         init_port (3, "Ser.2/LAN", 9, "SERIAL2", map_ptr->maptab + 3);
         break;
-      case 3 :
+      case 3 : /* Falcon */
         init_port (0, "Modem 1",   6, "MODEM1",  map_ptr->maptab + 0);
         init_port (1, "Modem 2",   7, "MODEM2",  map_ptr->maptab + 1);
         init_port (2, "LAN",       8, "LAN",     map_ptr->maptab + 2);
         break;
-      default :
-        init_port (0, "Modem 1",   6, "MODEM1",  map_ptr->maptab);
+      default:
+        init_port (0, "Modem 1",   6, "MODEM1",  map_ptr->maptab + 0);
+        break;
       }
  }
 
@@ -303,7 +309,15 @@ SERIAL_PORT  *port;
                else
                   port->generic.name = (*port->generic.name) ? port->generic.name : walk->miscell;
              if (walk->flags & RSVF_MXDDEV)
-                  port->iocntl = (*((void ***) walk->miscell - 1))[7];
+             {
+                port->iocntl = (*((void ***) walk->miscell - 1))[7];
+             }
+             if (!(walk->flags & RSVF_BIOS))
+             {
+                port->is_magx = TRUE;
+                if (!magx)
+                   return FALSE;
+             }
              return (TRUE);
            }
         walk++;
@@ -329,6 +343,7 @@ MAPTAB  *handler;
    my_ports[index].send_buffer   = NULL;
    my_ports[index].recve_buffer  = NULL;
 
+   my_ports[index].is_magx       = FALSE;
    my_ports[index].iocntl        = NULL;
    my_ports[index].ppp.pap_id[0] = my_ports[index].ppp.pap_passwd[0] = '\0';
 
@@ -429,13 +444,13 @@ int16  state;
 long  do_Fopen()
 
 {
-   OSHEADER  *oshdr = * (OSHEADER **) 0x4f2L;
+   SYSHDR  *oshdr = * (SYSHDR **) 0x4f2L;
    BASPAG    **process, *old;
 
    if (oshdr->os_version >= 0x0102)
-        process = oshdr->p_run;
+        process = oshdr->_run;
      else
-        process = (BASPAG **) (((oshdr->os_conf >> 1) == 4) ? 0x873cL : 0x602cL);
+        process = (BASPAG **) (((oshdr->os_palmode >> 1) == 4) ? 0x873cL : 0x602cL);
 
    old = *process;   *process = _BasPag;
 
@@ -450,13 +465,13 @@ long  do_Fopen()
 long  do_Fclose()
 
 {
-   OSHEADER  *oshdr = * (OSHEADER **) 0x4f2L;
+   SYSHDR  *oshdr = * (SYSHDR **) 0x4f2L;
    BASPAG    **process, *old;
 
    if (oshdr->os_version >= 0x0102)
-        process = oshdr->p_run;
+        process = oshdr->_run;
      else
-        process = (BASPAG **) (((oshdr->os_conf >> 1) == 4) ? 0x873cL : 0x602cL);
+        process = (BASPAG **) (((oshdr->os_palmode >> 1) == 4) ? 0x873cL : 0x602cL);
 
    old = *process;   *process = _BasPag;
 
@@ -471,7 +486,7 @@ long  do_Fclose()
 long  flush()
 
 {
-   while (execute (do_flush->Bconstat) != 0)
+   while (execute ((int cdecl (*)())do_flush->Bconstat) != 0)
         execute ((int cdecl (*) ()) do_flush->Bconin);
 
    return (0L);
@@ -535,13 +550,19 @@ int16   code;
         break;
       case CTL_SERIAL_SET_AUTH :
         if (argument) {
+#if 0
              serial->ppp.pap_ack = ((char **) argument)[0];
              serial->ppp.pap_nak = ((char **) argument)[1];
              serial->ppp.pap_auth = & ((char **) argument)[2];
+#else
+             serial->ppp.pap_auth = & ((char **) argument)[0];
+#endif
              port->flags |= FLG_REQU_AUTH;
            }
           else {
+#if 0
              serial->ppp.pap_ack = serial->ppp.pap_nak = NULL;
+#endif
              serial->ppp.pap_auth = NULL;
              port->flags &= ~ FLG_REQU_AUTH;
            }
