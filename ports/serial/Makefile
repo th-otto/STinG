@@ -23,3 +23,5 @@ clean distclean::
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
 	cp -a serial.stx $(RELEASE_DIR)/sting
+	$(MKDIR) $(RELEASE_DIR)/doc
+	cp -a ser_stx.txt $(RELEASE_DIR)/doc

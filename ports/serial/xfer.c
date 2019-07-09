@@ -21,6 +21,10 @@
 #include "ppp_fcs.h"
 
 
+#undef FIONREAD
+#undef FIONWRITE
+#define		FIONREAD		(('F' << 8) | 1)
+#define		FIONWRITE		(('F' << 8) | 2)
 
 static uint8 ppp_header[4] = { PPP_ADDR, PPP_CNTRL, 0, 0 };
 
@@ -268,24 +272,29 @@ static int16 fetch_datagram(SERIAL_PORT *port)
 
 void cdecl my_send(PORT *port)
 {
-	short cdecl (*co_stat) (short);
-	void cdecl (*con_out) (short, short);
 	SERIAL_PORT *serial;
 	uint8 *walk;
 	int16 remain;
+	int32 ready;
+	int32 ret;
 
 	if (port->driver != &my_driver || !port->active)
 		return;
 
 	serial = (SERIAL_PORT *) port;
-	walk = serial->send_buffer + serial->send_index;
-	remain = serial->send_length - serial->send_index;
-
-#pragma GCC diagnostic ignored "-Wcast-function-type"
-	co_stat = (short cdecl (*) (short))serial->handler->Bcostat;
-	if (execute(co_stat) != 0)
+	if (serial->is_magx)
 	{
-		con_out = serial->handler->Bconout;
+		ready = 0;
+		Fcntl(serial->handle, (long)&ready, FIONWRITE);
+	} else
+	{
+		ready = bconmap_bcostat(serial->handler);
+	}
+
+	if (ready != 0)
+	{
+		walk = serial->send_buffer + serial->send_index;
+		remain = serial->send_length - serial->send_index;
 		do
 		{
 			if (remain == 0)
@@ -296,10 +305,17 @@ void cdecl my_send(PORT *port)
 				serial->send_index = 0;
 				remain = serial->send_length;
 			}
-		} while (send(con_out, &walk, &remain, co_stat) != 0);
-	}
+			if (serial->is_magx)
+				ret = Fwrite(serial->handle, remain, walk);
+			else
+				ret = bconmap_write(serial->handler, remain, walk);
+			if ((short) ret <= 0)
+				break;
+			walk += (short)ret;
+		} while ((remain -= (short)ret) >= 0);
 
-	serial->send_index = serial->send_length - remain;
+		serial->send_index = serial->send_length - remain;
+	}
 }
 
 
@@ -502,8 +518,8 @@ static void process_datagram(SERIAL_PORT *port)
 		}
 	} else
 	{
-		len = slip_unwrap(port, &type);
 		data = port->recve_buffer;
+		len = slip_unwrap(port, &type);
 	}
 
 	if ((port->generic.flags & FLG_PRTCL) != 0 && port->ppp.ipcp.state != PPP_OPENED)
@@ -537,48 +553,99 @@ static void process_datagram(SERIAL_PORT *port)
 
 void cdecl my_receive(PORT *port)
 {
-	short cdecl(*con_stat) (short);
-	long cdecl(*con_in) (short);
 	SERIAL_PORT *serial;
-	uint8 *walk;
-	uint8 mark;
-	int16 remain;
-	int16 status;
+	uint8 *walk, mark;
+	uint8 *end, *recve_buffer;
+	int32 remain;
 
 	if (port->driver != &my_driver || !port->active)
 		return;
 
 	serial = (SERIAL_PORT *) port;
-	walk = serial->recve_buffer + serial->recve_index;
-	remain = serial->recve_buffer + 8190 - walk;
-	mark = (serial->generic.flags & FLG_PRTCL) == 0 ? SLIP_END : PPP_FLAG;
 
-	if (execute(con_stat = serial->handler->Bconstat) != 0)
+	if (serial->is_magx)
 	{
-		con_in = serial->handler->Bconin;
-		do
-		{
-			status = receive(con_in, &walk, &remain, con_stat, (uint16) mark);
-			if (remain == 0)
-			{
-				serial->generic.stat_dropped++;
-				walk = serial->recve_buffer;
-				serial->recve_index = 0;
-				remain = 8190;
-			}
-			if (walk[-1] == mark)
-			{
-				if (--walk != serial->recve_buffer)
-				{
-					serial->recve_length = walk - serial->recve_buffer;
-					process_datagram(serial);
-					walk = serial->recve_buffer;
-					serial->recve_index = 0;
-					remain = 8190;
-				}
-			}
-		} while (status != 0);
+		remain = 0;
+		Fcntl(serial->handle, (long) &remain, FIONREAD);
+	} else
+	{
+		remain = bconmap_bconstat(serial->handler);
 	}
 
-	serial->recve_index = (int) (walk - serial->recve_buffer);
+	if (remain != 0)
+	{
+		walk = serial->recve_buffer + serial->recve_index;
+		remain = serial->recve_buffer + 8190 - walk;
+		
+		if (serial->is_magx)
+			remain = Fread(serial->handle, remain, walk);
+		else
+			remain = bconmap_read(serial->handler, remain, walk);
+
+		if (remain <= 0)
+			return;
+		mark = ((serial->generic.flags & FLG_PRTCL) == 0) ? SLIP_END : PPP_FLAG;
+		end = walk + remain;
+		recve_buffer = serial->recve_buffer;
+		do {
+			if (*walk++ == mark)
+			{
+				if ((walk - serial->recve_buffer) > 1)
+				{
+					serial->recve_length = (int)(walk - serial->recve_buffer - 1);
+					process_datagram(serial);
+				}
+				serial->recve_buffer = walk;
+			}
+		} while (walk < end);
+		if (recve_buffer < serial->recve_buffer)
+		{
+			int count;
+			
+			serial->recve_index = (int) (walk - serial->recve_buffer);
+			if (serial->recve_index != 0)
+			{
+				count = serial->recve_index;
+				walk = recve_buffer;
+				end = serial->recve_buffer;
+				while (--count >= 0)
+					*walk++ = *end++;
+			}
+			serial->recve_buffer = recve_buffer;
+			return;
+		}
+		if ((serial->recve_index = (int) (walk - recve_buffer)) >= 8190)
+		{
+			serial->generic.stat_dropped++;
+			serial->recve_index = 0;
+		}
+	}
 }
+
+
+#if 0
+long bconmap_bconstat(MAPTAB *handler)
+{
+	IOREC *iorec = handler->iorec;
+	unsigned short size;
+	
+	size = iorec->ibuftl - iorec->ibufhd;
+	if ((unsigned short)iorec->ibuftl < (unsigned short)iorec->ibufhd)
+		size += (unsigned short)iorec->ibufsiz;
+	return size;
+}
+
+
+long bconmap_bcostat(MAPTAB *handler)
+{
+	IOREC *iorec = handler->iorec;
+	unsigned short size;
+	
+	size = (unsigned short)iorec[1].ibufhd - (unsigned short)iorec[1].ibuftl;
+	if ((unsigned short)iorec[1].ibufhd <= (unsigned short)iorec[1].ibuftl)
+		size += (unsigned short)iorec[1].ibufsiz;
+	if (size >= 2u)
+		size -= 2;
+	return size;
+}
+#endif

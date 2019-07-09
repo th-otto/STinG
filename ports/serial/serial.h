@@ -379,6 +379,7 @@ struct serial_port
 	uint8 *recve_buffer;
 	int16 recve_length;
 	int16 recve_index;
+	int16 is_magx;
 };
 
 
@@ -515,7 +516,10 @@ void set_dtr(void *hsm_code, int new_dtr) GNU_ASM_NAME("set_dtr");
 int inq_cd(void *hsm_code) GNU_ASM_NAME("inq_cd");
 long choose_magic(void) GNU_ASM_NAME("choose_magic");
 int execute(short cdecl (*code)(short dev)) GNU_ASM_NAME("execute");
-int cdecl send(void cdecl (*out)(short, short), uint8 **walk, int16 *rem, short cdecl (*stat)(short)) GNU_ASM_NAME("send");
-int cdecl receive(long cdecl (*in)(short dev), uint8 **walk, int16 *rem, short cdecl (*stat)(short), uint16 mark) GNU_ASM_NAME("receive");
+
+long bconmap_bcostat(MAPTAB *handler) GNU_ASM_NAME("bconmap_bcostat");
+long bconmap_bconstat(MAPTAB *handler) GNU_ASM_NAME("bconmap_bconstat");
+long bconmap_read(MAPTAB *handler, long count, uint8 *buffer) GNU_ASM_NAME("bconmap_read");
+long bconmap_write(MAPTAB *handler, long count, const uint8 *buffer) GNU_ASM_NAME("bconmap_write");
 
 #endif /* SERIAL_H */

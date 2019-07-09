@@ -11,92 +11,138 @@
 
 
              .globl    execute                   /* Function to execute status calls */
-             .globl    send                      /* Function for sending data */
-             .globl    receive                   /* Function for receiving data */
              .globl    inq_cd                    /* Function for inquiring DCD status */
              .globl    set_dtr                   /* Function for setting DTR status */
              .globl    choose_magic              /* Function for getting a random magic */
 
+			 .globl bconmap_bconstat
+			 .globl bconmap_bcostat
+			 .globl bconmap_read
+			 .globl bconmap_write
+
+/* ------------------------------------------------------------------------------------- */
+
+bconmap_bconstat:
+			movea.l    20(a0),a1
+			moveq.l    #0,d0
+			move.w     8(a1),d0
+			sub.w      6(a1),d0
+			bcc.s      bconmap_bconstat1
+			add.w      4(a1),d0
+bconmap_bconstat1:
+			rts
+
+/* ------------------------------------------------------------------------------------- */
+
+bconmap_bcostat:
+			movea.l    20(a0),a1
+			moveq.l    #0,d0
+			move.w     20(a1),d0
+			sub.w      22(a1),d0
+			bhi.s      bconmap_bcostat1
+			add.w      18(a1),d0
+bconmap_bcostat1:
+			subq.w     #2,d0
+			bpl.s      bconmap_bcostat2
+			moveq.l    #0,d0
+bconmap_bcostat2:
+			rts
+
+/* ------------------------------------------------------------------------------------- */
+
+/* long bconmap_read(MAPTAB *handler, long count, uint8 *buffer); */
+bconmap_read:
+			movem.l    a2-a4,-(a7)               /* Save CPU register */
+			movea.l    a1,a3
+			movea.l    a0,a4
+			movea.l    20(a4),a2                 /* get IOREC pointer */
+			move.w     4(a2),d2
+			moveq.l    #0,d1
+			move.w     8(a2),d1
+			sub.w      6(a2),d1
+			bcc.s      bconmap_read1
+			add.w      d2,d1
+bconmap_read1:
+			cmp.l      d0,d1
+			bcc.s      bconmap_read2
+			move.l     d1,d0
+bconmap_read2:
+			move.l     d0,-(a7)
+			beq.s      bconmap_read6
+			subq.l     #2,d0
+			bcs.s      bconmap_read5
+			movea.l    (a2),a0
+			move.w     6(a2),d1
+bconmap_read3:
+			addq.w     #1,d1
+			cmp.w      d2,d1
+			bcs.s      bconmap_read4
+			moveq.l    #0,d1
+bconmap_read4:
+			move.b     0(a0,d1.l),(a3)+
+			dbf        d0,bconmap_read3
+			move.w     d1,6(a2)
+bconmap_read5:
+			movea.l    4(a4),a1
+			jsr        (a1)
+			move.b     d0,(a3)
+bconmap_read6:
+			movem.l    (a7)+,d0/a2-a4            /* Restore CPU register */
+			rts
+
+/* ------------------------------------------------------------------------------------- */
+
+/* long bconmap_write(MAPTAB *handler, long count, const uint8 *buffer); */
+
+bconmap_write:
+			movem.l    a2/a4,-(a7)
+			movea.l    a0,a4
+			movea.l    20(a4),a2
+			move.w     18(a2),d2
+			moveq.l    #0,d1
+			move.w     20(a2),d1
+			sub.w      22(a2),d1
+			bhi.s      bconmap_write1
+			add.w      d2,d1
+bconmap_write1:
+			subq.l     #2,d1
+			bpl.s      bconmap_write2
+			moveq.l    #0,d1
+bconmap_write2:
+			cmp.l      d0,d1
+			bcc.s      bconmap_write3
+			move.l     d1,d0
+bconmap_write3:
+			move.l     d0,-(a7)
+			beq.s      bconmap_write7
+			subq.l     #2,d0
+			bcs.s      bconmap_write6
+			movea.l    14(a2),a0
+			move.w     22(a2),d1
+bconmap_write4:
+			addq.w     #1,d1
+			cmp.w      d2,d1
+			bcs.s      bconmap_write5
+			moveq.l    #0,d1
+bconmap_write5:
+			move.b     (a1)+,0(a0,d1.l)
+			dbf        d0,bconmap_write4
+			move.w     d1,22(a2)
+bconmap_write6:
+			move.b     (a1),d0
+			move.l     d0,-(a7)
+			movea.l    12(a4),a1
+			jsr        (a1)
+			addq.l     #4,a7
+bconmap_write7:
+			movem.l    (a7)+,d0/a2/a4
+			rts
 
 /* ------------------------------------------------------------------------------------- */
 
 execute:
              movem.l   d3-d7/a2-a6,cpu_state     /* Save CPU register */
              jsr       (a0)                      /* Call status code */
-             movem.l   cpu_state,a2-a6/d3-d7     /* Restore CPU register */
-             rts
-
-/* ------------------------------------------------------------------------------------- */
-
-send:
-             movem.l   d3-d7/a2-a6,cpu_state     /* Save CPU register */
-             move.l    4(sp),code                /* Get function for sending bytes */
-             move.l    8(sp),a0                  /* Pointer to real 'walk' */
-             move.l    (a0),walk                 /* Get pointer into buffer */
-             move.l    12(sp),a0                 /* Pointer to real 'remain' */
-             move.w    (a0),remain               /* Get number of remaining bytes */
-             move.l    16(sp),cstatus            /* Get function for checking status */
-send_lp:
-             clr.l     d0                        /* Prepare parameter set */
-             move.l    walk,a0                   /* Fetch next byte */
-             move.b    (a0)+,d0                  /* And include it into parameters */
-             move.l    a0,walk                   /* Save pointer */
-             move.l    d0,-(sp)                  /* And pass parameters */
-             move.l    code,a0                   /* Function for sending bytes */
-             jsr       (a0)                      /* Call it */
-             sub.w     #1,remain                 /* One less bytes to send */
-             clr.w     -(sp)                     /* Prepare stack for status check */
-             move.l    cstatus,a0                /* Function for checking status */
-             jsr       (a0)                      /* Call it */
-             addq.l    #6,sp                     /* Stack correction */
-             tst.w     d0                        /* Test : Buffer full ? */
-             beq       end_send                  /* Yes : Terminate */
-             tst.w     remain                    /* Test : More bytes to send ? */
-             bne       send_lp                   /* Yes : Loop */
-end_send:
-             move.l    8(sp),a0                  /* Pointer to real 'walk' */
-             move.l    walk,(a0)                 /* Save pointer into buffer */
-             move.l    12(sp),a0                 /* Pointer to real 'remain' */
-             move.w    remain,(a0)               /* Save number of remaining bytes */
-             movem.l   cpu_state,a2-a6/d3-d7     /* Restore CPU register */
-             rts
-
-/* ------------------------------------------------------------------------------------- */
-
-receive:
-             movem.l   d3-d7/a2-a6,cpu_state     /* Save CPU register */
-             move.l    4(sp),code                /* Get function for sending bytes */
-             move.l    8(sp),a0                  /* Pointer to real 'walk' */
-             move.l    (a0),walk                 /* Get pointer into buffer */
-             move.l    12(sp),a0                 /* Pointer to real 'remain' */
-             move.w    (a0),remain               /* Get amount of remaining space */
-             move.l    16(sp),cstatus            /* Get function for checking status */
-             move.w    20(sp),mark               /* Get end-of-data definition */
-recve_lp:
-             clr.w     -(sp)                     /* Prepare stack for receive */
-             move.l    code,a0                   /* Function for receiving a byte */
-             jsr       (a0)                      /* Call it */
-             move.l    walk,a0                   /* Pointer into buffer */
-             move.b    d0,(a0)+                  /* Save received byte */
-             move.l    a0,walk                   /* Save advanced pointer */
-             clr.w     -(sp)                     /* Prepare stack for status check */
-             move.l    cstatus,a0                /* Function for checking status */
-             jsr       (a0)                      /* Call it */
-             addq.l    #4,sp                     /* Stack correction */
-             move.l    walk,a0                   /* Pointer into buffer */
-             clr.w     d1                        /* Prepare register */
-             move.b    -1(a0),d1                 /* Recall received byte */
-             cmp.w     mark,d1                   /* Datagram end found ? */
-             beq       end_recve                 /* Yes : Terminate */
-             sub.w     #1,remain                 /* No space left anymore ? */
-             beq       end_recve                 /* Yes : Terminate */
-             tst.w     d0                        /* Test : Buffer empty ? */
-             bne       recve_lp                  /* No : Loop */
-end_recve:
-             move.l    8(sp),a0                  /* Pointer to real 'walk' */
-             move.l    walk,(a0)                 /* Save pointer into buffer */
-             move.l    12(sp),a0                 /* Pointer to real 'remain' */
-             move.w    remain,(a0)               /* Save amount of remaining space */
              movem.l   cpu_state,a2-a6/d3-d7     /* Restore CPU register */
              rts
 
@@ -177,10 +223,6 @@ failure:
 
 			 .bss
 
-walk:        ds.l      1                         /* Pointer into buffer */
-remain:      ds.w      1                         /* Remaining bytes */
-mark:        ds.w      1                         /* End-of-data mark */
-code:        ds.l      1                         /* Pointer to code to be called */
 cstatus:     ds.l      2                         /* Pointer to check function */
 stack:       ds.l      1                         /* Saved stack pointer */
 saved_bus:   ds.l      1                         /* Saved bus error vector */

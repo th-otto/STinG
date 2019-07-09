@@ -21,10 +21,11 @@
 #include "serial.h"
 
 
-#define  M_YEAR    1998
-#define  M_MONTH   6
-#define  M_DAY     18
-#define  M_VERSION "01.15"
+#define  M_YEAR    1999
+#define  M_MONTH   11
+#define  M_DAY     10
+#define  M_VERSION "01.20"
+#define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 
 TPL *tpl;
@@ -32,6 +33,7 @@ STX *stx;
 
 SERIAL_PORT *my_ports = NULL;
 int space;
+static int magx;
 
 
 
@@ -107,6 +109,7 @@ static void init_port(int index, const char *name, int bios, const char *gemdos,
 	my_ports[index].send_buffer = NULL;
 	my_ports[index].recve_buffer = NULL;
 
+	my_ports[index].is_magx = FALSE;
 	my_ports[index].iocntl = NULL;
 	my_ports[index].ppp.pap_id[0] = my_ports[index].ppp.pap_passwd[0] = '\0';
 
@@ -148,10 +151,10 @@ static void add_standard_ports(void)
 
 	switch ((int)(machine >> 16))
 	{
-	case 0:
-		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab);
+	case 0: /* ST */
+		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab + 0);
 		break;
-	case 1:
+	case 1: /* STE/MSTE */
 		if ((machine & 0xffffL) == 16)
 		{
 			init_port(1, "Modem 2", 7, "MODEM2", map_ptr->maptab + 1);
@@ -159,19 +162,20 @@ static void add_standard_ports(void)
 		}
 		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab);
 		break;
-	case 2:
+	case 2: /* TT */
 		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab + 0);
 		init_port(1, "Modem 2", 7, "MODEM2", map_ptr->maptab + 1);
 		init_port(2, "Serial 1", 8, "SERIAL1", map_ptr->maptab + 2);
 		init_port(3, "Ser.2/LAN", 9, "SERIAL2", map_ptr->maptab + 3);
 		break;
-	case 3:
+	case 3: /* Falcon */
+	case 5: /* Aranym */
 		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab + 0);
 		init_port(1, "Modem 2", 7, "MODEM2", map_ptr->maptab + 1);
 		init_port(2, "LAN", 8, "LAN", map_ptr->maptab + 2);
 		break;
 	default:
-		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab);
+		init_port(0, "Modem 1", 6, "MODEM1", map_ptr->maptab + 0);
 		break;
 	}
 }
@@ -198,7 +202,15 @@ static int find_rsvf_name(int bios, SERIAL_PORT *port, int lan)
 			else
 				port->generic.name = *port->generic.name ? port->generic.name : walk->miscell;
 			if (walk->flags & RSVF_MXDDEV)
+			{
 				port->iocntl = (*((void ***) walk->miscell - 1))[7];
+			}
+			if (!(walk->flags & RSVF_BIOS))
+			{
+				port->is_magx = TRUE;
+				if (!magx)
+					return FALSE;
+			}
 			return TRUE;
 		}
 		walk++;
@@ -556,7 +568,8 @@ DRIVER my_driver = {
 	my_receive,
 	"Serial",
 	M_VERSION,
-	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY, "Peter Rottengatter",
+	((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
+	M_AUTHOR,
 	NULL,
 	NULL
 };
@@ -566,7 +579,10 @@ static int install(void)
 	PORT *ports;
 	DRIVER *driver;
 	int count;
+	long value;
 
+	magx = get_cookie(0x4d616758L, &value); /* 'MagX' */
+	
 	if (Bconmap(0) != 0)
 		return FALSE;
 

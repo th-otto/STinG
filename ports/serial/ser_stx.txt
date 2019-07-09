@@ -1,0 +1,85 @@
+-----------------------------------------------------------------------------
+File name:	SER_STX.TXT			Revision date:	2000.09.02
+Created by:	Ulf Ronald Andersson		Creation date:	1999.11.02
+-----------------------------------------------------------------------------
+This file describes the current development state of the serial driver for
+STinG, as it has progressed since Peter 'disappeared' in mid-January 1999.
+Recently he has confirmed that he wants me to handle the administration of
+the future STinG development and has passed on all the sources to me.
+
+The copyright to updated versions remains property of Peter Rottengatter,
+and the release form remains FREEWARE, as originally defined by him.
+
+Updates will be described below, in reverse chronological order.
+-----------------------------------------------------------------------------
+SERIAL.STX 1.21:	Beta release:	2000.08.31	Public:	2000.09.02
+----------------
+Grzegorz Pawlik (in Poland) reported a bombing error after a major ISP
+update, making all recent STinG versions unusable.  This was due to a
+bug (now fixed) similar to that of 1.20, but with 32bit accesses, which
+were used in the code implementing PPP_ECHO_REQUEST and PPP_ECHO_REPLY,
+which is a kind of PPP level 'ping' operation, mostly unused. But it is
+probably used by that ISP in implementing a 'detmon' service, to detach
+any users whose machines have bombed or been turned off while online.
+This version is now public, as Grzegorz reports that the fix works fine.
+-----------------------------------------------------------------------------
+SERIAL.STX 1.20:	Beta release:	1999.11.10	Public:	1999.11.10
+----------------
+Sean Barbieri reported that version 1.19 bombed during PPP connection on ST.
+Tests I made on an ST of mine showed it as consistent.  Some searching in
+the source showed that part of the PPP engine used 16bit accesses even for
+addresses that could be odd, which will bomb an ST.  And as the location of
+one of those statements was identical with the location where I bombed in
+my test there is no doubt about it.  The different methods used earlier
+(partly) hid this bug before, by giving those accesses an address that was
+even, far more often than now.  Now they only get that in 50% of the cases,
+and that almost guarantees one odd occurrence before linking completes.
+
+But this old bug is clearly the main reason why ST users have had more
+problems getting connected reliably, than Falcon or TT users have. Those
+computers are immune to this 'odd address' problem thanks to the 68030.
+
+This release is a pure bugfix for that bug, and contains no other changes.
+-----------------------------------------------------------------------------
+SERIAL.STX 1.19:	Beta release:	1999.11.05	Public:	1999.11.07
+----------------
+Eabe Kuik noted that version 1.18 counted huge amounts of dropped packets.
+Actually those packets were not dropped, but the counter was incremented
+under the wrong conditions.  That has now been corrected.
+
+Beta testers have now confirmed proper operation of the new methods on as
+widely unrelated systems as Hades 060 and MagiCPC, so I will now release
+this version publicly as well.  Naturally I still want any bugs reported
+ASAP, though I don't really expect any serious problems of that kind.
+
+This is the first update component released with the new name of the STinG
+developer group added to the 'author' field as "STinG Evolution Team".
+At present That means myself and Vassili Papathanassiou, but in future
+others may also be included in this group.  Only time can tell...  :-)
+-----------------------------------------------------------------------------
+SERIAL.STX 1.18:	Beta release:	1999.11.05
+----------------
+After spending appx 24 hours using TTDIGGER to analyze HSModem components
+I have discovered a method to emulate Fread and Fwrite both under MagiC and
+SingleTOS (etc), without calling any TOS functions at all.  This allows even
+higher speed than when using MagiC Fread and Fwrite in version 1.17, and now
+the new speed is available regardless of operating system.
+
+As this is a brand new method being used, never tried before, I'd appreciate
+if all beta testers would make an effort to report their results to me ASAP.
+-----------------------------------------------------------------------------
+SERIAL.STX 1.17:	Compile date:	1999.11.03
+----------------
+This is the first version to be produced after Peter left STinG development.
+It contains some changes developed by Vassili Papathanassiou that provide
+compatibility with a Modem 2 device driver for MagiCPC and also uses that
+same method for handling data for other drivers as well, under MagiC of any
+'flavour'.  The reason for this is that Fread and Fwrite give much higher
+access speed, as they avoid calling HSModem for each character.  But this
+method is illegal under singleTOS, so the old methods are used there.
+
+These changes have then been debugged and (just a little) optimized by me
+to produce a version suitable for wider distribution. (Which never occurred)
+-----------------------------------------------------------------------------
+End of file:	SER_STX.TXT
+-----------------------------------------------------------------------------
