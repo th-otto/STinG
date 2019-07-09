@@ -51,7 +51,7 @@ typedef struct cn_funcs {
 typedef  struct drv_desc {
 	int16 cdecl (* set_state) (PORT *port, int16 enable); /* Setup and shutdown		*/
 	int16 cdecl (* cntrl) (PORT *port, uint32 arg, int16 code); /* Control functions		*/
-	void  cdecl (* send) (PORT *)port;  /* Send packets							*/
+	void  cdecl (* send) (PORT *port);  /* Send packets							*/
 	void  cdecl (* receive) (PORT *port); /* Receive packets					*/
 	const char *name;			/* Name of driver							*/
 	const char *version;		/* Version of driver in "xx.yy" format		*/
