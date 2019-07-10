@@ -11,6 +11,7 @@
 #include <tos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -18,29 +19,32 @@
 #include "udp.h"
 
 
-#define  M_YEAR     18
-#define  M_MONTH    3
-#define  M_DAY      6
-
+#define  M_YEAR     1999
+#define  M_MONTH    12
+#define  M_DAY      1
+#define  M_VERSION  "01.46"
+#define  M_AUTHOR   "Peter Rottengatter|     &  STinG Evolution Team"
 
 #pragma warn -par
 
 
-void          wait_flag (int16 *semaphore);
 int16         req_flag (int16 *semaphore);
 void          rel_flag (int16 *semaphore);
-long          dis_intrpt (void);
-long          en_intrpt (void);
 UDP_HDR *     get_pending (UDP_HDR **pointer);
 uint16        check_sum (uint32 src_ip, uint32 dest_ip, UDP_HDR *packet, uint16 length);
+int32 cdecl get_sr(void *);
+int32 cdecl set_sr(void *);
+void _appl_yield(void);
+long cdecl poll_super(void *);
 
 long          get_sting_cookie (void);
 int16         install (void);
 uint16        read_word (char *string);
-int16         next_port (void);
+int32 cdecl next_port (void *arg);
 int16  cdecl  my_UDP_open (uint32 rem_host, uint16 rem_port);
 int16  cdecl  my_UDP_close (int16 connec);
 int16  cdecl  my_UDP_send (int16 connec, void *buffer, int16 length);
+int16  cdecl  my_UDP_info (int16, UDPIB *);
 int16  cdecl  my_CNkick (void *connec);
 int16  cdecl  my_CNbyte_count (void *connec);
 int16  cdecl  my_CNget_char (void *connec);
@@ -51,16 +55,18 @@ int16  cdecl  my_CNgets (void *connec, char *buffer, int16 length, char delimite
 int16  cdecl  UDP_handler (IP_DGRAM *dgram);
 void   cdecl  timer_function (void);
 int16         poll_receive (CONNEC *connec);
-long          poll_doit (void);
+long          poll_doit (CONNEC  *connec);
 void          timer_work (CONNEC *connec);
 int16  cdecl  do_ICMP (IP_DGRAM *dgram);
+void *cdecl unlink_connect(int32 connect);
+uint32 inet_addr(const char *cp);
 
 
 DRV_LIST  *sting_drivers;
 TPL       *tpl;
 STX       *stx;
-LAYER     my_conf  = {    "UDP", "01.42", 0x10400L, (M_YEAR << 9) | (M_MONTH << 5) | M_DAY, 
-                          "Peter Rottengatter", 0, NULL, NULL  };
+LAYER     my_conf  = {    "UDP", M_VERSION, 0x10400L, ((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY, 
+                          M_AUTHOR, 0, NULL, NULL  };
 CN_FUNCS  cn_vectors = {  my_CNkick, my_CNbyte_count, my_CNget_char, my_CNget_NDB, 
                           my_CNget_block, my_CNgetinfo, my_CNgets   };
 uint16    last_port, udp_id = 0;
@@ -153,6 +159,7 @@ int16  install()
    tpl->UDP_open  = my_UDP_open;
    tpl->UDP_close = my_UDP_close;
    tpl->UDP_send  = my_UDP_send;
+   tpl->UDP_info  = my_UDP_info;
 
    config = getvstr ("UDP_PORT");
    if (config[1]) {
@@ -187,12 +194,10 @@ char  *string;
  }
 
 
-int16  next_port()
+int32 cdecl next_port(void *arg)
 
 {
    CONNEC  *connect;
-
-   Supexec (dis_intrpt);
 
    for (;;) {
         last_port++;
@@ -205,7 +210,6 @@ int16  next_port()
                   break;
         if (connect)   continue;
 
-        Supexec (en_intrpt);
         return (last_port);
       }
  }
@@ -224,16 +228,16 @@ uint16  rem_port;
    int16   ttl, handle;
 
    if (rem_host == 0L && rem_port == UDP_EXTEND)
-        rem_port = next_port();
+        rem_port = protect_exec(NULL, next_port);
 
    if (rem_port != UDP_EXTEND) {
-        lport = (rem_host) ? next_port() : rem_port;
+        lport = (rem_host) ? protect_exec(NULL, next_port) : rem_port;
         rport = (rem_host) ?  rem_port   : 0;
       }
      else {
         cab = (CAB *) rem_host;
         rem_host = cab->rhost;   rport =  cab->rport;
-        lcl_host = cab->lhost;   lport = (cab->lport) ? cab->lport : next_port();
+        lcl_host = cab->lhost;   lport = (cab->lport) ? cab->lport : protect_exec(NULL, next_port);
       }
 
    if (rem_host != 0) {
@@ -254,6 +258,8 @@ uint16  rem_port;
    connect->remote_port       = rport;
    connect->local_IP_address  = lcl_host;
    connect->local_port        = lport;
+   connect->state = rem_host != 0 ? UESTABLISH : ULISTEN;
+   /* BUG: defer not initialized */
    connect->ttl               = ttl;
    connect->total_data        = 0L;
    connect->info              = NULL;
@@ -262,10 +268,8 @@ uint16  rem_port;
    connect->net_error         = 0;
    connect->semaphore         = 0;
 
-   Supexec (dis_intrpt);
    connect->next = root_list;
    root_list     = connect;
-   Supexec (en_intrpt);
 
    return (handle);
  }
@@ -277,22 +281,12 @@ int16  connec;
 
 {
    UDP_HDR  *walk, *qu_prev;
-   CONNEC   *connect, *work, **previous;
+   CONNEC   *connect;
 
    if ((connect = PRTCL_lookup (connec, & cn_vectors)) == NULL)
         return (E_BADHANDLE);
 
-   Supexec (dis_intrpt);
-
-   for (work = * (previous = & root_list); work; work = * (previous = & work->next)) {
-        if (work == connect)
-             break;
-      }
-
-   if (work)
-        *previous = work->next;
-
-   Supexec (en_intrpt);
+   protect_exec(connect, (int32 cdecl (*)(void *))unlink_connect);
 
    if (connect->info != NULL)
         KRfree (connect->info);
@@ -354,10 +348,41 @@ void   *buffer;
    value = IP_send (conn->local_IP_address, conn->remote_IP_address, 0, FALSE, conn->ttl,
                     P_UDP, udp_id++, packet, udp_length, NULL, 0);
 
-   if (value != E_NORMAL)   KRfree (packet);
+   if (value != E_NORMAL)
+      KRfree (packet);
+   else
+      conn->state = UESTABLISH;
 
    return (value);
  }
+
+
+int16 cdecl my_UDP_info(int16 connec, UDPIB *buffer)
+{
+	CONNEC *conn;
+	int16 error;
+	uint32 request;
+
+	if ((conn = PRTCL_lookup(connec, &cn_vectors)) == NULL)
+		return E_BADHANDLE;
+	if ((long)buffer <= 0 || (request = buffer->request) > UDPI_mask)
+		return E_PARAMETER;
+	if (request & UDPI_defer)
+		conn->defer |= DEFER_FLAG;
+	if (request & UDPI_state)
+		buffer->state = conn->state;
+	if (request & UDPI_reserve1)
+		buffer->reserve1 = 0;
+	if (request & UDPI_reserve2)
+		buffer->reserve2 = 0;
+	
+	error = conn->net_error;
+	if (error < 0)
+		conn->net_error = 0;
+	else
+		error = UESTABLISH;
+	return error;
+}
 
 
 int16  cdecl  my_CNkick (connec)
@@ -383,7 +408,8 @@ void  *connec;
 
    if ((error = poll_receive (connec)) < 0)
         return (error);
-
+   if (((CONNEC *) connec)->state == ULISTEN)
+        return E_LISTEN;
    return ((int16) ((CONNEC *) connec)->total_data);
  }
 
@@ -395,11 +421,22 @@ void  *connec;
 {
    UDP_HDR  *walk;
    int16    error, chr;
+	int32 now;
 
    if ((error = poll_receive (connec)) < 0)
         return (error);
 
-   wait_flag (& ((CONNEC *) connec)->semaphore);
+	if ((error = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+		!(((CONNEC *) connec)->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		now = TIMER_now();
+		while ((error = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+			TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+		return E_LOCKED;
 
    for (;;) {
         if ((walk = ((CONNEC *) connec)->receive_queue) == NULL)
@@ -428,11 +465,23 @@ void  *connec;
 {
    UDP_HDR  *walk;
    NDB      *data_blk;
+	int16 error;
+	int32 now;
 
    if (poll_receive (connec) < 0)
         return (NULL);
 
-   wait_flag (& ((CONNEC *) connec)->semaphore);
+	if ((error = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+		!(((CONNEC *) connec)->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		now = TIMER_now();
+		while ((error = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+			TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+		return (NDB *)E_LOCKED;
 
    for (;;) {
         if ((walk = ((CONNEC *) connec)->receive_queue) == NULL)
@@ -461,15 +510,13 @@ void  *connec;
  }
 
 
-int16  cdecl  my_CNget_block (connec, buffer, length)
-
-void   *connec;
-void   *buffer;
-int16  length;
-
+int16  cdecl  my_CNget_block (void *connec, void *buffer, int16 length)
 {
    UDP_HDR  *walk;
-   int16    error, count = 0, xfer;
+   int16 count = 0;
+   int16 xfer;
+   int16 error;
+   int16 error2;
 
    if ((error = poll_receive (connec)) < 0)
         return (error);
@@ -479,7 +526,17 @@ int16  length;
    if (length > ((CONNEC *) connec)->total_data)
         return (E_NODATA);
 
-   wait_flag (& ((CONNEC *) connec)->semaphore);
+	if ((error2 = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+		!(((CONNEC *) connec)->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		int32 now = TIMER_now();
+		while ((error2 = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+			TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error2)
+		return E_LOCKED;
 
    do {
         if ((walk = ((CONNEC *) connec)->receive_queue) == NULL) {
@@ -505,6 +562,7 @@ int16  length;
    return (count);
  }
 
+char *masquerade_port = "Masquerade";
 
 CIB *  cdecl  my_CNgetinfo (connec)
 
@@ -527,8 +585,58 @@ void  *connec;
    cib->address.rhost = ((CONNEC *) connec)->remote_IP_address;
    cib->address.lhost = ((CONNEC *) connec)->local_IP_address;
 
+	if ((cib->address.lhost = ((CONNEC *) connec)->local_IP_address) == 0)
+	{
+		const char *config;
+		
+		config = getvstr("FORCED_IP");
+		if (strlen(config) > 6)
+		{
+			cib->address.lhost = inet_addr(config);
+		} else
+		{
+			if (query_port(masquerade_port))
+			{
+				cntrl_port(masquerade_port, (uint32)&cib->address.lhost, CTL_MASQUE_GET_REALIP);
+			} else
+			{
+				if (cib->address.rhost != 0)
+				{
+					PRTCL_get_parameters(cib->address.rhost, &cib->address.lhost, NULL, NULL);
+				} else
+				{
+					PRTCL_get_parameters(0x0A00FF49UL, &cib->address.lhost, NULL, NULL);
+				}
+			}
+		}
+	}
+
    return (cib);
  }
+
+
+uint32 inet_addr(const char *cp)
+{
+	uint32 ip_a, ip_b, ip_c, ip_d;
+	
+	ip_a = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_b = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_c = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_d = (uint32)atoi(cp);
+	return (ip_a << 24) | (ip_b << 16) | (ip_c << 8) | ip_d;
+}
 
 
 int16  cdecl  my_CNgets (connec, buffer, length, delimiter)
@@ -541,6 +649,7 @@ char   *buffer, delimiter;
    UDP_HDR  *walk, *free, *next;
    int16    error, cnt, amount = 0;
    uint8    *search;
+   int16 error2;
 
    if ((error = poll_receive (connec)) < 0)
         return (error);
@@ -551,7 +660,17 @@ char   *buffer, delimiter;
    if (length <= 1)
         return (E_BIGBUF);
 
-   wait_flag (& ((CONNEC *) connec)->semaphore);
+	if ((error2 = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+		!(((CONNEC *) connec)->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		int32 now = TIMER_now();
+		while ((error2 = req_flag (& ((CONNEC *) connec)->semaphore)) != 0 &&
+			TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error2)
+		return E_LOCKED;
 
    for (walk = ((CONNEC *) connec)->receive_queue; walk != NULL; walk = walk->chain.next) {
         search = (uint8 *) (walk + 1) + walk->chain.index;
@@ -659,8 +778,11 @@ IP_DGRAM  *dgram;
    hdr->chain.index = 0;   hdr->chain.next = NULL;
 
    previous = & connect->pending;
-   for (walk = *previous; walk; walk = * (previous = & walk->chain.next));
+   for (walk = *previous; walk; walk = * (previous = & walk->chain.next))
+       ;
    *previous = hdr;
+
+   connect->state = UESTABLISH;
 
    return (TRUE);
  }
@@ -692,22 +814,9 @@ CONNEC  *connec;
    if (TIMER_elapsed (connec->last_work) < 1200)
         return(0);
 
-   wait_flag (& global_sema);   global = connec;
-   Supexec (poll_doit);
+   protect_exec(connec, poll_super);
 
    return(0);
- }
-
-
-long  poll_doit()
-
-{
-   CONNEC  *connec;
-
-   connec = global;   rel_flag (& global_sema);
-   timer_work (connec);
-
-   return (0L);
  }
 
 
@@ -790,3 +899,23 @@ IP_DGRAM  *dgram;
    ICMP_discard (dgram);
    return (TRUE);
  }
+
+
+#if 0
+void *cdecl unlink_connect(int32 connect)
+{
+	CONNEC *work;
+	CONNEC **previous;
+
+	previous = &root_list;
+	while ((int32)(work = *previous) > 0)
+	{
+		if (work == (CONNEC *)connect)
+		{
+			*previous = work->next;
+			return (void *)(int32)previous;
+		}
+	}
+	return previous;
+}
+#endif

@@ -1,0 +1,23 @@
+udp.stx
+
+.C[-I..\..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=256]
+
+=
+pcstart.s
+
+udp.c (udp.h)
+sema.s [-S]
+
+c:\pc\orig\lib\pcstdlib.lib
+c:\pc\orig\lib\pctoslib.lib

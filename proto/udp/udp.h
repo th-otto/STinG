@@ -41,6 +41,8 @@ typedef  struct connec  {
      uint16   remote_port;           /* Foreign socket port number          */
      uint32   local_IP_address;      /* Local socket IP address             */
      uint16   local_port;            /* Local socket port number            */
+     uint8    state;                 /* current UDP pseudo state            */
+     uint8    defer;
      int16    ttl;                   /* Time To Live (for IP)               */
      uint32   total_data;            /* Total real data in queue            */
      CIB      *info;                 /* Connection information link         */
@@ -52,6 +54,7 @@ typedef  struct connec  {
      struct connec  *next;           /* Link to next connection in chain    */
  } CONNEC;
 
+#define DEFER_FLAG 0x80
 
 
 /*--------------------------------------------------------------------------*/
