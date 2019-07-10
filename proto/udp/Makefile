@@ -1,10 +1,10 @@
 include ../../configvars
 
 CFLAGS += -I../../include
-LIBS += -lgem
 
 SRCS = \
 	udp.c \
+	applyld.c \
 	$(empty)
 OBJS = $(SRCS:.c=.o) sema.o
 
@@ -19,3 +19,5 @@ clean distclean::
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
 	cp -a udp.stx $(RELEASE_DIR)/sting
+	$(MKDIR) $(RELEASE_DIR)/doc
+	cp -a udp_stx.txt $(RELEASE_DIR)/doc

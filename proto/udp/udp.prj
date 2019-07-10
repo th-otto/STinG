@@ -16,7 +16,7 @@ udp.stx
 =
 cstart0.o
 
-udp.c
+udp.c (udp.h)
 sema.s [-S]
 applyld.c
 

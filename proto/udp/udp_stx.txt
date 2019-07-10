@@ -1,0 +1,81 @@
+-----------------------------------------------------------------------------
+File name:	UDP_STX.TXT			Revision date:	1999.12.01
+Created by:	Ulf Ronald Andersson		Creation date:	1999.09.22
+-----------------------------------------------------------------------------
+This file describes the current development state of the UDP module for
+STinG, as it has progressed since Peter 'disappeared' in mid-January 1999.
+Recently he has confirmed that he wants me to handle the administration of
+the future STinG development and has passed on all the sources to me.
+
+The copyright to updated versions remains property of Peter Rottengatter,
+and the release form remains FREEWARE, as originally defined by him.
+
+Updates will be described below, in reverse chronological order.
+-----------------------------------------------------------------------------
+UDP.STX 1.46:		Beta release:	1999.12.01
+-------------
+UDP_info has been changed so as to return network error codes similar to how
+most other API functions do it. But unlike other API functions UDP_info will
+still perform its main function even then, so the info block will be valid.
+THO: the above statement is wrong, if UDP_info returns an error, the info
+block ist *not* valid
+-----------------------------------------------------------------------------
+UDP.STX 1.45:		Beta release:	1999.10.15	public:	1999.10.26
+-------------
+This version has been changed to use the message E_LOCKED, rather than the
+message E_DEFERRED, to tell callers that they can not be serviced at once,
+and should instead call again later. This change was for STiK compatibility,
+and code E_DEFERRED is abolished, as it duplicated the purpose of E_LOCKED.
+
+This version has also been improved so as to allow safe and efficient use of
+a connection from multiple threads/forks/APPs/ACCs, in all TOS variants.
+
+Such usage may however lead to E_LOCKED return for cases where the caller
+is executing in supervisor mode, while other threads (etc) already have
+an access to the same connection in progress.  Programmers should be aware
+of this, and note that such a message does not mean the function can not be
+performed, but only that it will have to be done later, when other threads
+are not locking the access.
+-----------------------------------------------------------------------------
+UDP.STX 1.44:		Beta release:	1999.10.11
+-------------
+This version has a new function, UDP_info, to be used similarily to the
+TCP_info function, except that some things obviously don't apply to UDP
+connections.
+
+Because the UDP_info function does not exist in older kernels, this UDP
+module requires STinG kernel 1.21 or newer.  NB: Older kernels may BOMB.
+-----------------------------------------------------------------------------
+UDP.STX 1.43:		Beta release:	1999.09.22    Public:	1999.09.26
+-------------
+This version contains some major updates relative to earlier versions.
+
+All the Supexec calls have been removed from the UDP API functions, which
+should make servers of all kinds more reliable, especially under singleTOS.
+Now the only TOS function ever called by API functions is _appl_yield, as
+is required for proper multitasking (NB: this is true even in singleTOS).
+
+UDP CNbyte_count never returned E_LISTEN for passive connections.  This is
+fixed by making a passive UDP connection return E_LISTEN until it has
+received some incoming packet.  This ceases as soon as it does receive any
+incoming packet, even if that packet has no data at all.  From then on the
+value returned will be the number of data bytes received (0 if none) unless
+a network error occurs, in which case that error code will be passed as is
+normal for STinG API functions.  This should make consistent server design
+easier, as it allows TCP and UDP functions to be 'watched' by similar means.
+
+Note however, that in reality there is no such thing as a UDP connection
+and consequently there is no such thing as a 'passive' UDP connection.
+
+The concept is undefined, but for the purpose of our STinG usage I have
+followed the tradition that a UDP opened for an unspecified remote host
+IP shall be considered to be passive, and return E_LISTEN for CNbyte_count
+calls, until some packet has been received.  Connections with specified
+remote host will continue to function like previously, returning E_NODATA
+until packets arrive.
+
+Several of the TCP patches I have made over the last year also apply to
+the UDP module, and these have now been merged in as well.
+-----------------------------------------------------------------------------
+End of file:	UDP_STX.TXT
+-----------------------------------------------------------------------------

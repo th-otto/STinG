@@ -41,6 +41,8 @@ typedef  struct connec  {
      uint16   remote_port;           /* Foreign socket port number          */
      uint32   local_IP_address;      /* Local socket IP address             */
      uint16   local_port;            /* Local socket port number            */
+     uint8    state;                 /* current UDP pseudo state            */
+     uint8    defer;
      int16    ttl;                   /* Time To Live (for IP)               */
      uint32   total_data;            /* Total real data in queue            */
      CIB      *info;                 /* Connection information link         */
@@ -52,6 +54,7 @@ typedef  struct connec  {
      struct connec  *next;           /* Link to next connection in chain    */
 } CONNEC;
 
+#define DEFER_FLAG 0x80
 
 
 /*--------------------------------------------------------------------------*/
@@ -80,9 +83,9 @@ void _appl_yield(void);
 void wait_flag(volatile signed char *semaphore) GNU_ASM_NAME("wait_flag");
 int16 req_flag(volatile signed char *semaphore) GNU_ASM_NAME("req_flag");
 void rel_flag(volatile signed char *semaphore) GNU_ASM_NAME("rel_flag");
-long dis_intrpt(void) GNU_ASM_NAME("dis_intrpt");
-long en_intrpt(void) GNU_ASM_NAME("en_intrpt");
 UDP_HDR *get_pending(UDP_HDR **pointer) GNU_ASM_NAME("get_pending");
 uint16 check_sum(uint32 src_ip, uint32 dest_ip, UDP_HDR *packet, uint16 length) GNU_ASM_NAME("check_sum");
+int32 cdecl get_sr(void *) GNU_ASM_NAME("get_sr");
+int32 cdecl set_sr(void *) GNU_ASM_NAME("set_sr");
 
 #endif /* UDP_H */

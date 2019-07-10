@@ -10,6 +10,7 @@
 #include <tos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -21,10 +22,11 @@
 #endif
 
 
-#define  M_YEAR     1998
-#define  M_MONTH    3
-#define  M_DAY      6
-#define  M_VERSION  "01.42"
+#define  M_YEAR     1999
+#define  M_MONTH    12
+#define  M_DAY      1
+#define  M_VERSION  "01.46"
+#define  M_AUTHOR   "Peter Rottengatter|     &  STinG Evolution Team"
 
 
 TPL *tpl;
@@ -43,22 +45,22 @@ static LAYER my_conf = {
 
 static uint16 last_port;
 static uint16 udp_id = 0;
-static volatile signed char global_sema = 0;
 static CONNEC *root_list;
-static CONNEC *global;
 static char const fault[] = "UDP.STX : STinG extension module. Only to be started by STinG !\r\n";
+static char const masquerade_port[] = "Masquerade";
 
 
 
-static void timer_work(CONNEC *connec)
+static long cdecl timer_work(void *param)
 {
+	CONNEC *connec = (CONNEC *)param;
 	UDP_HDR *queue;
 	UDP_HDR *walk;
 	UDP_HDR **previous;
 	uint32 pending;
 
 	if (req_flag(&connec->semaphore) != 0)
-		return;
+		return 0;
 
 	if (connec->pending)
 	{
@@ -67,13 +69,15 @@ static void timer_work(CONNEC *connec)
 		for (walk = queue; walk; walk = walk->chain.next)
 			pending += walk->chain.length;
 		previous = &connec->receive_queue;
-		for (walk = *previous; walk; walk = *(previous = &walk->chain.next)) ;
+		for (walk = *previous; walk; walk = *(previous = &walk->chain.next))
+			;
 		*previous = queue;
 		connec->total_data += pending;
 	}
 
 	connec->last_work = TIMER_now();
 	rel_flag(&connec->semaphore);
+	return 0;
 }
 
 
@@ -84,19 +88,6 @@ static int16 cdecl timer_function(IP_DGRAM *dgram)
 	(void)dgram;
 	for (connect = root_list; connect; connect = connect->next)
 		timer_work(connect);
-	return 0;
-}
-
-
-static long poll_doit(void)
-{
-	CONNEC *connec;
-
-	connec = global;
-
-	rel_flag(&global_sema);
-	timer_work(connec);
-
 	return 0;
 }
 
@@ -116,10 +107,7 @@ static int16 poll_receive(CONNEC *connec)
 	if (TIMER_elapsed(connec->last_work) < 1200)
 		return 0;
 
-	wait_flag(&global_sema);
-	global = connec;
-
-	Supexec(poll_doit);
+	protect_exec(connec, timer_work);
 
 	return 0;
 }
@@ -145,6 +133,9 @@ static int16 cdecl my_CNbyte_count(void *connec)
 	if ((error = poll_receive(conn)) < 0)
 		return error;
 
+	if (conn->state == ULISTEN)
+		return E_LISTEN;
+
 	return (int16) conn->total_data;
 }
 
@@ -159,7 +150,16 @@ static int16 cdecl my_CNget_char(void *connec)
 	if ((error = poll_receive(conn)) < 0)
 		return error;
 
-	wait_flag(&conn->semaphore);
+	if ((error = req_flag (&conn->semaphore)) != 0 &&
+		!(conn->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag (&conn->semaphore)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+		return E_LOCKED;
 
 	for (;;)
 	{
@@ -188,11 +188,21 @@ static NDB *cdecl my_CNget_NDB(void *connec)
 	CONNEC *conn = connec;
 	UDP_HDR *walk;
 	NDB *data_blk;
+	int16 error;
 
 	if (poll_receive(conn) < 0)
 		return NULL;
 
-	wait_flag(&conn->semaphore);
+	if ((error = req_flag (&conn->semaphore)) != 0 &&
+		!(conn->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag (&conn->semaphore)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+		return (NDB *)E_LOCKED;
 
 	for (;;)
 	{
@@ -240,7 +250,16 @@ static int16 cdecl my_CNget_block(void *connec, void *buffer, int16 length)
 	if ((uint16)length > conn->total_data)
 		return E_NODATA;
 
-	wait_flag(&conn->semaphore);
+	if ((error = req_flag (&conn->semaphore)) != 0 &&
+		!(conn->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag (&conn->semaphore)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+		return E_LOCKED;
 
 	do
 	{
@@ -272,6 +291,30 @@ static int16 cdecl my_CNget_block(void *connec, void *buffer, int16 length)
 }
 
 
+static uint32 inet_addr(const char *cp)
+{
+	uint32 ip_a, ip_b, ip_c, ip_d;
+	
+	ip_a = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_b = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_c = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_d = (uint32)atoi(cp);
+	return (ip_a << 24) | (ip_b << 16) | (ip_c << 8) | ip_d;
+}
+
+
 static CIB *cdecl my_CNgetinfo(void *connec)
 {
 	CONNEC *conn = connec;
@@ -291,6 +334,32 @@ static CIB *cdecl my_CNgetinfo(void *connec)
 	cib->address.rport = conn->remote_port;
 	cib->address.rhost = conn->remote_IP_address;
 	cib->address.lhost = conn->local_IP_address;
+
+	if (cib->address.lhost == 0)
+	{
+		const char *config;
+		
+		config = getvstr("FORCED_IP");
+		if (strlen(config) > 6)
+		{
+			cib->address.lhost = inet_addr(config);
+		} else
+		{
+			if (query_port(masquerade_port))
+			{
+				cntrl_port(masquerade_port, (uint32)&cib->address.lhost, CTL_MASQUE_GET_REALIP);
+			} else
+			{
+				if (cib->address.rhost != 0)
+				{
+					PRTCL_get_parameters(cib->address.rhost, &cib->address.lhost, NULL, NULL);
+				} else
+				{
+					PRTCL_get_parameters(0x0A00FF49UL, &cib->address.lhost, NULL, NULL);
+				}
+			}
+		}
+	}
 
 	return cib;
 }
@@ -316,7 +385,16 @@ static int16 cdecl my_CNgets(void *connec, char *buffer, int16 length, char deli
 	if (length <= 1)
 		return E_BIGBUF;
 
-	wait_flag(&conn->semaphore);
+	if ((error = req_flag (&conn->semaphore)) != 0 &&
+		!(conn->defer & DEFER_FLAG) &&
+		!(protect_exec(0, get_sr) & 0x200)) /* ?? should that be 0x2000 for supervisor? */
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag (&conn->semaphore)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+		return E_LOCKED;
 
 	search = NULL;
 	for (walk = conn->receive_queue; walk != NULL; walk = walk->chain.next)
@@ -369,12 +447,11 @@ static CN_FUNCS cn_vectors = {
 };
 
 
-static int16 next_port(void)
+static int32 cdecl next_port(void *param)
 {
 	CONNEC *connect;
 
-	Supexec(dis_intrpt);
-
+	(void)param;
 	for (;;)
 	{
 		last_port++;
@@ -388,7 +465,6 @@ static int16 next_port(void)
 		if (connect)
 			continue;
 
-		Supexec(en_intrpt);
 		return last_port;
 	}
 }
@@ -406,11 +482,11 @@ static int16 cdecl my_UDP_open(uint32 rem_host, uint16 rem_port)
 	int16 handle;
 
 	if (rem_host == 0L && rem_port == UDP_EXTEND)
-		rem_port = next_port();
+		rem_port = protect_exec(NULL, next_port);
 
 	if (rem_port != UDP_EXTEND)
 	{
-		lport = rem_host ? next_port() : rem_port;
+		lport = rem_host ? protect_exec(NULL, next_port) : rem_port;
 		rport = rem_host ? rem_port : 0;
 	} else
 	{
@@ -418,7 +494,7 @@ static int16 cdecl my_UDP_open(uint32 rem_host, uint16 rem_port)
 		rem_host = cab->rhost;
 		rport = cab->rport;
 		lcl_host = cab->lhost;
-		lport = cab->lport ? cab->lport : next_port();
+		lport = cab->lport ? cab->lport : protect_exec(NULL, next_port);
 	}
 
 	if (rem_host != 0)
@@ -441,6 +517,8 @@ static int16 cdecl my_UDP_open(uint32 rem_host, uint16 rem_port)
 	connect->remote_port = rport;
 	connect->local_IP_address = lcl_host;
 	connect->local_port = lport;
+	connect->state = rem_host != 0 ? UESTABLISH : ULISTEN;
+	connect->defer = 0;
 	connect->ttl = ttl;
 	connect->total_data = 0L;
 	connect->info = NULL;
@@ -449,12 +527,28 @@ static int16 cdecl my_UDP_open(uint32 rem_host, uint16 rem_port)
 	connect->net_error = 0;
 	connect->semaphore = 0;
 
-	Supexec(dis_intrpt);
+	/* FIXME: unprotected */
 	connect->next = root_list;
 	root_list = connect;
-	Supexec(en_intrpt);
 
 	return handle;
+}
+
+
+static int32 cdecl unlink_connect(void *connect)
+{
+	CONNEC *work, **previous;
+
+	previous = &root_list;
+	while ((work = *previous) != 0)
+	{
+		if (work == connect)
+		{
+			*previous = work->next;
+			return (int32)previous;
+		}
+	}
+	return (int32)previous;
 }
 
 
@@ -463,24 +557,11 @@ static int16 cdecl my_UDP_close(int16 connec)
 	UDP_HDR *walk;
 	UDP_HDR *qu_prev;
 	CONNEC *connect;
-	CONNEC *work;
-	CONNEC **previous;
 
 	if ((connect = PRTCL_lookup(connec, &cn_vectors)) == NULL)
 		return E_BADHANDLE;
 
-	Supexec(dis_intrpt);
-
-	for (work = *(previous = &root_list); work; work = *(previous = &work->next))
-	{
-		if (work == connect)
-			break;
-	}
-
-	if (work)
-		*previous = work->next;
-
-	Supexec(en_intrpt);
+	protect_exec(connect, unlink_connect);
 
 	if (connect->info != NULL)
 		KRfree(connect->info);
@@ -545,8 +626,38 @@ static int16 cdecl my_UDP_send(int16 connec, const void *buffer, int16 length)
 
 	if (value != E_NORMAL)
 		KRfree(packet);
+	else
+		conn->state = UESTABLISH;
 
 	return value;
+}
+
+
+static int16 cdecl my_UDP_info(int16 connec, UDPIB *buffer)
+{
+	CONNEC *conn;
+	int16 error;
+	uint32 request;
+
+	if ((conn = PRTCL_lookup(connec, &cn_vectors)) == NULL)
+		return E_BADHANDLE;
+	if ((long)buffer <= 0 || (request = buffer->request) > UDPI_mask)
+		return E_PARAMETER;
+	if (request & UDPI_defer)
+		conn->defer |= DEFER_FLAG;
+	if (request & UDPI_state)
+		buffer->state = conn->state;
+	if (request & UDPI_reserve1)
+		buffer->reserve1 = 0;
+	if (request & UDPI_reserve2)
+		buffer->reserve2 = 0;
+	
+	error = conn->net_error;
+	if (error < 0)
+		conn->net_error = 0;
+	else
+		error = UESTABLISH;
+	return error;
 }
 
 
@@ -630,8 +741,11 @@ static int16 cdecl UDP_handler(IP_DGRAM *dgram)
 	hdr->chain.next = NULL;
 
 	previous = &connect->pending;
-	for (walk = *previous; walk; walk = *(previous = &walk->chain.next)) ;
+	for (walk = *previous; walk; walk = *(previous = &walk->chain.next))
+		;
 	*previous = hdr;
+
+	connect->state = UESTABLISH;
 
 	return TRUE;
 }
@@ -768,6 +882,7 @@ static int16 install(void)
 	tpl->UDP_open = my_UDP_open;
 	tpl->UDP_close = my_UDP_close;
 	tpl->UDP_send = my_UDP_send;
+	tpl->UDP_info = my_UDP_info;
 
 	config = getvstr("UDP_PORT");
 	if (config[1])
