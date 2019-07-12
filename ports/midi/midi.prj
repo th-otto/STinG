@@ -1,0 +1,20 @@
+midi.stx
+
+.C[-A-]
+.C[-P-]
+.C[-M-]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=256]
+
+=
+pcstart.s
+
+midi.c
+
+c:\pc\orig\lib\pcstdli2.lib
+c:\pc\orig\lib\pctoslib.lib

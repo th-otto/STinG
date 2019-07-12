@@ -27,32 +27,10 @@
 /*       constants.                                                     */
 /* -------------------------------------------------------------------- */
 
-#ifdef GLOBAL
-#undef GLOBAL
-#endif
-
-#define GLOBAL EXTERN
-
-#define Mavail( ) (LONG)Malloc( -1L )
-
 #ifndef max
 #define max( a, b ) ( ( (a) > (b) ) ? (a) : (b) ) /* Maximum-Funktion */
 #define min( a, b ) ( ( (a) < (b) ) ? (a) : (b) ) /* Minimum Funktion */
 #endif
-
-#define odd( i )    ( (i) & 1 )                   /* ungerade */
-
-#define AND         &&
-#define OR          ||
-#define XOR         ^^
-#define NOT         !
-#define DIV         /
-#define MOD         %
-
-#define BITAND      &
-#define BITOR       |
-#define BITXOR      ^
-#define BITNOT      ~
 
 /* -------------------------------------------------------------------- */
 /*       types.                                                         */

@@ -11,9 +11,9 @@
 #include	<string.h>
 #include	<stdlib.h>
 
-#include	<sting\transprt.h>
-#include	<sting\layer.h>
-#include	<sting\resolve.h>
+#include	"transprt.h"
+#include	"layer.h"
+#include	"resolve.h"
 
 /*----------------------------------------------------------------------------*/
 

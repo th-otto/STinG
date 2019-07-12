@@ -10,9 +10,9 @@
 #include	<stdio.h>
 #include	<string.h>
 
-#include	<sting\transprt.h>
-#include	<sting\layer.h>
-#include	<sting\resolve.h>
+#include	"transprt.h"
+#include	"layer.h"
+#include	"resolve.h"
 
 #define	DNS_TIMEOUT 10000L
 #define	UDP_MAX_TRIES 3
@@ -27,6 +27,8 @@ int16	track_section (uint8 *data_p, int16 size, uint8 *section, int16 num, int16
 int16	track_domain (uint8 *data_p, int16 size, uint8 *label, char domain[]);
 
 uint16	identifier = 0;
+
+long sys_timer_supx(void);
 
 
 /*----------------------------------------------------------------------------*/

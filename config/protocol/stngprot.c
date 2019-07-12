@@ -24,8 +24,6 @@
 #include "transprt.h"
 #include "layer.h"
 
-#include <xctrl.h>
-
 
 /*
  *  Setup variables. Must be first variables !!!
@@ -49,6 +47,7 @@ CONF config = {
 #include "sting.rsh"
 #pragma  warn  .rpt
 
+#include "xctrl.h"
 
 #define  MESSAGE      -1
 #define  CROS_CHK     (CROSSED | CHECKED)

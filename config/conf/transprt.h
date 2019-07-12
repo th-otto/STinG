@@ -18,12 +18,12 @@
  *   Data types used throughout STinG.
  */
 
-typedef          char    int8;        /*   Signed  8 bit (char)             */
-typedef unsigned char   uint8;        /* Unsigned  8 bit (byte, octet)      */
-typedef          short  int16;        /*   Signed 16 bit (int)              */
-typedef unsigned short uint16;        /* Unsigned 16 bit (word)             */
-typedef          long   int32;        /*   Signed 32 bit                    */
-typedef unsigned long  uint32;        /* Unsigned 32 bit (longword)         */
+typedef          char  int8;          /*   Signed  8 bit (char)             */
+typedef unsigned char uint8;          /* Unsigned  8 bit (byte, octet)      */
+typedef          int   int16;         /*   Signed 16 bit (int)              */
+typedef unsigned int  uint16;         /* Unsigned 16 bit (word)             */
+typedef          long  int32;         /*   Signed 32 bit                    */
+typedef unsigned long uint32;         /* Unsigned 32 bit (longword)         */
 
 
 #ifndef TRUE
@@ -34,17 +34,6 @@ typedef unsigned long  uint32;        /* Unsigned 32 bit (longword)         */
 #endif
 
 
-#ifdef __PUREC__
-/* #define  cdecl cdecl */
-#endif
-
-#ifdef LATTICE
-#define  cdecl  __stdargs
-#endif
-
-#ifdef __GNUC__
-#define  cdecl
-#endif
 
 /*--------------------------------------------------------------------------*/
 
@@ -100,8 +89,6 @@ extern DRV_LIST *drivers;
  */
 
 #define  TCP_URGENT        ((void *) -1)     /* Mark urgent position        */
-#define  TCP_HALFDUPLEX    (-1)              /* TCP_close() half duplex     */
-#define  TCP_IMMEDIATE     (0)               /* TCP_close() immediate       */
 
 
 /*
@@ -126,7 +113,7 @@ extern DRV_LIST *drivers;
  */
 
 typedef struct tcpib {      /* TCP Information Block                        */
-    int16  state;           /* Connection state                             */
+    int16       state;      /* Connection state                             */
  } TCPIB;
 
 
@@ -149,40 +136,39 @@ typedef  struct pnta {
  *   Command opcodes for cntrl_port().
  */
 
-#define  CTL_KERN_FIRST_PORT      (('K' << 8) | 'F')   /* Kernel            */
-#define  CTL_KERN_NEXT_PORT       (('K' << 8) | 'N')   /* Kernel            */
-#define  CTL_KERN_FIND_PORT       (('K' << 8) | 'G')   /* Kernel            */
+#define  CTL_KERN_FIRST_PORT      ('K' << 8 | 'F')     /* Kernel            */
+#define  CTL_KERN_NEXT_PORT       ('K' << 8 | 'N')     /* Kernel            */
+#define  CTL_KERN_FIND_PORT       ('K' << 8 | 'G')     /* Kernel            */
 
-#define  CTL_GENERIC_SET_IP       (('G' << 8) | 'H')   /* Kernel, all ports */
-#define  CTL_GENERIC_GET_IP       (('G' << 8) | 'I')   /* Kernel, all ports */
-#define  CTL_GENERIC_SET_MASK     (('G' << 8) | 'L')   /* Kernel, all ports */
-#define  CTL_GENERIC_GET_MASK     (('G' << 8) | 'M')   /* Kernel, all ports */
-#define  CTL_GENERIC_SET_MTU      (('G' << 8) | 'N')   /* Kernel, all ports */
-#define  CTL_GENERIC_GET_MTU      (('G' << 8) | 'O')   /* Kernel, all ports */
-#define  CTL_GENERIC_GET_MMTU     (('G' << 8) | 'P')   /* Kernel, all ports */
-#define  CTL_GENERIC_GET_TYPE     (('G' << 8) | 'T')   /* Kernel, all ports */
-#define  CTL_GENERIC_GET_STAT     (('G' << 8) | 'S')   /* Kernel, all ports */
-#define  CTL_GENERIC_CLR_STAT     (('G' << 8) | 'C')   /* Kernel, all ports */
+#define  CTL_GENERIC_SET_IP       ('G' << 8 | 'H')     /* Kernel, all ports */
+#define  CTL_GENERIC_GET_IP       ('G' << 8 | 'I')     /* Kernel, all ports */
+#define  CTL_GENERIC_SET_MASK     ('G' << 8 | 'L')     /* Kernel, all ports */
+#define  CTL_GENERIC_GET_MASK     ('G' << 8 | 'M')     /* Kernel, all ports */
+#define  CTL_GENERIC_SET_MTU      ('G' << 8 | 'N')     /* Kernel, all ports */
+#define  CTL_GENERIC_GET_MTU      ('G' << 8 | 'O')     /* Kernel, all ports */
+#define  CTL_GENERIC_GET_MMTU     ('G' << 8 | 'P')     /* Kernel, all ports */
+#define  CTL_GENERIC_GET_TYPE     ('G' << 8 | 'T')     /* Kernel, all ports */
+#define  CTL_GENERIC_GET_STAT     ('G' << 8 | 'S')     /* Kernel, all ports */
+#define  CTL_GENERIC_CLR_STAT     ('G' << 8 | 'C')     /* Kernel, all ports */
 
-#define  CTL_SERIAL_SET_PRTCL     (('S' << 8) | 'P')   /* Serial Driver     */
-#define  CTL_SERIAL_GET_PRTCL     (('S' << 8) | 'Q')   /* Serial Driver     */
-#define  CTL_SERIAL_SET_LOGBUFF   (('S' << 8) | 'L')   /* Serial Driver     */
-#define  CTL_SERIAL_SET_LOGGING   (('S' << 8) | 'F')   /* Serial Driver     */
-#define  CTL_SERIAL_SET_AUTH      (('S' << 8) | 'A')   /* Serial Driver     */
-#define  CTL_SERIAL_SET_PAP       (('S' << 8) | 'B')   /* Serial Driver     */
-#define  CTL_SERIAL_INQ_STATE     (('S' << 8) | 'S')   /* Serial Driver     */
+#define  CTL_SERIAL_SET_PRTCL     ('S' << 8 | 'P')     /* Serial Driver     */
+#define  CTL_SERIAL_GET_PRTCL     ('S' << 8 | 'Q')     /* Serial Driver     */
+#define  CTL_SERIAL_SET_LOGBUFF   ('S' << 8 | 'L')     /* Serial Driver     */
+#define  CTL_SERIAL_SET_LOGGING   ('S' << 8 | 'F')     /* Serial Driver     */
+#define  CTL_SERIAL_SET_AUTH      ('S' << 8 | 'A')     /* Serial Driver     */
+#define  CTL_SERIAL_SET_PAP       ('S' << 8 | 'B')     /* Serial Driver     */
+#define  CTL_SERIAL_INQ_STATE     ('S' << 8 | 'S')     /* Serial Driver     */
 
-#define  CTL_ETHER_SET_MAC        (('E' << 8) | 'M')   /* EtherNet          */
-#define  CTL_ETHER_GET_MAC        (('E' << 8) | 'N')   /* EtherNet          */
-#define  CTL_ETHER_INQ_SUPPTYPE   (('E' << 8) | 'Q')   /* EtherNet          */
-#define  CTL_ETHER_SET_TYPE       (('E' << 8) | 'T')   /* EtherNet          */
-#define  CTL_ETHER_GET_TYPE       (('E' << 8) | 'U')   /* EtherNet          */
+#define  CTL_ETHER_SET_MAC        ('E' << 8 | 'M')     /* EtherNet          */
+#define  CTL_ETHER_GET_MAC        ('E' << 8 | 'N')     /* EtherNet          */
+#define  CTL_ETHER_INQ_SUPPTYPE   ('E' << 8 | 'Q')     /* EtherNet          */
+#define  CTL_ETHER_SET_TYPE       ('E' << 8 | 'T')     /* EtherNet          */
+#define  CTL_ETHER_GET_TYPE       ('E' << 8 | 'U')     /* EtherNet          */
 
-#define  CTL_MASQUE_SET_PORT      (('M' << 8) | 'P')   /* Masquerade        */
-#define  CTL_MASQUE_GET_PORT      (('M' << 8) | 'Q')   /* Masquerade        */
-#define  CTL_MASQUE_SET_MASKIP    (('M' << 8) | 'M')   /* Masquerade        */
-#define  CTL_MASQUE_GET_MASKIP    (('M' << 8) | 'N')   /* Masquerade        */
-#define  CTL_MASQUE_GET_REALIP    (('M' << 8) | 'R')   /* Masquerade        */
+#define  CTL_MASQUE_SET_PORT      ('M' << 8 | 'P')     /* Masquerade        */
+#define  CTL_MASQUE_GET_PORT      ('M' << 8 | 'Q')     /* Masquerade        */
+#define  CTL_MASQUE_SET_MASKIP    ('M' << 8 | 'M')     /* Masquerade        */
+#define  CTL_MASQUE_GET_MASKIP    ('M' << 8 | 'N')     /* Masquerade        */
 
 
 
@@ -310,7 +296,7 @@ typedef  struct tpl  {
     char *     cdecl  (* getvstr) (char *);
     int16      cdecl  (* carrier_detect) (void);
     int16      cdecl  (* TCP_open) (uint32, uint16, uint16, uint16);
-    int16      cdecl  (* TCP_close) (int16, int16, int16 *);
+    int16      cdecl  (* TCP_close) (int16, int16);
     int16      cdecl  (* TCP_send) (int16, void *, int16);
     int16      cdecl  (* TCP_wait_state) (int16, int16, int16);
     int16      cdecl  (* TCP_ack_wait) (int16, int16);
@@ -356,7 +342,7 @@ extern TPL *tpl;
 #define getvstr(x)                       (*tpl->getvstr)(x)
 #define carrier_detect()                 (*tpl->carrier_detect)()
 #define TCP_open(w,x,y,z)                (*tpl->TCP_open)(w,x,y,z)
-#define TCP_close(x,y,z)                 (*tpl->TCP_close)(x,y,z)
+#define TCP_close(x,y)                   (*tpl->TCP_close)(x,y)
 #define TCP_send(x,y,z)                  (*tpl->TCP_send)(x,y,z)
 #define TCP_wait_state(x,y,z)            (*tpl->TCP_wait_state)(x,y,z)
 #define TCP_ack_wait(x,y)                (*tpl->TCP_ack_wait)(x,y)

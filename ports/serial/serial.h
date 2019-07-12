@@ -308,7 +308,11 @@ typedef  struct ppp_data  {
      uint32   recve_accm, send_accm;
      uint32   local_magic, remote_magic, offered;
      char     pap_id[128], pap_passwd[128];
-     char     **pap_auth, *pap_ack, *pap_nak;
+     char     **pap_auth;
+#if 0
+     char     *pap_ack;
+     char     *pap_nak;
+#endif
      uint32   p_dns, s_dns;
      uint8    *cp_send_data, *data;
      int16    cp_send_len, length, mtu2, vjhc_max1, vjhc_max2;

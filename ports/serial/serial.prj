@@ -1,7 +1,5 @@
 serial.stx
 
-.C[-I..\..\include]
-
 .C[-A-]
 .C[-P-]
 .C[-M]

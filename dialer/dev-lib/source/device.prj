@@ -4,9 +4,9 @@
 ; Date       :		29.03.1994
 ;
 
-D:\PURE-C\LIB\DEVICE.LIB
+device.lib
 
-.C[-C -P -K]				; Optionen Compiler
+.C[-C -P -K -M-]				; Optionen Compiler
 .S[-S]						; -"-      Assembler
 .L[-J]						; Neues Objektformat
 
@@ -14,7 +14,7 @@ D:\PURE-C\LIB\DEVICE.LIB
 
 ; ########### 'C' Modules ##########
 
- DEV_LIB.C
+DEV_LIB.C
 
 ; ######## Assembler Modules #######
 

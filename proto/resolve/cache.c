@@ -12,8 +12,8 @@
 #include <string.h>
 #include <time.h>
 
-#include <sting\transprt.h>
-#include <sting\resolve.h>
+#include "transprt.h"
+#include "resolve.h"
 
 
 void	wait_flag (int16 *semaphore);

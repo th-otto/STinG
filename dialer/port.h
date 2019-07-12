@@ -45,12 +45,11 @@ typedef  struct port_desc {
  */
 
 typedef  struct drv_desc {
-    int16 cdecl  (* set_state) (PORT *, int16);       /* Setup and shutdown */
-    int16 cdecl  (* cntrl) (PORT *, uint32, int16);   /* Control functions  */
-    void  cdecl  (* send) (PORT *);                   /* Send packets       */
-    void  cdecl  (* receive) (PORT *);                /* Receive packets    */
-    const char       *name;     /* Name of driver                           */
-    const char       *version;  /* Version of driver in "xx.yy" format      */
+    int16 cdecl  (* set_state) (PORT *, int16);  /* Setup and shutdown port */
+    void  cdecl  (* send) (PORT *);              /* Send pending packets    */
+    void  cdecl  (* receive) (PORT *);           /* Receive pending packets */
+    char             *name;     /* Name of driver                           */
+    char             *version;  /* Version of driver in "xx.yy" format      */
     uint16           date;      /* Compile date in GEMDOS format            */
     char             *author;   /* Name of programmer                       */
     struct drv_desc  *next;     /* Next driver in driver chain              */

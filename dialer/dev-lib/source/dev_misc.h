@@ -1,1 +1,1 @@
-GLOBAL	BOOLEAN		has_drive_u	( VOID );
+BOOLEAN		has_drive_u	( void );

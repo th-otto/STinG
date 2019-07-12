@@ -1,13 +1,11 @@
-#include "import.h"
 #include <device.h>
 
-#include "export.h"
 
 /*
  * Small program to print out all available serial ports and the
  * available speeds
  */
-GLOBAL WORD main( VOID )
+WORD main( void )
 {
 	DEV_LIST	*ports, *walk;
 	LONG		*speeds;

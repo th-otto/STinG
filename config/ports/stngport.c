@@ -35,7 +35,7 @@ char  inf_file[] = "\0.345678901234567890123456789012345678901234567890123456789
 #include "transprt.h"
 #include "port.h"
 
-#include <xctrl.h>
+#include "xctrl.h"
 
 
 #define  MESSAGE     -1

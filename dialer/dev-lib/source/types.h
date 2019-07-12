@@ -11,7 +11,7 @@
 /*--- includes              ---*/
 
 #include <tos.h>
-#include <mint\mintbind.h>
+#include <portab.h>
 
 /*--- defines               ---*/
 
@@ -142,7 +142,7 @@ typedef struct
 			sg_ospeed,
 			sg_erase,
 			sg_kill;
-	USHORT	sg_flags;
+	UWORD	sg_flags;
 } SGTTYB;
 
 /*
@@ -158,7 +158,7 @@ typedef struct
 
 typedef struct
 {
-	VOID		*ptr;
+	void		*ptr;
 	HS_TYPES	typ;
 	UBYTE		bios_nr;
 	UBYTE		unused;

@@ -1,0 +1,21 @@
+sting.bin
+
+.C[-I..]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=1024]
+
+=
+sting.c
+
+c:\pc\orig\lib\pcstdli2.lib
+c:\pc\orig\lib\pctoslib.lib
+c:\pc\orig\lib\pcgemlib.lib
