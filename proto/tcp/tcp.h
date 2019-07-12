@@ -138,6 +138,7 @@ typedef  struct connec  {
      struct {                        /* Structure containing RECEIVE info : */
          uint32   next;              /*   Next acceptable sequence number   */
          uint16   window;            /*   Actual size of receive window     */
+         uint32   lst_next;          /*   Next acceptable sequence number   */
          uint16   lst_win;           /*   Last window size reported         */
          RESEQU   *reseq;            /*   Segment queue for resequencing    */
          int16    count;             /*   Real data in queue                */
@@ -252,6 +253,7 @@ void send_sync(CONNEC *connec);
 void do_arrive(CONNEC *conn, IP_DGRAM *dgram);
 
 uint16 pull_up(NDB **queue, char *buffer, uint16 length);
+uint16 pull_char(NDB *queue, char *buffer, uint16 length);
 void do_output(CONNEC *connec);
 void update_wind(CONNEC *connec, TCP_HDR *tcph);
 int16 trim_segm(CONNEC *connec, IP_DGRAM *dgram, RESEQU **block, int16 make_resequ);

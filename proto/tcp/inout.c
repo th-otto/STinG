@@ -120,6 +120,27 @@ uint16 pull_up(NDB **queue, char *buffer, uint16 length)
 }
 
 
+uint16 pull_char (NDB *queue, char *buffer, uint16 length)
+{
+	uint16  avail, accu = 0;
+
+	while (length > 0 && queue != NULL)
+	{
+		avail = queue->len < length ? queue->len : length;
+		if (avail && buffer)
+		{
+			memcpy(buffer, queue->ndata, avail);
+			buffer += avail;
+		}
+		queue = queue->next;
+		accu += avail;
+		length -= avail;
+	}
+
+	return accu;
+}
+
+
 int16 trim_segm(CONNEC *connec, IP_DGRAM *dgram, RESEQU **block, int16 make_resequ)
 {
 	TCP_HDR *hdr;
@@ -176,14 +197,16 @@ int16 trim_segm(CONNEC *connec, IP_DGRAM *dgram, RESEQU **block, int16 make_rese
 			return FALSE;
 	}
 
+	if (hdr->sync)
+	{
+		if (connec->recve.next == hdr->sequence)
+			connec->recve.next++;
+		hdr->sync = FALSE;
+		hdr->sequence++;
+	}
+
 	if ((dupes = connec->recve.next - hdr->sequence) > 0)
 	{
-		if (hdr->sync)
-		{
-			dupes--;
-			hdr->sync = FALSE;
-			hdr->sequence++;
-		}
 		data += dupes;
 		dat_len -= dupes;
 		hdr->sequence += dupes;
@@ -288,6 +311,7 @@ static uint8 *prep_segment(CONNEC *connec, TCP_HDR *hdr, uint16 *length, uint16 
 		check_sum(connec->local_IP_address, connec->remote_IP_address, (TCP_HDR *) mem, *length);
 
 	connec->recve.lst_win = connec->recve.window;
+	connec->recve.lst_next = connec->recve.next;
 
 	return mem;
 }
@@ -381,13 +405,12 @@ void do_output(CONNEC *connec)
 
 		if ((connec->flags & FLAG40) &&
 			connec->send.count - sent == size &&
+			size != 0 &&
 			connec->send.count != 0)
 		{
 			hdr.fin = TRUE;
 			if (--raw_size < 0)
 				raw_size = 0;
-			if (size == 0)
-				hdr.sequence = connec->send.unack - 1;
 		}
 
 		if (raw_size != 0 && sent + size == connec->send.count)

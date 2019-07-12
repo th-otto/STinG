@@ -330,7 +330,7 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 void send_sync(CONNEC *connec)
 {
 	ini_sequ += 250052L;
-	ini_sequ_next = TIMER_now() << (8 + (uint8)ini_sequ);
+	ini_sequ_next = (TIMER_now() << 8) + ini_sequ;
 	connec->send.ini_sequ = ini_sequ_next;
 	connec->rtrp.sequ = connec->send.lwup_ack = connec->send.unack = connec->send.ini_sequ;
 	connec->send.ptr = connec->send.next = connec->send.ini_sequ;
@@ -352,7 +352,7 @@ void process_sync(CONNEC *connec, IP_DGRAM *dgram)
 
 	connec->send.lwup_seq = ((TCP_HDR *) dgram->pkt_data)->sequence;
 	connec->send.window = ((TCP_HDR *) dgram->pkt_data)->window;
-	connec->recve.next = ((TCP_HDR *) dgram->pkt_data)->sequence + 1;
+	connec->recve.next = ((TCP_HDR *) dgram->pkt_data)->sequence;
 
 	process_options(connec, dgram);
 
@@ -488,12 +488,18 @@ int16 receive(CONNEC *connec, uint8 *buffer, int16 *length, int16 getchar)
 	{
 		if (*length > connec->recve.count)
 			*length = connec->recve.count;
+		if (getchar)
+		{
+			pull_char(connec->recve.queue, (char *)buffer, *length);
+			return connec->recve.count;
+		}
 		pull_up(&connec->recve.queue, (char *)buffer, *length);
 	} else
 	{
 		if ((ndb = connec->recve.queue) == NULL)
+		{
 			*length = -1;
-		else
+		} else
 		{
 			*length = ndb->len;
 			*(NDB **) buffer = ndb;
@@ -506,8 +512,9 @@ int16 receive(CONNEC *connec, uint8 *buffer, int16 *length, int16 getchar)
 		connec->recve.count -= *length;
 		connec->recve.window += *length;
 
-		if ((connec->recve.lst_win < connec->mss && connec->recve.window >= connec->mss) ||
-			connec->recve.window == *length || !getchar)
+		if (connec->recve.window == *length ||
+			(connec->recve.lst_win < connec->mss && connec->recve.window >= connec->mss) ||
+			(int32)(connec->recve.next + connec->recve.window - (connec->recve.lst_next + connec->recve.lst_win)) >= connec->mss)
 		{
 			connec->flags |= FORCE;
 			do_output(connec);

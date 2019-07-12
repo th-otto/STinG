@@ -28,6 +28,8 @@ int16 cdecl TCP_handler(IP_DGRAM *datagram)
 	IP_DGRAM *walk;
 	uint16 len;
 	uint16 max_mss;
+	uint16 count;
+	uint16 found;
 
 	hdr = (TCP_HDR *) datagram->pkt_data;
 	len = datagram->pkt_length;
@@ -44,23 +46,42 @@ int16 cdecl TCP_handler(IP_DGRAM *datagram)
 		return TRUE;
 	}
 
-	for (option = NULL, connect = root_list; connect; connect = connect->next)
+	for (option = NULL, count = 0, connect = root_list; connect; connect = connect->next)
 	{
-		if (hdr->dest_port == connect->local_port &&
-			hdr->src_port == connect->remote_port &&
-			datagram->hdr.ip_dest == connect->local_IP_address &&
-			datagram->hdr.ip_src == connect->remote_IP_address)
+		if (hdr->dest_port == connect->local_port)
 		{
-			if (connect->state != TLISTEN)
-				break;
-			option = connect;
-		} else
-		{
-			if (hdr->dest_port == connect->local_port &&
-				(connect->remote_port == 0 || hdr->src_port == connect->remote_port) &&
-				(connect->local_IP_address == 0 || datagram->hdr.ip_dest == connect->local_IP_address) &&
-				(connect->remote_IP_address == 0 || datagram->hdr.ip_src == connect->remote_IP_address))
+			if (connect->remote_port == hdr->src_port &&
+				connect->local_IP_address == datagram->hdr.ip_dest &&
+				connect->remote_IP_address == datagram->hdr.ip_src)
 			{
+				if (connect->state != TLISTEN)
+					break;
+				found = 4;
+			} else
+			{
+				found = 1;
+				if (connect->remote_port != 0)
+				{
+					if (connect->remote_port != hdr->src_port)
+						continue;
+					found += found;
+				}
+				if (connect->local_IP_address != 0)
+				{
+					if (connect->local_IP_address != datagram->hdr.ip_dest)
+						continue;
+					found++;
+				}
+				if (connect->remote_IP_address != 0)
+				{
+					if (connect->remote_IP_address != datagram->hdr.ip_src)
+						continue;
+					found++;
+				}
+			}
+			if (found > count)
+			{
+				count = found;
 				option = connect;
 			}
 		}
@@ -197,9 +218,12 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 			conn->state = TSYN_RECV;
 			if (len - hdr->offset * 4 > 0 || hdr->fin)
 				break;
+			++conn->recve.next;
 			do_output(conn);
 		} else
+		{
 			my_conf.generic.stat_dropped++;
+		}
 		return;
 	case TSYN_SENT:
 		if (hdr->ack)
@@ -249,6 +273,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 				break;
 			if (conn->rtrp.mode)
 				rtrp_mode(conn);
+			++conn->recve.next;
 			do_output(conn);
 		}
 		if (hdr->ack && conn->o140 < 0xffff)
@@ -338,7 +363,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		return;
 	}
 
-	if (hdr->sequence != conn->recve.next && (net_data->data_len != 0 || hdr->sync || hdr->fin))
+	if (hdr->sequence != conn->recve.next && (net_data->data_len != 0 || hdr->fin))
 	{
 		add_resequ(conn, net_data);
 		return;

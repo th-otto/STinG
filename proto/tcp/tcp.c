@@ -21,10 +21,10 @@
 #include "tcp.h"
 
 
-#define  M_YEAR    1999
-#define  M_MONTH   12
-#define  M_DAY     1
-#define  M_VERSION "01.35"
+#define  M_YEAR    2000
+#define  M_MONTH   8
+#define  M_DAY     26
+#define  M_VERSION "01.40"
 #define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 #ifdef __GNUC__
@@ -149,7 +149,7 @@ static int16 cdecl my_CNget_char(void *connec)
 		return E_LOCKED;
 	}
 
-	receive(conn, &character, &length, TRUE);
+	receive(conn, &character, &length, FALSE);
 	rel_flag(&conn->sema);
 
 	return length ? (int16) character : E_NODATA;
@@ -198,6 +198,11 @@ static int16 cdecl my_CNget_block(void *connec, void *buffer, int16 length)
 {
 	CONNEC *conn = connec;
 	int16 error;
+	int16 buflen;
+	int16 flag;
+
+	buflen = length >= 0 ? length : -length;
+	flag = length < 0;
 
 	if ((error = poll_receive(connec)) < 0)
 		return error;
@@ -213,10 +218,9 @@ static int16 cdecl my_CNget_block(void *connec, void *buffer, int16 length)
 		return E_NODATA;
 	}
 
-	if (length <= 0)
+	if (buflen == 0)
 		return 0;
-
-	if (length > conn->recve.count)
+	if (buflen > conn->recve.count)
 		return E_NODATA;
 
 	if ((error = req_flag(&conn->sema)) != 0 &&
@@ -232,10 +236,10 @@ static int16 cdecl my_CNget_block(void *connec, void *buffer, int16 length)
 		return E_LOCKED;
 	}
 
-	receive(conn, buffer, &length, FALSE);
+	receive(conn, buffer, &buflen, flag);
 	rel_flag(&conn->sema);
 
-	return length;
+	return buflen;
 }
 
 
@@ -469,7 +473,8 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	}
 
 	ttl = my_conf.def_ttl;
-	window = buff_size > 0 ? buff_size : my_conf.rcv_window;
+	buff_size = buff_size > 0 ? buff_size : my_conf.rcv_window;
+	window = buff_size > my_conf.rcv_window ? buff_size : my_conf.rcv_window;
 
 	if ((connect = (CONNEC *) KRmalloc(sizeof(CONNEC))) == NULL)
 		return E_NOMEM;
@@ -500,7 +505,7 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	connect->net_error = 0;
 
 	connect->send.window = window;
-	connect->send.bufflen = window;
+	connect->send.bufflen = buff_size;
 	connect->o140 = 0x430;
 	connect->o142 = 0xffff;
 	connect->send.total = 0;
@@ -558,13 +563,14 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 }
 
 
-static int16 cdecl my_TCP_close(int16 connec, int16 mode, int16 *result)
+static int16 cdecl my_TCP_close(int16 connec, int16 mode, int16 *presult)
 {
 	CONNEC *conn;
 	int16 retval = E_NOROUTINE;
 	int32 now;
 	int32 start;
 	int16 error;
+	int16 *result;
 
 	now = TIMER_now();
 
@@ -578,10 +584,12 @@ static int16 cdecl my_TCP_close(int16 connec, int16 mode, int16 *result)
 			conn->result = NULL;
 			return E_NORMAL;
 		}
+		result = NULL;
 		if (mode >= 1000)
 			mode = 999;
 	} else
 	{
+		result = presult;
 		conn->result = result;
 	}
 
@@ -684,7 +692,7 @@ static int16 cdecl my_TCP_close(int16 connec, int16 mode, int16 *result)
 		break;
 	}
 
-	if (mode < 0 && result != NULL)
+	if (result != NULL)
 		*result = retval;
 
 	return retval;
