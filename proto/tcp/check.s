@@ -7,27 +7,20 @@
 /*********************************************************************/
 
 
-            .globl    wait_flag                  /* Function for waiting for semaphore */
             .globl    req_flag                   /* Function for requesting semaphore */
             .globl    rel_flag                   /* Function for releasing semaphore */
-
-            .globl    dis_intrpt                 /* Function for disabling interupts */
-            .globl    en_intrpt                  /* Function for enabling interupts */
 
             .globl    get_pending                /* Function for getting pending data */
 
             .globl    check_sum                  /* Function for checksumming data */
 
+			.globl get_sr
+			.globl set_sr
+			.globl cli
 
 			.text
 
 /* ------------------------------------------------------------------------------------- */
-
-wait_flag:
-            tas     (a0)                         /* Test semaphore, and set bit 7 */
-            bne     wait_flag                    /* Was set ? Then loop */
-            or.b    #0xff,(a0)                   /* Now the lock is ours */
-            rts
 
 req_flag:
             move.l  #1,d0                        /* Preset TRUE in case of lock */
@@ -44,16 +37,22 @@ rel_flag:
 
 /* ------------------------------------------------------------------------------------- */
 
-dis_intrpt:
-            move.w  sr,srsave                    /* Save CPU status */
-            or.w    #0x0700,sr                   /* Disable interupts */
-            rts
+get_sr:
+			move.w 8(a7),d0
+			rts
 
-en_intrpt:
-            move.w  srsave,sr                    /* Restore CPU status */
-            rts
+/* ------------------------------------------------------------------------------------- */
 
-srsave:     .dc.w   0                            /* CPU status */
+set_sr:
+			move.w 6(a7),8(a7)
+			rts
+
+/* ------------------------------------------------------------------------------------- */
+
+cli:
+			move.w 8(a7),d0
+            or.w    #0x0700,8(a7)                /* Disable interupts */
+			rts
 
 /* ------------------------------------------------------------------------------------- */
 

@@ -13,6 +13,7 @@
 #include <tos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -21,9 +22,10 @@
 
 
 #define  M_YEAR    1999
-#define  M_MONTH   1
-#define  M_DAY     2
-#define  M_VERSION "01.15"
+#define  M_MONTH   12
+#define  M_DAY     1
+#define  M_VERSION "01.35"
+#define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 #ifdef __GNUC__
 # define _BasPag _base
@@ -37,6 +39,7 @@ CONNEC *root_list;
 
 static uint16 last_port;
 static char const fault[] = "TCP.STX : STinG extension module. Only to be started by STinG !\r\n";
+static char const masquerade_port[] = "Masquerade";
 
 TCP_CONF my_conf = {
 	{
@@ -44,12 +47,12 @@ TCP_CONF my_conf = {
 		M_VERSION,
 		0x10400L,
 		((M_YEAR - 1980) << 9) | (M_MONTH << 5) | M_DAY,
-		"Peter Rottengatter",
+		M_AUTHOR,
 		0,
 		NULL,
 		NULL
 	},
-	2000, 2000, 50, 64, 200, 0, 0, 0
+	2000, 2000, 1500, 64, 6000, 0, 0, 0
 };
 
 
@@ -58,19 +61,27 @@ static int16 cdecl my_CNkick(void *connec)
 {
 	CONNEC *conn = connec;
 	int16 error;
-	uint16 smooth;
 
 	if ((error = poll_receive(connec)) < 0)
 		return error;
 
-	wait_flag(&conn->sema);
-
-	smooth = conn->rtrp.smooth > 1 ? conn->rtrp.smooth : 1;
+	if ((error = req_flag(&conn->sema)) != 0 &&
+		!(conn->flags & DEFERRED) &&
+		!(protect_exec(0, get_sr) & 0x2000))
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+	{
+		return E_LOCKED;
+	}
 
 	conn->rtrn.mode = FALSE;
 	conn->rtrn.backoff = 0;
 	conn->rtrn.start = TIMER_now();
-	conn->rtrn.timeout = 2 * smooth;
+	conn->rtrn.timeout = 2 * conn->rtrp.smooth;
 
 	conn->flags |= FORCE;
 
@@ -125,7 +136,21 @@ static int16 cdecl my_CNget_char(void *connec)
 		return E_NODATA;
 	}
 
+	if ((error = req_flag(&conn->sema)) != 0 &&
+		!(conn->flags & DEFERRED) &&
+		!(protect_exec(0, get_sr) & 0x2000))
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+	{
+		return E_LOCKED;
+	}
+
 	receive(conn, &character, &length, TRUE);
+	rel_flag(&conn->sema);
 
 	return length ? (int16) character : E_NODATA;
 }
@@ -133,17 +158,34 @@ static int16 cdecl my_CNget_char(void *connec)
 
 static NDB *cdecl my_CNget_NDB(void *connec)
 {
+	CONNEC *conn = connec;
 	NDB *ndb;
-	int16 flag = categorize(connec);
+	int16 flag = categorize(conn);
+	int16 error;
 
-	if (poll_receive(connec) < 0)
+	if (poll_receive(conn) < 0)
 		return NULL;
 
 	if (flag != C_READY && flag != C_FIN)
 		return NULL;
 
 	flag = -1;
-	receive(connec, (uint8 *) & ndb, &flag, FALSE);
+
+	if ((error = req_flag(&conn->sema)) != 0 &&
+		!(conn->flags & DEFERRED) &&
+		!(protect_exec(0, get_sr) & 0x2000))
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+	{
+		return (NDB *)E_LOCKED;
+	}
+
+	receive(conn, (uint8 *) &ndb, &flag, FALSE);
+	rel_flag(&conn->sema);
 
 	if (flag < 0)
 		return NULL;
@@ -177,9 +219,47 @@ static int16 cdecl my_CNget_block(void *connec, void *buffer, int16 length)
 	if (length > conn->recve.count)
 		return E_NODATA;
 
+	if ((error = req_flag(&conn->sema)) != 0 &&
+		!(conn->flags & DEFERRED) &&
+		!(protect_exec(0, get_sr) & 0x2000))
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+	{
+		return E_LOCKED;
+	}
+
 	receive(conn, buffer, &length, FALSE);
+	rel_flag(&conn->sema);
 
 	return length;
+}
+
+
+static uint32 inet_addr(const char *cp)
+{
+	uint32 ip_a, ip_b, ip_c, ip_d;
+
+	ip_a = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_b = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_c = (uint32)atoi(cp);
+	cp = strchr(cp, '.');
+	if (cp == NULL)
+		return 0;
+	++cp;
+	ip_d = (uint32)atoi(cp);
+	return (ip_a << 24) | (ip_b << 16) | (ip_c << 8) | ip_d;
 }
 
 
@@ -201,7 +281,31 @@ static CIB *cdecl my_CNgetinfo(void *connec)
 	cib->address.lport = conn->local_port;
 	cib->address.rport = conn->remote_port;
 	cib->address.rhost = conn->remote_IP_address;
-	cib->address.lhost = conn->local_IP_address;
+	if ((cib->address.lhost = conn->local_IP_address) == 0)
+	{
+		const char *config;
+
+		config = getvstr("FORCED_IP");
+		if (strlen(config) > 6)
+		{
+			cib->address.lhost = inet_addr(config);
+		} else
+		{
+			if (query_port(masquerade_port))
+			{
+				cntrl_port(masquerade_port, (uint32)&cib->address.lhost, CTL_MASQUE_GET_REALIP);
+			} else
+			{
+				if (cib->address.rhost != 0)
+				{
+					PRTCL_get_parameters(cib->address.rhost, &cib->address.lhost, NULL, NULL);
+				} else
+				{
+					PRTCL_get_parameters(0x0A00FF49UL, &cib->address.lhost, NULL, NULL);
+				}
+			}
+		}
+	}
 
 	return cib;
 }
@@ -236,7 +340,18 @@ static int16 cdecl my_CNgets(void *connec, char *buffer, int16 length, char deli
 	if (length <= 1)
 		return E_BIGBUF;
 
-	wait_flag(&conn->sema);
+	if ((error = req_flag(&conn->sema)) != 0 &&
+		!(conn->flags & DEFERRED) &&
+		!(protect_exec(0, get_sr) & 0x2000))
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+	{
+		return E_LOCKED;
+	}
 
 	for (walk = conn->recve.queue, amount = 0; walk != NULL; walk = walk->next)
 	{
@@ -246,8 +361,8 @@ static int16 cdecl my_CNgets(void *connec, char *buffer, int16 length, char deli
 			if (*search++ == delimiter)
 			{
 				amount++;
-				rel_flag(&conn->sema);
 				receive(conn, (uint8 *)buffer, &amount, FALSE);
+				rel_flag(&conn->sema);
 				buffer[--amount] = '\0';
 				return amount;
 			}
@@ -276,12 +391,11 @@ static CN_FUNCS cn_vectors = {
 };
 
 
-static int16 next_port(void)
+static int32 cdecl next_port(void *param)
 {
 	CONNEC *connect;
 
-	Supexec(dis_intrpt);
-
+	(void)param;
 	for (;;)
 	{
 		last_port++;
@@ -295,7 +409,6 @@ static int16 next_port(void)
 		if (connect)
 			continue;
 
-		Supexec(en_intrpt);
 		return last_port;
 	}
 }
@@ -307,7 +420,7 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	CONNEC *connect;
 	uint32 lcl_host = 0;
 	uint32 aux_ip;
-	uint32 error;
+	int16 error;
 	uint16 act_pass;
 	uint16 lport;
 	uint16 rport;
@@ -317,15 +430,15 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	int16 ttl;
 	int16 handle;
 
-	if (rem_host == 0L && (rem_port == TCP_ACTIVE || rem_port == TCP_PASSIVE))
-		rem_port = next_port();
+	if (rem_host == 0 && (rem_port == TCP_ACTIVE || rem_port == TCP_PASSIVE))
+		rem_port = protect_exec(NULL, next_port);
 
 	if (rem_port != TCP_ACTIVE && rem_port != TCP_PASSIVE)
 	{
 		if (rem_host)
 		{
 			act_pass = TCP_ACTIVE;
-			lport = next_port();
+			lport = protect_exec(NULL, next_port);
 			rport = rem_port;
 		} else
 		{
@@ -340,7 +453,7 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 		rem_host = cab->rhost;
 		rport = cab->rport;
 		lcl_host = cab->lhost;
-		lport = cab->lport ? cab->lport : next_port();
+		lport = cab->lport ? cab->lport : protect_exec(NULL, next_port);
 	}
 
 	if (rem_host != 0L)
@@ -367,6 +480,12 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 		return E_NOMEM;
 	}
 
+	connect->handle = handle;
+	connect->act_pass = act_pass;
+	connect->remote_IP_address_orig = rem_host;
+	connect->rport_orig = rport;
+	connect->local_IP_address_orig = lcl_host;
+	connect->lport_orig = lport;
 	connect->remote_IP_address = rem_host;
 	connect->remote_port = rport;
 	connect->local_IP_address = lcl_host;
@@ -382,29 +501,37 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 
 	connect->send.window = window;
 	connect->send.bufflen = window;
+	connect->o140 = 0x430;
+	connect->o142 = 0xffff;
 	connect->send.total = 0;
 	connect->send.count = 0;
 	connect->send.queue = NULL;
+	connect->send.start = TIMER_now() - 1500;
+
 	connect->recve.window = my_conf.rcv_window;
 	connect->recve.reseq = NULL;
 	connect->recve.count = 0;
 	connect->recve.queue = NULL;
 
-	connect->rtrn.start = TIMER_now();
-	connect->rtrn.timeout = 2 * my_conf.def_rtt;
-	connect->rtrn.mode = FALSE;
-	connect->rtrn.backoff = 0;
 	connect->rtrp.mode = FALSE;
 	connect->rtrp.smooth = my_conf.def_rtt;
+	if (connect->rtrp.smooth < 100)
+		connect->rtrp.smooth = 100;
+	else if (connect->rtrp.smooth > 30000)
+		connect->rtrp.smooth = 30000;
+
+	connect->rtrn.timeout = 2 * connect->rtrp.smooth;
+	connect->rtrn.start = TIMER_now();
+	connect->rtrn.mode = FALSE;
+	connect->rtrn.backoff = 0;
 
 	connect->sema = -1;
 	connect->pending = NULL;
 	connect->result = NULL;
 
-	Supexec(dis_intrpt);
+	/* BUG: not protected */
 	connect->next = root_list;
 	root_list = connect;
-	Supexec(en_intrpt);
 
 	if (act_pass == TCP_ACTIVE)
 	{
@@ -422,9 +549,7 @@ static int16 cdecl my_TCP_open(uint32 rem_host, uint16 rem_port, uint16 tos, uin
 	if ((error = connect->net_error) == 0)
 		return handle;
 
-	Supexec(dis_intrpt);
-	root_list = connect->next;
-	Supexec(en_intrpt);
+	protect_exec(connect, unlink_connect);
 
 	KRfree(connect);
 	PRTCL_release(handle);
@@ -437,6 +562,11 @@ static int16 cdecl my_TCP_close(int16 connec, int16 mode, int16 *result)
 {
 	CONNEC *conn;
 	int16 retval = E_NOROUTINE;
+	int32 now;
+	int32 start;
+	int16 error;
+
+	now = TIMER_now();
 
 	if ((conn = PRTCL_lookup(connec, &cn_vectors)) == NULL)
 		return E_BADHANDLE;
@@ -449,37 +579,107 @@ static int16 cdecl my_TCP_close(int16 connec, int16 mode, int16 *result)
 			return E_NORMAL;
 		}
 		if (mode >= 1000)
-			return E_PARAMETER;
+			mode = 999;
 	} else
 	{
 		conn->result = result;
 	}
 
+	if (conn->flags & CLOSING)
+	{
+		if (conn->state != TCLOSED)
+			close_self(conn, E_BADCLOSE);
+		return E_BADCLOSE;
+	}
+	conn->close.start = now;
+	conn->close.timeout = 1000000L;
+
 	switch (conn->state)
 	{
 	case TLISTEN:
 	case TSYN_SENT:
-		wait_flag(&conn->sema);
+		if ((error = req_flag(&conn->sema)) != 0 &&
+			!(conn->flags & DEFERRED) &&
+			!(protect_exec(0, get_sr) & 0x2000))
+		{
+			start = TIMER_now();
+			while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(start) < 1000)
+				_appl_yield();
+		}
+		if (error)
+			return E_LOCKED;
 		close_self(conn, E_NORMAL);
+		conn->flags |= CLOSING;
 		rel_flag(&conn->sema);
 		retval = E_NORMAL;
 		break;
 	case TSYN_RECV:
 	case TESTABLISH:
 	case TCLOSE_WAIT:
-		if (mode >= 0)
+		if ((error = req_flag(&conn->sema)) != 0 &&
+			!(conn->flags & DEFERRED) &&
+			!(protect_exec(0, get_sr) & 0x2000))
 		{
-			retval = fuldup_close(conn, 1000L * mode);
-			PRTCL_release(connec);
+			start = TIMER_now();
+			while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(start) < 1000)
+				_appl_yield();
+		}
+		if (error)
+			return E_LOCKED;
+		conn->flags |= FLAG40;
+		++conn->send.count;
+		conn->state = conn->state == TCLOSE_WAIT ? TLAST_ACK : TFIN_WAIT1;
+		do_output(conn);
+		rel_flag(&conn->sema);
+		if (!(conn->flags & DEFERRED) && mode >= 0)
+		{
+			if (conn->recve.count != 0)
+			{
+				retval = mode != 0 ? E_CNTIMEOUT : E_NORMAL;
+				abort_conn(conn);
+				my_conf.generic.stat_dropped++;
+				close_self(conn, retval);
+				destroy_conn(conn);
+				return retval;
+			} else
+			{
+				retval = E_NODATA;
+				conn->result = &retval;
+				conn->flags |= CLOSING | DISCARD;
+				while (retval == E_NODATA && TIMER_elapsed(now) < mode * 1000L)
+				{
+					if (!(protect_exec(NULL, get_sr) & 0x2000))
+						_appl_yield();
+				}
+				conn->result = NULL;
+				if (retval == E_NODATA)
+				{
+					retval = mode != 0 ? E_CNTIMEOUT : E_NORMAL;
+				}
+			}
 		} else
-			retval = halfdup_close(conn);
+		{
+			conn->flags |= CLOSING;
+			if (conn->flags & DEFERRED)
+				retval = E_LOCKED;
+			else
+				retval = E_NODATA;
+		}
 		break;
+	case TCLOSED:
+		conn->flags &= ~CLOSING;
+		retval = conn->reason == 0 ? E_EOF : conn->reason;
+		if (result)
+			*result = retval;
+		destroy_conn(conn);
+		return retval;
 	case TFIN_WAIT1:
 	case TFIN_WAIT2:
 	case TCLOSING:
 	case TLAST_ACK:
 	case TTIME_WAIT:
-	case TCLOSED:
+		close_self(conn, E_BADCLOSE);
+		conn->flags |= CLOSING;
 		retval = E_BADCLOSE;
 		break;
 	}
@@ -538,11 +738,25 @@ static int16 cdecl my_TCP_send(int16 connec, const void *buffer, int16 length)
 	ndb->next = NULL;
 	memcpy(data, buffer, length);
 
-	wait_flag(&conn->sema);
+	if ((error = req_flag(&conn->sema)) != 0 &&
+		!(conn->flags & DEFERRED) &&
+		!(protect_exec(0, get_sr) & 0x2000))
+	{
+		int32 now = TIMER_now();
+		while ((error = req_flag(&conn->sema)) != 0 && TIMER_elapsed(now) < 1000)
+			_appl_yield();
+	}
+	if (error)
+	{
+		KRfree(data);
+		KRfree(ndb);
+		return E_LOCKED;
+	}
 
 	if (conn->send.queue)
 	{
-		for (walk = conn->send.queue; walk->next; walk = walk->next) ;
+		for (walk = conn->send.queue; walk->next; walk = walk->next)
+			;
 		walk->next = ndb;
 	} else
 	{
@@ -577,16 +791,26 @@ static int16 cdecl my_TCP_wait_state(int16 connec, int16 state, int16 timeout)
 		return err;
 	}
 
-	timer = TIMER_now();
 	time_out = 1000L * timeout;
+	if (time_out != 0 && (conn->flags & DEFERRED))
+		return E_PARAMETER;
 
+	timer = TIMER_now();
 	while (conn->state != state)
 	{
 		if (TIMER_elapsed(timer) >= time_out)
 		{
 			return E_CNTIMEOUT;
 		}
-		_appl_yield();
+		if (!(protect_exec(NULL, get_sr) & 0x2000))
+			_appl_yield();
+		err = conn->net_error;
+
+		if (err < 0)
+		{
+			conn->net_error = 0;
+			return err;
+		}
 	}
 
 	return E_NORMAL;
@@ -610,6 +834,9 @@ static int16 cdecl my_TCP_ack_wait(int16 connec, int16 timeout)
 		return err;
 	}
 
+	if (timeout != 0 && (conn->flags & DEFERRED))
+		return E_PARAMETER;
+
 	timer = TIMER_now();
 
 	while (conn->send.total > 0)
@@ -618,7 +845,15 @@ static int16 cdecl my_TCP_ack_wait(int16 connec, int16 timeout)
 		{
 			return E_CNTIMEOUT;
 		}
-		_appl_yield();
+		if (!(protect_exec(NULL, get_sr) & 0x2000))
+			_appl_yield();
+		err = conn->net_error;
+
+		if (err < 0)
+		{
+			conn->net_error = 0;
+			return err;
+		}
 	}
 
 	return E_NORMAL;
@@ -628,16 +863,30 @@ static int16 cdecl my_TCP_ack_wait(int16 connec, int16 timeout)
 static int16 cdecl my_TCP_info(int16 connec, TCPIB *block)
 {
 	CONNEC *conn;
+	uint32 request;
+	int16 error;
 
 	if ((conn = PRTCL_lookup(connec, &cn_vectors)) == NULL)
 		return E_BADHANDLE;
 
-	if (block == NULL)
+	if ((long)block <= 0 || (request = block->request) > TCPI_mask)
 		return E_PARAMETER;
 
-	block->state = conn->state;
+	if (request & TCPI_defer)
+		conn->flags |= DEFERRED;
+	if (request & TCPI_state)
+		block->state = conn->state;
+	if (request & TCPI_unacked)
+		block->unacked = conn->send.count;
+	if (request & TCPI_srtt)
+		block->srtt = conn->rtrp.smooth;
 
-	return E_NORMAL;
+	error = conn->net_error;
+	if (error < 0)
+		conn->net_error = 0;
+	else
+		error = TCPI_bits;
+	return error;
 }
 
 

@@ -1,0 +1,543 @@
+-----------------------------------------------------------------------------
+File name:	TCP_STX.TXT			Revision date:	2000.08.26
+Created by:	Ulf Ronald Andersson		Creation date:	1999.03.18
+-----------------------------------------------------------------------------
+This file describes the current development state of the TCP module for
+STinG, as it has progressed since Peter 'disappeared' in mid-January 1999.
+Recently he has confirmed that he wants me to handle the administration of
+the future STinG development and has passed on all the sources to me.
+
+The copyright to updated versions remains property of Peter Rottengatter,
+and the release form remains FREEWARE, as originally defined by him.
+
+Updates will be described below, in reverse chronological order.
+-----------------------------------------------------------------------------
+TCP.STX 1.40:						public:	2000.08.26
+-------------
+I found a serious (but not so common) problem that crept in with other
+changes in version 1.36.  This would cause final data packets to be lost
+when the FIN bit arrived in a packet without data and before arrival of
+packets for the data that 'should' precede the FIN.  This is now fixed.
+-----------------------------------------------------------------------------
+TCP.STX 1.39:		Beta release:	2000.08.19	public:	2000.08.25
+-------------
+Found a really odd case of close negotiation gone astray...  Fixing this
+eliminated the closing problems of the Drac_Emu module.
+-----------------------------------------------------------------------------
+TCP.STX 1.38:		Alpha release:	2000.08.14
+-------------
+Implemented 'peek' mode for CNget_block, specified by using a data length
+parameter that is negated.  Such a call will return available data without
+removing it from internal buffers or affecting the TCP handshaking.  The
+resulting TCP state is exactly as if no operation had been performed.
+Another modification should reduce the amount of redundant ACK packets.
+-----------------------------------------------------------------------------
+TCP.STX 1.37:		Beta release:	2000.07.08	public:	2000.07.06
+-------------
+Olivier Booklage reported problems with some cases of extended TCP_close,
+which have now been fixed.
+-----------------------------------------------------------------------------
+TCP.STX 1.36:		Beta release:	2000.03.02	public:	2000.07.06
+-------------
+Dan Ackerman reported a remaining problem in STinG handling of early data
+on some connections. (Only partially fixed in version 1.27)  This bug has
+now been fixed, and hopefully completely this time.
+-----------------------------------------------------------------------------
+TCP.STX 1.35:		Beta release:	1999.12.01
+-------------
+The last version finally implemented TTIME_WAIT correctly, but this had one
+effect which I missed at the time.  It caused a visible delay in some close
+operations.  That has been fixed in this version, so that clients do not
+have to wait for the final delay to complete (as all data is already ACKed).
+
+Another change is a fix for TCP_info, so that it too will return network
+error codes.  But unlike other API functions TCP_info will still perform
+its main function even then, so the info block will be valid then too.
+-----------------------------------------------------------------------------
+TCP.STX 1.34:		Beta release:	1999.11.24
+-------------
+I discovered a new bug that could treat active connections like passive ones
+at receipt of RST packets in state TSYN_RECV.  This could force those active
+connections into state TLISTEN, which is meaningless for active connections.
+That bug has now been fixed.
+
+I then Restructured TCP_close again, for several reasons, one of those being
+to comply with RFC 1122 and RFC 2525 on how to implement half duplex close.
+There is now a large difference between full and half duplex close modes, as
+there should be.  Apps using STiK-like mode will get STiK-like behaviour.
+
+Further restructuring of TCP_close made in this version should also fix
+some of the remaining cases of 'unclosable' connections, and reduce the
+number of connections that incorrectly use the long 'internal' timeout.
+The number of closures ending in RST packets should also be reduced now,
+as I have reimplemented the final delay of TCP state TTIME_WAIT.
+
+This version also has an implementation of clock-based initial sequence
+numbers, as required by RFC 1122, but as the TOS clock has a resolution
+of 5000 microseconds, rather than the 4 microseconds wanted, I also use
+an accumulative offset to the scaled clock value to ensure uniqueness.
+-----------------------------------------------------------------------------
+TCP.STX 1.33:		Beta release:	1999.10.19	public:	1999.10.26
+-------------
+I discovered a bad bug that caused some problems with the CAB.OVL and HTTP
+server WebLight (both by Olivier Booklage.  This bug was triggered by some
+special (but correct) sequences of traffic used in these programs, but were
+not triggered (and thus hidden from me) in most other clients and servers.
+
+The bug, which is now fixed, led to incorrect ACKing of early data blocks,
+and a lost character on data-carrying FIN packets at closing.
+-----------------------------------------------------------------------------
+TCP.STX 1.32:		Beta release:	1999.10.19
+-------------
+One final touch in the TCP connection closure code has diminished the number
+of connections whose closing lead to final RST packets.  While those are not
+in themselves harmful to the traffic, being part of the TCP method ensuring
+connection uniqueness, I prefer to reduce their occurrence to normal levels.
+No other changes were made in this version.
+-----------------------------------------------------------------------------
+TCP.STX 1.31:		Beta release:	1999.10.16
+-------------
+Erik H„ll finally produced a log file that shows what goes on in MyMail as
+TCP_close calls fail.  This shows two errors.  One of them was performed by
+the mail server he tested against, which first ACKs our FIN, but then goes
+on sending data indefinitely anyway, and waits forever for an answer that we
+may no longer send, having closed our end of the connection.
+
+The other error was performed by STinG, who in this special case manages to
+send the FIN bit with two different sequence numbers in subsequent packets.
+That error is fixed in this version.
+
+It is really surprising that the other TCP did not send RST packets when
+this happened, as it is required to do by the TCP RFC.
+-----------------------------------------------------------------------------
+TCP.STX 1.30:		Beta release:	1999.10.16
+-------------
+This version merely fixes a bug that was revealed by the elimination of the
+redundant packet sending of TCP 1.29.  All data packets sent before another
+TCP had ACKed the outgoing SYN would lose their first data character. This
+was hidden by the delay caused by the sending of redundant packets, which
+mostly caused the first real data to be sent after the SYN was ACKed.
+-----------------------------------------------------------------------------
+TCP.STX 1.29:		Beta release:	1999.10.15
+-------------
+This version has been changed to use the message E_LOCKED, rather than the
+message E_DEFERRED, to tell callers that they can not be serviced at once,
+and should instead call again later. This change was for STiK compatibility,
+and code E_DEFERRED is abolished, as it duplicated the purpose of E_LOCKED.
+
+This version has also been improved so as to allow safe and efficient use of
+a connection from multiple threads/forks/APPs/ACCs, in all TOS variants.
+
+Such usage may however lead to E_LOCKED return for cases where the caller
+is executing in supervisor mode, while other threads (etc) already have
+an access to the same connection in progress.  Programmers should be aware
+of this, and note that such a message does not mean the function can not be
+performed, but only that it will have to be done later, when other threads
+are not locking the access.
+
+Another change in this version has led to elimination of many redundant
+and duplicate packets that would be sent with all previous versions, which
+should give some further speed improvements.
+-----------------------------------------------------------------------------
+TCP.STX 1.28:		Beta release:	1999.10.13
+-------------
+This version completely reimplements the semaphore usage of the TCP API,
+which while normally invisible to users is what allows STinG TCP to work
+well in (and as) an interrupt-driven environment.  The reason for this
+change, and some of its consequences were these:
+
+Erik H„ll reported that an APP calling TCP_close from a separate 'thread'
+could block that APP, as if going into an eternal loop, which in fact it did.
+
+The reason is that some code needs to be certain that no other code modifies
+the data structures needed to access a connection, and for that purpose a
+system of metaphores exist to prevent that.  Intended usage of this is that
+an interrupt routine should sense that an APP is using the connection data
+and delay any updates until the semaphore is released again.  And for that
+purpose the old code worked fine.
+
+We never did plan for the case where several APPs (or threads) accessed the
+same connection by API calls at the same time, but now it has happened, and
+STinG must adapt to it.  Erik also discovered that the same thing can happen
+when using the 'STOP' button in CAB, to halt loading of a page.  Which is
+not surprising, as that probably performs the same action he had tried, of
+closing a connection from one thread, while still accessed by another.
+-----------------------------------------------------------------------------
+TCP.STX 1.27:		Beta release:	1999.10.11
+-------------
+This version fixes some very old problems related to the treatment of SYN
+and FIN bits of TCP headers, and effects on sequence number calculations
+caused by this.  The error symptoms included checksum errors in closing
+packets of a connection, and was one reason why most TCP_close negotiations
+usually resulted in a TCP reset packet.  This should no longer be the case,
+although occasional resets are still to be expected, as that is part of the
+TCP concept (to ensure unique connections).  But they should be rarer now.
+
+This change has a much larger impact on browsing speed than most people
+would expect, as it eliminates a timeout delay for each connection that
+is closed (except on real errors).  In HTML, each separate icon, or image,
+and several other things, are all transferred over separate connections.
+So, for browsing an improvement in closing speed has large effect, though
+it has fairly small effect on protocols that use a single connection for
+larger amounts of data.  (eg: large file transfer over FTP)  But you may
+still note the difference as some clients manage to close faster (eg: AFTP)
+
+Another change in this version is that initial congestion windows have been
+raised to two segments, in accordance with RFC 2581.
+
+Apart from the above, this version also contains all the code of the last
+limited beta (1.26), and I now consider those additions to be permanent.
+-----------------------------------------------------------------------------
+TCP.STX 1.26:		Beta release:	1999.09.30 (limited beta release)
+-------------
+This version implements a new connection mode, called DEFER mode, intended
+only for STinG-specific servers and clients. This allows the TCP API to be
+used fully from all existing program environments, including both interrupts
+and XFS drivers (of either MiNT or MagiC).
+
+This means that in this new mode the TCP API will never loop internally,
+and will also never call _appl_yield internally. The calling code now has
+total control, and must itself decide when such things are appropriate.
+
+As part of this implementation, some further changes are made to the TCP_info
+definitions.  Both the prototype and the constants defined earlier remain
+valid, but the following additional definitions are introduced:
+
+1:  TCP_info will return the number of defined request bits of the current
+    implementation, so that clients/servers will know what is available. The
+    bits are always counted from bit 0 and up, and new bits will always be
+    allocated in sequence.  Likewise will extensions to the TCPIB struct be
+    made always at the end of the previous definition.  For the present all
+    definitions for TCP 1.25 (see below) remain valid, but two new constants
+    are added, one holding the number of bits currently defined.  It is:
+
+#define	TCPI_bits	4	/* currently 3 bits are defined */
+
+    That is the value the current TCP module will return for TCP_info calls,
+    except when some error occurs, for the connection or in the parameters
+    passed to TCP_info.  For such cases an error code is returned instead.
+
+    The other new constant is:
+
+#define	TCPI_defer	8	/* request switch to defer mode */
+
+    Its use should hopefully be obvious from the comment...
+    Also, because of the new definition, and old definition is altered:
+
+#define TCPI_mask	0x0000000FL	/* current sum of defined request bits	*/
+
+
+2:  Calling TCP_info with the request bit named "TCP_defer" set will switch
+    the connection into the DEFER mode, whereafter the rules specified below
+    will apply to all future TCP calls made for that connection.
+
+3:  In DEFER mode most functions that would 'wait' for an event or for some
+    data will not loop inside the API for this.  Instead those functions
+    will return E_DEFERRED, a new STinG-specific code (-33), which means
+    that the caller should try again some later time.  This is not only used
+    when data is requested but not available, but is also used when a call
+    is made from an interrupt to access a connection which is already locked
+    for other updates by the TCP module.  Calling again later should produce
+    the wanted result (eventually) or some error code if network errors have
+    occurred.  Values other than E_DEFERRED should be interpreted as usual,
+    as they mean that the function did not need to defer results.
+
+4:  In DEFER mode the following functions may return E_DEFERRED at present:
+    4.1:   TCP_close
+    4.2:   TCP_send
+    4.3:   CNkick
+    4.4:   CNget_char
+    4.5:   CNget_NDB		NB: test this as ((int32) CNget_NDB(...))
+    4.6:   CNget_block
+    4.7:   CNgets
+    Note that of these functions CNget_NDB normally returns pointer values,
+    but for a deferred case that value will be ((NDB *) E_DEFERRED).  You
+    need to test this as an int32, as the normal pointer values may well be
+    similar to an error code in the lower bits, even though no error at all
+    has occurred, nor even a deferral (which is not an error).
+
+5:  In DEFER mode the following functions are modified such that they will
+    return E_PARAMETER if called with a timeout > 0
+    5.1:   TCP_wait_state
+    5.2:   TCP_ack_wait
+    Their use is discouraged, as the new TCP_info function obsoletes them.
+    (For use in DEFER mode that is.  In normal mode all is as before.)
+
+6:  In DEFER mode TCP_close timeout will be ignored, and treated as zero
+    except if it is negative.  That is interpreted in accordance with the
+    docs for the STinG 1.2 release, to allow final TCP_close results to
+    be stored in a user variable by the TCP timer interrupts.  As before,
+    calling TCP_close a second time with timeout=0 can then be used to
+    cancel such result storage, when a client/server tires of waiting.
+
+NB: At present the DEFER mode exists only for the TCP API. That will change!
+-----------------------------------------------------------------------------
+TCP.STX 1.25:		Beta release:	1999.09.27
+-------------
+This version finally implements both "Slow Start" and "Congestion avoidance"
+as described (and demanded) by RFC 2001. It also reimplements a new function
+in the STinG API, TCP_info, in a slightly different manner from what Peter
+and I have discussed earlier in various media.  The reason for the changes
+is that I have realized that this function will be extended later, and most
+probably on several occasions, as new needs arise.  Therefore it had to be
+so constructed as to allow extension without becoming incompatible with the
+clients/servers that begin to use the early forms of this function.
+
+The C function prototype used is this:
+
+int16 cdecl TCP_info(int16 conn_handle, TCPIB *block);
+
+and other associated declarations are these:
+
+typedef struct tcpib
+{	uint32	request;	/* 32 bit flags requesting various info (following)	*/
+	uint16	state;		/* current TCP state 								*/
+	uint32	unacked;	/* unacked outgoing sequence length (incl SYN/FIN)	*/
+	uint32	srtt;		/* smoothed round trip time of this connection		*/
+}	TCPIB;
+
+#define	TCPI_state	0x00000001L	/* request current TCP state		*/
+#define	TCPI_unacked	0x00000002L	/* request length of unacked sequence	*/
+#define	TCPI_srtt	0x00000004L	/* request smoothed round trip time	*/
+#define	TCPI_mask	0x00000007L	/* current sum of defined request bits	*/
+/* NB: A TCP_info request using undefined bits will result in E_PARAMETER. */
+
+Intended usage is for example:
+
+{   TCPIB   my_tcpib;
+    my_tcpib.request = TCPI_state|TCPI_unacked|TCPI_srtt; /* I want them all */
+    error = TCP_info(my_conn_handle, &my_tcpib);
+    if  (error)
+        handle_disaster(error);
+    switch(my_tcpib.state)
+    {
+    case TLISTEN :
+        your_own_stuff_1();
+    case TESTABLISH :
+        your_own_stuff_2();
+    default:
+        your_own_stuff_3();
+    }
+}
+
+I hope you see the point of the above, even if the example is very simplistic.
+The real point is that a programmer now can get direct access to this info that
+was previously hidden inside the TCP module. This is important, as it makes use
+of the outdated functions TCP_wait_state and TCP_ack_wait unneeded, and that is
+now a 'must' as they have proven unsuitable for use by advanced servers.
+(Those functions are inherently allergic to being used from interrupts.)
+
+Improved forms of this 'documentation' will eventually be added to the HYP as
+well, but I hope you can manage with the above for the time being.
+
+To use the new function you will need to use the new TRANSPRT.H which is
+supplied in the same archive as this text.  If you have not already updated
+to the latest earlier release, you have to add an argument to your TCP_close
+calls (a final NULL pointer), as that was redefined in STinG release 1.2 .
+-----------------------------------------------------------------------------
+TCP.STX 1.24:		Beta released:	1999.09.26
+-------------
+This version has had major rewrites concerning round trip timing and also for
+retransmission timing (these are of course related).  The default RTT and the
+way it is used to calculate RTO now follow the demands of RFC 2525.
+
+The above means that default RTT should be raised to 1500 or higher in your
+DEFAULT.CFG, to avoid having your system break against those demands, as
+STinG does allow the default to be overridden by user specified values. But
+the new version also includes limitation on the used values for RTO, such
+that it will always be in the range 200 ms through 1 minute. and within this
+range it will be normalized at 2*SRTT, with SRTT the exponentially smoothed
+average of the round trip time actually measured for the connection, though
+this will be DEF_RTT for a connection before traffic.
+-----------------------------------------------------------------------------
+TCP.STX 1.23:		Compile date:	1999.09.24    (not released)
+-------------
+This version contains two changes that affect TCP speed.  The test functions
+for TCP sequence numbers were replaced by two simple inline macros. This cut
+down on the time needed for these tests by a large amount, while still giving
+exactly the same functionality.
+-----------------------------------------------------------------------------
+TCP.STX 1.22:		Beta released:	1999.09.22    public:	1999.09.26
+-------------
+This version contains some major updates relative to earlier versions.
+
+The final Supexec call has been removed from the TCP API functions, which
+should make servers of all kinds more reliable, especially under singleTOS.
+Now the only TOS function ever called by API functions is _appl_yield, as
+is required for proper multitasking (NB: this is true even in singleTOS).
+
+Bruno Kozlowski reported that RST packets were sent with an erroneous field
+content for the 'data offset'.  Of course, RST packets should not have data,
+but an erroneous field might confuse some servers into rejecting a reset.
+This bug is now fixed.  The offset field will now always be 5 for a reset.
+(As it is to be multiplied by 4, that value means 20 bytes TCP header.)
+-----------------------------------------------------------------------------
+TCP.STX 1.21:		Release date:	1999.09.06
+-------------
+This version is almost identical to 1.20 (tested for a long time now), but
+also has a small but important patch that makes TCP connections work well
+with servers that make a small error in the connection sequence when they
+want to raise the 'Precedence' of a TCP connection above that which the
+original request specified.
+
+The error is that they send the ACK bit in the same packet as the initial
+SYN bit and the changed PRECedence, even though the RFC clearly states that
+the PRECedence is considered locked as soon as a valid ACK arrives.  Thus
+it is not quite correct to allow an ACK-carrying packet to change PREC.
+That should be done with an initial SYN-packet carrying the wanted PREC,
+but no ACK.
+
+However, the purpose of STinG is not to correct other implementations, but
+to provide maximum network usefulness for Atari users.  Therefore I have
+allowed the PREC to be changed by a SYN+ACK packet in this TCP version,
+as this seems required for compatibility with a few servers.  Apparently
+many other implementations already have this 'non-RFC' behaviour, as PC
+users have not experienced these problems.
+
+This solves the access problems STinG users have experienced with the
+belgian servers at "FTP://chapelie.rma.ac.be/" and "http://www.belnet.be/".
+
+NB: A mistake was made in copying for the original release, causing the STX
+    file in the archive to be the wrong version.  This has been corrected in
+    the current archive (which also contains this text you are now reading).
+-----------------------------------------------------------------------------
+TCP.STX 1.20:		Compile date:	1999.05.15
+-------------
+This version was never released as it mainly contained experimental changes
+that I used to test how to improve compatibility with some clients/servers
+which transfer IP addresses over high level protocols, thus causing problems
+for users of MASQUE.STX.  The experiments were partly successful in that the
+programs now do work when used on the 'modem machine', but some of them do
+not work on other machines in a masqueraded system as yet.
+
+eg: MICQ still works only on the 'modem machine', but this is still better
+    than before when it required masquerading to be disabled.
+-----------------------------------------------------------------------------
+TCP.STX 1.19:		Beta released:	1999.04.08
+-------------
+This version was publicly released on 1999.04.12, as part of the official
+STinG release 1.20 placed on my STinG pages at http://www.ettnet.se/~dlanor/
+Although that release was made in Peters Rottengatters absence, he has since
+then confirmed that it was the right thing to do, and that he wants me to
+continue the STinG support that he himself can no longer devote his time to.
+
+This patch corrects the way TCP_ack_wait and TCP_wait_state respond to any
+network errors (eg: TCP RESET or ICMP error messages) that come in for the
+given connection during the timeout period.  Previously they were ignored
+until the timeout was exceeded, but now they will immediately break the
+loop and return the error code associated with that network error.
+
+The result is that there is no longer any visible delay between an attempt
+to connect to a nonexistent server and the resulting error dialog of the
+client (unless the client itself is bugged).  This was tested with two of
+the clients that have irritated me most with such delays, namely AFTP 1.5b
+and MG-FTP 1.04, both of which now yield immediate error dialogs when the
+requested server is not available.  No more irritation...  :-)
+-----------------------------------------------------------------------------
+TCP.STX 1.18:		Beta released:	1999.04.07
+-------------
+As Olivier was early to report, the TCP beta 1.17 did improve the closing
+negotiation a lot, sufficiently to eliminate most server problems.  Yet a
+problem remained, in that final FIN/ACK negotiation often failed on one
+side of the connection.  This led to remnant connections having to be
+cleaned out by internal timeout, which takes more than 16 minutes.
+(Remnant == Closed but with handle and RAM blocks not yet released.)
+
+That is not a fatal problem, as long as it works (and it did), but it is
+not the kind of behaviour we want STinG to have either, so I have worked
+on fixing this problem. I believe this new TCP beta 1.18 takes care of it.
+
+I tested it by running simultaneous FTP sessions where each LAN machine
+ran AFTP 1.5b to access another LAN machine running FTP_SERV 1.05, which
+in turn did the same in opposite direction.  This was followed by some
+web browsing using the current CAB 2.7 beta with Olivier's CAB.OVL 5.4,
+connecting to WebLight 5.04.  TUR_GEM was constantly running at each
+machine, and was used to check connection handles after each completed
+transfer, as well as after termination of each program.
+
+The results were that I could find no trace of any remnant connections,
+and none of the transfers ever failed (and there were a _lot_ in http).
+After termination of all those clients and servers, TUR_GEM showed that
+the only remaining connections were the same ones as when I started,
+the ones belonging to my resident NetD servers.  All others had been
+properly closed.  I now really believe this problem is fully fixed.
+
+Please report any remaining problems to me ASAP, so we can get this done
+once and for all. (Thus opening the way to more interesting improvements.)
+
+NB:
+Due to timing problems over long networks and differing implementation
+details (time-out delays and responses etc), it is still possible that
+occasional 'remnant' connections may occur, due to failed negotiations.
+That is nothing to be concerned about, since they will eventually be
+cleaned out by the interrupt driven code.  But it should no longer occur
+on any local connections.  So if it does, I want to know about it !!!
+
+
+One other change in this beta is that I have eliminated all but two of the
+xbios Supexec calls from the TCP module. One of the remaining is only used
+in initialization, and does not affect traffic at all.  The other is used
+in some CN* calls, in a non-reentrant manner.  For the moment you should
+avoid using these calls from interrupt driven code.
+
+A perfect fix of the CN* functions will require a STinG kernel change.
+The functions needed are already implemented in the kernel, but there
+is no way yet for external modules (like TCP) to call them.
+
+TCP_open and TCP_close do not use Supexec at all now, and that should
+mean that NetD can now be used safely without SUPX.PRG, even under
+singletasking TOS.  This has not yet been extensively tested though.
+-----------------------------------------------------------------------------
+TCP.STX 1.17:		Beta released:	1999.03.26
+-------------
+Oh well, another release on the same day.  In fact all the changes made in
+the last one were correct.  Unfortunately some code in the high level TCP
+API prevented the interrupt routines from ever seeing the conditions that
+they were intended to.  Now the high level routines have been corrected,
+and now the closing really does work as intended even for TLISTEN state.
+
+This has been tested by several mixed successive runs of WebLight 5.04 and
+FTP-Server 1.05 without any failures.  I hope (and believe) that this will
+also remain the results that we get for this version in longterm testing.
+-----------------------------------------------------------------------------
+TCP.STX 1.16:		Beta released:	1999.03.26
+-------------
+In this version I (RA) have rewritten the interrupt driven tests for closure
+of TCP connections, and also corrected a mistake that prevented connections
+that were closed in the true 'half-duplex' mode from having their handles
+released for future reuse.  (But AFAIK no one uses this mode yet...)
+
+As far as I can tell this version does close all connections properly, with
+no 'remnants'.  But of course, that is also the responsibility of clients
+and servers.  If they forget to close something, it will never be released.
+
+NB: If a connection has seen any traffic at all (has left TLISTEN mode),
+    then it will not be fully closed until either both parties have closed,
+    or a timeout of 1000 seconds has been exceeded.  This is not something
+    clients or servers need worry about, since it is handled internally by
+    the interrupt driven code.
+-----------------------------------------------------------------------------
+TCP.STX 1.15		Beta released:	1999.03.18
+------------
+This is the first released patch after Peter's 'disappearance'.  It was made
+on January 14 by me (Ulf Ronald Andersson), based on TCP module sources that
+Peter sent me on January 12.
+
+Patches made:
+One routine was deleted, and the conditions for closing TCP connections were
+slightly altered.  This was done to make such closing follow the TCP specs
+more closely.  The patch has greatest effect for cases where the STinG TCP
+is  sending files or other bulk transfer as a separate TCP connection.
+
+Typical cases include:
+	FTP client sending upload
+	FTP server sending download
+	HTTP server sending browser data/downloads
+
+The problem with the unpatched version was that the sending of data like the
+above was often terminated before completion, since bugs in the TCP_close
+process led to discarding the connection before all data had been sent.
+In no case (as yet) has such fault been noted with the patched version.
+-----------------------------------------------------------------------------
+End of file:	TCP_STX.TXT
+-----------------------------------------------------------------------------

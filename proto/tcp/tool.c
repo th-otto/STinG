@@ -20,30 +20,8 @@
 
 
 static uint32 ini_sequ;
-static CONNEC *global;
-static volatile signed char global_sema = 0;
+static uint32 ini_sequ_next;
 
-
-
-static int16 discard(CONNEC *connec)
-{
-	NDB *ndb;
-
-	if ((ndb = connec->recve.queue) == NULL)
-		return TRUE;
-
-	connec->recve.queue = ndb->next;
-	connec->recve.count -= ndb->len;
-	connec->recve.window += ndb->len;
-
-	connec->flags |= FORCE;
-	do_output(connec);
-
-	KRfree(ndb->ptr);
-	KRfree(ndb);
-
-	return FALSE;
-}
 
 
 static void flush_queue(NDB **queue)
@@ -54,26 +32,21 @@ static void flush_queue(NDB **queue)
 	if (*queue == NULL)
 		return;
 
-	for (walk = *queue; walk; walk = temp)
+	walk = *queue;
+	*queue = NULL;
+	for (; walk; walk = temp)
 	{
-		KRfree(walk->ptr);
 		temp = walk->next;
+		KRfree(walk->ptr);
 		KRfree(walk);
 	}
-	*queue = NULL;
 }
 
 
-static void destroy_conn(CONNEC *connec)
+int32 cdecl unlink_connect(void *connec)
 {
 	CONNEC *work;
 	CONNEC **previous;
-	IP_DGRAM *ip_walk;
-	IP_DGRAM *ip_next;
-	RESEQU *rsq_walk;
-	RESEQU *rsq_next;
-
-	Supexec(dis_intrpt);
 
 	for (work = *(previous = &root_list); work; work = *(previous = &work->next))
 	{
@@ -83,9 +56,18 @@ static void destroy_conn(CONNEC *connec)
 
 	if (work)
 		*previous = work->next;
+	return (int32) previous;
+}
 
-	Supexec(en_intrpt);
 
+void destroy_conn(CONNEC *connec)
+{
+	IP_DGRAM *ip_walk;
+	IP_DGRAM *ip_next;
+	RESEQU *rsq_walk;
+	RESEQU *rsq_next;
+
+	protect_exec(connec, unlink_connect);
 	flush_queue(&connec->send.queue);
 	flush_queue(&connec->recve.queue);
 
@@ -102,12 +84,13 @@ static void destroy_conn(CONNEC *connec)
 		KRfree(rsq_walk);
 	}
 
+	PRTCL_release(connec->handle);
 	KRfree(connec->info);
 	KRfree(connec);
 }
 
 
-static void abort_conn(CONNEC *connec)
+void abort_conn(CONNEC *connec)
 {
 	TCP_HDR *hdr;
 
@@ -134,12 +117,11 @@ static void abort_conn(CONNEC *connec)
 }
 
 
-static int16 timer_work(CONNEC *connec)
+static int32 cdecl timer_work(void *param)
 {
+	CONNEC *connec = param;
 	IP_DGRAM *walk;
 	IP_DGRAM *next;
-	uint16 backoff;
-	uint16 smooth;
 
 	if (req_flag(&connec->sema) != 0)
 		return TRUE;
@@ -161,13 +143,17 @@ static int16 timer_work(CONNEC *connec)
 			connec->rtrn.mode = FALSE;
 			if (connec->state != TTIME_WAIT)
 			{
-				connec->rtrn.backoff++;
-				backoff = (int16) connec->rtrn.backoff * connec->rtrn.backoff;
-				smooth = connec->rtrp.smooth > 1 ? connec->rtrp.smooth : 1;
 				connec->send.ptr = connec->send.unack;
 				connec->flags |= RETRAN;
 				connec->rtrn.start = TIMER_now();
-				connec->rtrn.timeout = 2L * backoff * smooth;
+				connec->rtrn.timeout = connec->rtrp.smooth << ++connec->rtrn.backoff;
+				if (connec->send.window <= connec->o140)
+					connec->o142 = connec->send.window >> 1;
+				else
+					connec->o142 = connec->o140 >> 1;
+				if (connec->o142 < connec->mss)
+					connec->o142 = connec->mss;
+				connec->o140 = connec->mss;
 				do_output(connec);
 			} else
 			{
@@ -176,19 +162,47 @@ static int16 timer_work(CONNEC *connec)
 		}
 	}
 
+	if ((connec->flags & FLAG20) && (connec->flags & FORCE))
+	{
+		uint32 elapsed;
+
+		if ((elapsed = TIMER_elapsed(connec->send.start)) >= 500 ||
+			elapsed >= (connec->rtrp.smooth >> 1))
+		{
+			do_output(connec);
+		}
+	}
+
 	if (connec->flags & CLOSING)
 	{
-		if (discard(connec))
+		if (connec->state == TCLOSED)
 		{
-			if (connec->state == TCLOSED && (connec->flags & DISCARD))
+			destroy_conn(connec);
+			return FALSE;
+		}
+		if (connec->state == TTIME_WAIT)
+		{
+			if (TIMER_elapsed(connec->send.start) > 2 * my_conf.max_slt)
 			{
+				close_self(connec, E_NORMAL);
 				destroy_conn(connec);
 				return FALSE;
+			}
+			if (connec->result != NULL)
+			{
+				*connec->result = E_NORMAL;
+				connec->result = NULL;
 			}
 		}
 		if ((uint32)TIMER_elapsed(connec->close.start) > connec->close.timeout)
 		{
 			abort_conn(connec);
+			close_self(connec, E_CNTIMEOUT);
+			destroy_conn(connec);
+			return FALSE;
+		}
+		if (connec->net_error != 0)
+		{
 			close_self(connec, E_CNTIMEOUT);
 			destroy_conn(connec);
 			return FALSE;
@@ -204,7 +218,8 @@ static int16 timer_work(CONNEC *connec)
 
 int16 cdecl timer_function(IP_DGRAM *dgram)
 {
-	CONNEC *connect, *next;
+	CONNEC *connect;
+	CONNEC *next;
 
 	(void)dgram;
 	for (connect = root_list; connect; connect = next)
@@ -213,17 +228,6 @@ int16 cdecl timer_function(IP_DGRAM *dgram)
 		timer_work(connect);
 	}
 	return 0;
-}
-
-
-static long poll_doit(void)
-{
-	CONNEC *connec;
-
-	connec = global;
-
-	rel_flag(&global_sema);
-	return timer_work(connec);
 }
 
 
@@ -242,10 +246,7 @@ int16 poll_receive(CONNEC *connec)
 	if (TIMER_elapsed(connec->last_work) < 1200)
 		return 0;
 
-	wait_flag(&global_sema);
-	global = connec;
-
-	return Supexec(poll_doit) ? E_NORMAL : E_NOCONNECTION;
+	return protect_exec(connec, timer_work) ? E_NORMAL : E_NOCONNECTION;
 }
 
 
@@ -292,7 +293,7 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 		return TRUE;
 	}
 
-	if (!sequ_within(tcp->sequence, connect->send.unack, connect->send.next))
+	if (!sequ_within_range(tcp->sequence, connect->send.unack, connect->send.next))
 	{
 		ICMP_discard(dgram);
 		return TRUE;
@@ -329,7 +330,8 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 void send_sync(CONNEC *connec)
 {
 	ini_sequ += 250052L;
-	connec->send.ini_sequ = ini_sequ;
+	ini_sequ_next = TIMER_now() << (8 + (uint8)ini_sequ);
+	connec->send.ini_sequ = ini_sequ_next;
 	connec->rtrp.sequ = connec->send.lwup_ack = connec->send.unack = connec->send.ini_sequ;
 	connec->send.ptr = connec->send.next = connec->send.ini_sequ;
 	connec->send.count++;
@@ -343,8 +345,10 @@ void process_sync(CONNEC *connec, IP_DGRAM *dgram)
 
 	connec->flags |= FORCE;
 
-	if (PREC(dgram->hdr.tos) > PREC(connec->tos))
+	if (PRECMASK(dgram->hdr.tos) > PRECMASK(connec->tos))
 		connec->tos = dgram->hdr.tos;
+	else
+		connec->tos = (dgram->hdr.tos & 0x1f) | PRECMASK(connec->tos);
 
 	connec->send.lwup_seq = ((TCP_HDR *) dgram->pkt_data)->sequence;
 	connec->send.window = ((TCP_HDR *) dgram->pkt_data)->window;
@@ -355,6 +359,8 @@ void process_sync(CONNEC *connec, IP_DGRAM *dgram)
 	max_mss = connec->mtu - sizeof(IP_HDR) - sizeof(TCP_HDR);
 	if (connec->mss > max_mss)
 		connec->mss = max_mss;
+	connec->o140 = connec->mss * 2;
+	connec->o142 = 0xffff;
 }
 
 
@@ -372,6 +378,8 @@ void process_options(CONNEC *connec, IP_DGRAM *dgram)
 		switch (*work)
 		{
 		case 0:
+			work = limit;
+			break;
 		case 1:
 			work++;
 			break;
@@ -420,7 +428,8 @@ void send_reset(IP_DGRAM *dgram)
 	}
 	hdr->reset = TRUE;
 
-	hdr->offset = hdr->window = hdr->chksum = hdr->urg_ptr = 0;
+	hdr->window = hdr->chksum = hdr->urg_ptr = 0;
+	hdr->offset = 5;
 
 	hdr->chksum = check_sum(dgram->hdr.ip_dest, dgram->hdr.ip_src, hdr, sizeof(TCP_HDR));
 
@@ -431,106 +440,49 @@ void send_reset(IP_DGRAM *dgram)
 }
 
 
-int16 sequ_within(uint32 actual, uint32 low, uint32 high)
-{
-	if (0 <= (int32) high - (int32) low)
-	{
-		if (0 <= (int32) actual - (int32) low && 0 <= (int32) high - (int32) actual)
-			return TRUE;
-	} else
-	{
-		if (0 >= (int32) actual - (int32) low && 0 >= (int32) high - (int32) actual)
-			return TRUE;
-	}
-	return FALSE;
-}
-
-
 void close_self(CONNEC *connec, int16 reason)
 {
 	RESEQU *work;
 	RESEQU *temp;
 
+	/*
+	 * BUG: calling this directly does not work;
+	 * it will only set the mask to be restored
+	 * when returning from protect_exec, but does not
+	 * generate a priviledge violation when called from user mode.
+	 * As a result, it will corrupt the stack.
+	 */
+	/* uint16 save_sr = cli(NULL); */
+
 	connec->rtrn.mode = FALSE;
 	connec->rtrp.mode = FALSE;
 	connec->reason = reason;
 
-	for (work = connec->recve.reseq; work; work = temp)
-	{
-		KRfree(work->hdr);
-		temp = work->next;
-		KRfree(work);
-	}
+	work = connec->recve.reseq;
 	connec->recve.reseq = NULL;
-
 	connec->state = TCLOSED;
 
-	if (connec->result)
+	if (connec->result != NULL)
 	{
 		if (connec->send.count == 0 && reason == E_NORMAL)
 			*connec->result = E_NORMAL;
 		else
 			*connec->result = reason == E_NORMAL ? E_EOF : reason;
 	}
-}
+	/* set_sr((void *)(int32)save_sr); */
 
-
-int16 halfdup_close(CONNEC *connec)
-{
-	wait_flag(&connec->sema);
-
-	connec->send.count++;
-	connec->state = connec->state == TCLOSE_WAIT ? TLAST_ACK : TFIN_WAIT1;
-	do_output(connec);
-
-	rel_flag(&connec->sema);
-
-	return E_NODATA;
-}
-
-
-int16 fuldup_close(CONNEC *connec, int32 time_out)
-{
-	int32 now;
-	int16 result;
-
-	wait_flag(&connec->sema);
-
-	connec->send.count++;
-	connec->state = connec->state == TCLOSE_WAIT ? TLAST_ACK : TFIN_WAIT1;
-	do_output(connec);
-
-	connec->close.start = TIMER_now();
-	connec->close.timeout = 1000000L;
-	connec->flags |= CLOSING;
-
-	rel_flag(&connec->sema);
-
-	now = TIMER_now();
-
-	/*
-	 * BUG: if closing timed out, timer_work will have deallocated
-	 * connec
-	 */
-	while (connec->state != TCLOSED && TIMER_elapsed(now) < time_out)
-		_appl_yield();
-
-	if (connec->state != TCLOSED)
-		result = time_out ? E_CNTIMEOUT : E_NORMAL;
-	else
-		result = connec->reason;
-
-	connec->flags |= DISCARD;
-
-	return result;
+	for (; work; work = temp)
+	{
+		temp = work->next;
+		KRfree(work->hdr);
+		KRfree(work);
+	}
 }
 
 
 int16 receive(CONNEC *connec, uint8 *buffer, int16 *length, int16 getchar)
 {
 	NDB *ndb;
-
-	wait_flag(&connec->sema);
 
 	if (*length >= 0)
 	{
@@ -561,8 +513,6 @@ int16 receive(CONNEC *connec, uint8 *buffer, int16 *length, int16 getchar)
 			do_output(connec);
 		}
 	}
-
-	rel_flag(&connec->sema);
 
 	return connec->recve.count;
 }

@@ -44,22 +44,26 @@ int16 cdecl TCP_handler(IP_DGRAM *datagram)
 		return TRUE;
 	}
 
-	for (connect = root_list, option = NULL; connect; connect = connect->next)
+	for (option = NULL, connect = root_list; connect; connect = connect->next)
 	{
-		if (hdr->dest_port != connect->local_port)
-			continue;
-		if (connect->remote_port)
-			if (hdr->src_port != connect->remote_port)
-				continue;
-		if (connect->local_IP_address)
-			if (datagram->hdr.ip_dest != connect->local_IP_address)
-				continue;
-		if (connect->remote_IP_address)
-			if (datagram->hdr.ip_src != connect->remote_IP_address)
-				continue;
-		if (connect->local_IP_address && connect->remote_IP_address && connect->remote_port)
-			break;
-		option = connect;
+		if (hdr->dest_port == connect->local_port &&
+			hdr->src_port == connect->remote_port &&
+			datagram->hdr.ip_dest == connect->local_IP_address &&
+			datagram->hdr.ip_src == connect->remote_IP_address)
+		{
+			if (connect->state != TLISTEN)
+				break;
+			option = connect;
+		} else
+		{
+			if (hdr->dest_port == connect->local_port &&
+				(connect->remote_port == 0 || hdr->src_port == connect->remote_port) &&
+				(connect->local_IP_address == 0 || datagram->hdr.ip_dest == connect->local_IP_address) &&
+				(connect->remote_IP_address == 0 || datagram->hdr.ip_src == connect->remote_IP_address))
+			{
+				option = connect;
+			}
+		}
 	}
 
 	if (connect == NULL && option != NULL)
@@ -113,7 +117,8 @@ int16 cdecl TCP_handler(IP_DGRAM *datagram)
 
 	if (connect->pending)
 	{
-		for (walk = connect->pending; walk->next; walk = walk->next) ;
+		for (walk = connect->pending; walk->next; walk = walk->next)
+			;
 		walk->next = datagram;
 	} else
 	{
@@ -121,6 +126,32 @@ int16 cdecl TCP_handler(IP_DGRAM *datagram)
 	}
 
 	return TRUE;
+}
+
+
+static void rtrp_mode(CONNEC *conn)
+{
+	uint32 elapsed;
+
+	conn->rtrp.mode = 0;
+	if (!(conn->flags & RETRAN))
+	{
+		elapsed = TIMER_elapsed(conn->rtrp.start);
+		conn->rtrp.smooth = (conn->rtrp.smooth * 7 + elapsed) / 8;
+		if (conn->rtrp.smooth < 100)
+		{
+			conn->rtrp.timeout = 200;
+		} else if (conn->rtrp.smooth > 30000L)
+		{
+			conn->rtrp.timeout = 60000L;
+		} else
+		{
+			conn->rtrp.timeout = conn->rtrp.smooth * 2;
+		}
+		conn->rtrn.timeout = conn->rtrp.smooth * 2;
+		conn->rtrn.start = TIMER_now();
+		conn->rtrn.backoff = 0;
+	}
 }
 
 
@@ -141,6 +172,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 	switch (conn->state)
 	{
 	case TCLOSED:
+		conn->rtrp.mode = 0;
 		send_reset(datagram);
 		conn->net_error = E_UA;
 		my_conf.generic.stat_dropped++;
@@ -152,6 +184,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		}
 		if (hdr->ack)
 		{
+			conn->rtrp.mode = 0;
 			send_reset(datagram);
 			my_conf.generic.stat_dropped++;
 			return;
@@ -171,8 +204,9 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 	case TSYN_SENT:
 		if (hdr->ack)
 		{
-			if (!sequ_within(hdr->acknowledge, conn->send.ini_sequ + 1, conn->send.next))
+			if (!sequ_within_range(hdr->acknowledge, conn->send.ini_sequ + 1, conn->send.next))
 			{
+				conn->rtrp.mode = 0;
 				send_reset(datagram);
 				conn->net_error = E_UA;
 				my_conf.generic.stat_dropped++;
@@ -183,13 +217,19 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		{
 			if (hdr->ack)
 			{
+				conn->rtrp.mode = 0;
 				close_self(conn, E_RRESET);
 				conn->net_error = E_REFUSE;
 			}
 			return;
 		}
+		if (hdr->sync)
+		{
+			process_sync(conn, datagram);
+		}
 		if (hdr->ack && PREC(datagram->hdr.tos) != PREC(conn->tos))
 		{
+			conn->rtrp.mode = 0;
 			send_reset(datagram);
 			conn->net_error = E_UA;
 			my_conf.generic.stat_dropped++;
@@ -197,7 +237,6 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		}
 		if (hdr->sync)
 		{
-			process_sync(conn, datagram);
 			if (hdr->ack)
 			{
 				update_wind(conn, hdr);
@@ -208,7 +247,32 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 			}
 			if (len - hdr->offset * 4 > 0 || hdr->fin)
 				break;
+			if (conn->rtrp.mode)
+				rtrp_mode(conn);
 			do_output(conn);
+		}
+		if (hdr->ack && conn->o140 < 0xffff)
+		{
+			if (conn->o140 <= conn->o142)
+			{
+				conn->o140 += conn->mss;
+			} else
+			{
+				if (conn->smooth_start == 0 ||
+					(uint32)TIMER_elapsed(conn->smooth_start) > conn->rtrp.smooth)
+				{
+					conn->smooth_start = TIMER_now();
+					conn->o148 = 0;
+				}
+				if (conn->o148 < conn->mss)
+				{
+					uint16 tmp = (conn->mss * conn->mss) / conn->o140;
+					if (conn->o148 + tmp > conn->mss)
+						tmp = conn->mss - conn->o148;
+					conn->o140 += tmp;
+					conn->o148 += tmp;
+				}
+			}
 		}
 		return;
 	}
@@ -221,12 +285,58 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		if (!hdr->reset)
 		{
 			conn->flags |= FORCE;
+			conn->rtrp.mode = 0;
 			do_output(conn);
 		}
 		KRfree(net_data);
 		return;
 	}
 	datagram->pkt_data = NULL;
+
+	if (conn->rtrp.mode && ((int32)hdr->acknowledge - (int32)conn->rtrp.sequ) >= 0)
+		rtrp_mode(conn);
+	if (hdr->ack && conn->o140 < 0xffff)
+	{
+		if (conn->o140 <= conn->o142)
+		{
+			conn->o140 += conn->mss;
+		} else
+		{
+			if (conn->smooth_start == 0 ||
+				(uint32)TIMER_elapsed(conn->smooth_start) > conn->rtrp.smooth)
+			{
+				conn->smooth_start = TIMER_now();
+				conn->o148 = 0;
+			}
+			if (conn->o148 < conn->mss)
+			{
+				uint16 tmp = (conn->mss * conn->mss) / conn->o140;
+				if (conn->o148 + tmp > conn->mss)
+					tmp = conn->mss - conn->o148;
+				conn->o140 += tmp;
+				conn->o148 += tmp;
+			}
+		}
+	}
+
+	if ((conn->flags & DISCARD) && net_data->data_len != 0)
+	{
+		KRfree(net_data->hdr);
+		KRfree(net_data);
+		my_conf.generic.stat_dropped++;
+		abort_conn(conn);
+		close_self(conn, E_CNTIMEOUT);
+		conn->net_error = E_CNTIMEOUT;
+		return;
+	}
+	if ((conn->flags & CLOSING) && net_data->hdr->reset)
+	{
+		KRfree(net_data->hdr);
+		KRfree(net_data);
+		close_self(conn, E_CNTIMEOUT);
+		conn->net_error = E_CNTIMEOUT;
+		return;
+	}
 
 	if (hdr->sequence != conn->recve.next && (net_data->data_len != 0 || hdr->sync || hdr->fin))
 	{
@@ -242,9 +352,14 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 
 		if (hdr->reset)
 		{
-			if (conn->state == TSYN_RECV)
+			if (conn->state == TSYN_RECV && conn->act_pass == TCP_PASSIVE)
+			{
+				conn->local_IP_address = conn->local_IP_address_orig;
+				conn->local_port = conn->lport_orig;
+				conn->remote_IP_address = conn->remote_IP_address_orig;
+				conn->remote_port = conn->rport_orig;
 				conn->state = TLISTEN;
-			else
+			} else
 			{
 				close_self(conn, E_RRESET);
 				conn->net_error = E_RRESET;
@@ -276,7 +391,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		switch (conn->state)
 		{
 		case TSYN_RECV:
-			if (sequ_within(hdr->acknowledge, conn->send.unack + 1, conn->send.next))
+			if (sequ_within_range(hdr->acknowledge, conn->send.unack + 1, conn->send.next))
 			{
 				update_wind(conn, hdr);
 				conn->state = TESTABLISH;
@@ -345,7 +460,8 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 				ndb->next = NULL;
 				if (conn->recve.queue)
 				{
-					for (work = conn->recve.queue; work->next; work = work->next) ;
+					for (work = conn->recve.queue; work->next; work = work->next)
+						;
 					work->next = ndb;
 				} else
 				{

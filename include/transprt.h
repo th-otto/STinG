@@ -503,6 +503,10 @@ extern TPL *tpl;
 #define E_FNAVAIL		-32		/* Function not available					*/
 #define E_LASTERROR		32		/* ABS of last error code in this list		*/
 
+#if 0 /* used by TCP.STX 1.15-1.29: */
+#define E_DEFERRED		-33
+#endif
+
 /*--------------------------------------------------------------------------*/
 
 #endif /* STING_TRANSPRT_H */

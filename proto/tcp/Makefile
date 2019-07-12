@@ -1,13 +1,13 @@
 include ../../configvars
 
 CFLAGS += -I../../include
-LIBS += -lgem
 
 SRCS = \
 	tcp.c \
 	arrive.c \
 	inout.c \
 	tool.c \
+	applyld.c \
 	$(empty)
 OBJS = $(SRCS:.c=.o) check.o
 
@@ -22,3 +22,5 @@ clean distclean::
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
 	cp -a tcp.stx $(RELEASE_DIR)/sting
+	$(MKDIR) $(RELEASE_DIR)/doc
+	cp -a tcp_stx.txt $(RELEASE_DIR)/doc

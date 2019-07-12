@@ -656,7 +656,7 @@ static int16 cdecl my_UDP_info(int16 connec, UDPIB *buffer)
 	if (error < 0)
 		conn->net_error = 0;
 	else
-		error = UESTABLISH;
+		error = UDPI_bits;
 	return error;
 }
 
