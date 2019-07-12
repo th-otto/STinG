@@ -32,6 +32,7 @@ int32 cdecl set_sr(void *);
 
 void          do_arrive (CONNEC *conn, IP_DGRAM *dgram);
 
+uint16        pull_char (NDB *queue, char *buffer, uint16 length);
 uint16        pull_up (NDB **queue, char *buffer, uint16 length);
 void          do_output (CONNEC *connec);
 
@@ -186,7 +187,6 @@ int16  cdecl  do_ICMP (IP_DGRAM *dgram)
    IP_HDR   *ip;
    TCP_HDR  *tcp;
    CONNEC   *connect;
-   int16    count;
    uint8    type, code;
 
    if ((my_conf.generic.flags & 0x10000ul) == 0)
@@ -248,8 +248,8 @@ int16  cdecl  do_ICMP (IP_DGRAM *dgram)
 
 void  send_sync (CONNEC *connec)
 {
-   ini_sequ += 250052;
-   ini_sequ_next = TIMER_now() << (8 + (uint8)ini_sequ);
+   ini_sequ += 250052L;
+   ini_sequ_next = (TIMER_now() << 8) + ini_sequ;
    connec->send.ini_sequ = ini_sequ_next;
    connec->rtrp.sequ = connec->send.lwup_ack = connec->send.unack = connec->send.ini_sequ;
    connec->send.ptr  = connec->send.next     = connec->send.ini_sequ;
@@ -274,7 +274,7 @@ IP_DGRAM  *dgram;
         connec->tos = (dgram->hdr.tos & 0x1f) | PRECMASK (connec->tos);
    connec->send.lwup_seq = ((TCP_HDR *) dgram->pkt_data)->sequence;
    connec->send.window   = ((TCP_HDR *) dgram->pkt_data)->window;
-   connec->recve.next    = ((TCP_HDR *) dgram->pkt_data)->sequence + 1;
+   connec->recve.next    = ((TCP_HDR *) dgram->pkt_data)->sequence;
 
    process_options (connec, dgram);
 
@@ -509,6 +509,11 @@ int16   *length, getchar;
    if (*length >= 0) {
         if (*length > connec->recve.count)
              *length = connec->recve.count;
+        if (getchar)
+        {
+           pull_char (connec->recve.queue, buffer, *length);
+           return (connec->recve.count);
+        }
         pull_up (& connec->recve.queue, buffer, *length);
       }
      else {
@@ -525,8 +530,9 @@ int16   *length, getchar;
         connec->recve.count  -= *length;
         connec->recve.window += *length;
 
-        if ((connec->recve.lst_win < connec->mss && connec->recve.window >= connec->mss) ||
-                        connec->recve.window == *length || ! getchar) {
+        if (connec->recve.window == *length ||
+            (connec->recve.lst_win < connec->mss && connec->recve.window >= connec->mss) ||
+             (int32)(connec->recve.next + connec->recve.window - (connec->recve.lst_next + connec->recve.lst_win)) >= connec->mss) {
              connec->flags |= FORCE;
              do_output (connec);
            }

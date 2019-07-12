@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     High Level Protokoll : TCP                                    */
@@ -22,10 +21,10 @@
 #include "tcp.h"
 
 
-#define  M_YEAR    1999
-#define  M_MONTH   12
-#define  M_DAY     1
-#define  M_VERSION "01.35"
+#define  M_YEAR    2000
+#define  M_MONTH   8
+#define  M_DAY     26
+#define  M_VERSION "01.40"
 #define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 
@@ -135,7 +134,6 @@ int16  install()
 
 {
    LAYER  *layers;
-   int16  count;
    char   *config;
 
    if (! ICMP_handler (do_ICMP, HNDLR_SET))
@@ -286,7 +284,8 @@ uint16  buff_size;
       }
 
    ttl = my_conf.def_ttl;
-   window = (buff_size > 0) ? buff_size : my_conf.rcv_window;
+   buff_size = (buff_size > 0) ? buff_size : my_conf.rcv_window;
+   window = buff_size > my_conf.rcv_window ? buff_size : my_conf.rcv_window;
 
    if ((connect = (CONNEC *) KRmalloc (sizeof (CONNEC))) == NULL)
         return (E_NOMEM);
@@ -316,7 +315,7 @@ uint16  buff_size;
    connect->net_error         = 0;
 
    connect->send.window       = window;
-   connect->send.bufflen      = window;
+   connect->send.bufflen      = buff_size;
    connect->o140 = 0x430;
    connect->o142 = 0xffff;
    connect->send.total        = 0;
@@ -371,9 +370,9 @@ uint16  buff_size;
  }
 
 
-int16  cdecl  my_TCP_close (connec, mode, result)
+int16  cdecl  my_TCP_close (connec, mode, presult)
 
-int16  connec, mode, *result;
+int16  connec, mode, *presult;
 
 {
    CONNEC  *conn;
@@ -381,6 +380,7 @@ int16  connec, mode, *result;
    int32 now;
    int32 start;
    int16 error;
+   int16 *result;
 
    now = TIMER_now();
 
@@ -391,11 +391,15 @@ int16  connec, mode, *result;
         if (conn->result != NULL) {
              conn->result = NULL;   return (E_NORMAL);
            }
+        result = NULL;
         if (mode >= 1000)
             mode = 999;
       }
      else
+      {
+        result = presult;
         conn->result = result;
+      }
 
    if (conn->flags & CLOSING)
    {
@@ -495,7 +499,7 @@ int16  connec, mode, *result;
 		break;
       }
 
-   if (mode < 0 && result != NULL)
+   if (result != NULL)
         *result = retval;
 
    return (retval);
@@ -562,7 +566,8 @@ void   *buffer;
 	}
 
    if (conn->send.queue) {
-        for (walk = conn->send.queue; walk->next; walk = walk->next);
+        for (walk = conn->send.queue; walk->next; walk = walk->next)
+           ;
         walk->next = ndb;
       }
      else {
@@ -772,7 +777,7 @@ int16  cdecl  my_CNget_char (void  *connec)
     	return E_LOCKED;
 	}
 
-   receive (conn, & character, & length, TRUE);
+   receive (conn, & character, & length, FALSE);
    rel_flag (& conn->sema);
 
    return ((length) ? (int16) character : E_NODATA);
@@ -823,6 +828,11 @@ int16  cdecl  my_CNget_block (void *connec, void *buffer, int16 length)
    CONNEC  *conn = connec;
    int16   error;
    int16   error2;
+   int16 buflen;
+   int16 flag;
+
+   buflen = length >= 0 ? length : -length;
+   flag = length < 0;
 
    if ((error = poll_receive (connec)) < 0)
         return (error);
@@ -834,9 +844,9 @@ int16  cdecl  my_CNget_block (void *connec, void *buffer, int16 length)
       case C_DEFAULT :   return (E_NODATA);
       }
 
-   if (length <= 0)   return (0);
-
-   if (length > conn->recve.count)
+   if (buflen == 0)
+        return 0;
+   if (buflen > conn->recve.count)
         return (E_NODATA);
 
     if ((error2 = req_flag(&conn->sema)) != 0 &&
@@ -852,10 +862,10 @@ int16  cdecl  my_CNget_block (void *connec, void *buffer, int16 length)
     	return E_LOCKED;
 	}
 
-   receive (conn, buffer, & length, FALSE);
+   receive (conn, buffer, &buflen, flag);
    rel_flag (& conn->sema);
 
-   return (length);
+   return (buflen);
  }
 
 

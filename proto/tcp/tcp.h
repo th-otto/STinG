@@ -138,6 +138,7 @@ typedef  struct connec  {
      struct {                        /* Structure containing RECEIVE info : */
          uint32   next;              /*   Next acceptable sequence number   */
          uint16   window;            /*   Actual size of receive window     */
+         uint32   lst_next;
          uint16   lst_win;           /*   Last window size reported         */
          RESEQU   *reseq;            /*   Segment queue for resequencing    */
          int16    count;             /*   Real data in queue                */
