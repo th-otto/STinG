@@ -58,6 +58,7 @@ set_sr:
 			move.w 6(a7),8(a7)
 			rts
 
+cli:
 			move.w 8(a7),d0
             or.w    #$0700,8(a7)                   ;" Disable interupts
 			rts

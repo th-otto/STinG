@@ -55,7 +55,6 @@ int16  cdecl  my_CNgets (void *connec, char *buffer, int16 length, char delimite
 int16  cdecl  UDP_handler (IP_DGRAM *dgram);
 void   cdecl  timer_function (void);
 int16         poll_receive (CONNEC *connec);
-long          poll_doit (CONNEC  *connec);
 void          timer_work (CONNEC *connec);
 int16  cdecl  do_ICMP (IP_DGRAM *dgram);
 void *cdecl unlink_connect(int32 connect);
@@ -380,7 +379,7 @@ int16 cdecl my_UDP_info(int16 connec, UDPIB *buffer)
 	if (error < 0)
 		conn->net_error = 0;
 	else
-		error = UESTABLISH;
+		error = UDPI_bits;
 	return error;
 }
 

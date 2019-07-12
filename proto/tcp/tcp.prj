@@ -1,0 +1,26 @@
+tcp.stx
+
+.C[-I..\..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=256]
+
+=
+pcstart.s
+
+tcp.c (tcp.h)
+tool.c (tcp.h)
+arrive.c (tcp.h)
+inout.c (tcp.h)
+check.s [-S]
+
+c:\pc\orig\lib\pcstdlib.lib
+c:\pc\orig\lib\pctoslib.lib

@@ -10,7 +10,6 @@
 
             .export   _appl_yield                ;" Function for AES task switch
 
-            .export   wait_flag                  ;" Function for waiting for semaphore
             .export   req_flag                   ;" Function for requesting semaphore
             .export   rel_flag                   ;" Function for releasing semaphore
 
@@ -21,6 +20,71 @@
 
             .export   check_sum                  ;" Function for checksumming data
 
+			.globl get_sr
+			.globl set_sr
+			.globl cli
+			.globl poll_super
+
+			.xref timer_work
+
+;-------------------------------------------------------------------------------------)
+			move.w sr,d0
+			rts
+
+en_intrpt:
+            move.w  d0, sr                       ;" Restore CPU status
+            rts
+
+;-------------------------------------------------------------------------------------)
+
+dis_intrpt:
+            move.w  sr, d0                       ;" Save CPU status
+            or.w    #$0700, sr                   ;" Disable interupts
+            rts
+
+            move.w  sr,d1
+            move.w  d0,sr
+            move.w  d1,sr
+            rts
+
+;-------------------------------------------------------------------------------------)
+
+get_sr:
+			move.w 8(a7),d0
+			rts
+
+;-------------------------------------------------------------------------------------)
+
+set_sr:
+			move.w 6(a7),8(a7)
+			rts
+
+;-------------------------------------------------------------------------------------)
+
+cli:
+			move.w 8(a7),d0
+            or.w    #$0700,8(a7)                   ;" Disable interupts
+			rts
+
+;-------------------------------------------------------------------------------------)
+
+			move.w 6(a7),sr
+			rts
+
+;-------------------------------------------------------------------------------------)
+
+poll_super:
+			move.w     8(a7),d0
+			or.w       #$2000,d0
+			move.w     d0,sr
+			movea.l    4(a7),a0
+			jmp        timer_work
+
+;-------------------------------------------------------------------------------------)
+
+illg:
+			.dc.w 0x4afc
+			rts
 
 ;-------------------------------------------------------------------------------------)
 
@@ -31,37 +95,17 @@ _appl_yield:
 
 ;-------------------------------------------------------------------------------------)
 
-wait_flag:
-            tas     (a0)                         ;" Test semaphore, and set bit 7
-            bne     wait_flag                    ;" Was set ? Then loop
-            or.b    #$ff, (a0)                   ;" Now the lock is ours
-            rts
-
 req_flag:
             move.l  #1, d0                       ;" Preset TRUE in case of lock
             tas     (a0)                         ;" Test semaphore, and set bit 7
             bne     denied                       ;" Was set ? Return TRUE
             or.b    #$ff, (a0)                   ;" Now the lock is ours
             clr.l   d0                           ;" And return FALSE
-denied:     nop
-            rts
+denied:     rts
 
 rel_flag:
             clr.b   (a0)                         ;" Clear semaphore
             rts
-
-;-------------------------------------------------------------------------------------)
-
-dis_intrpt:
-            move.w  sr, status                   ;" Save CPU status
-            or.w    #$0700, sr                   ;" Disable interupts
-            rts
-
-en_intrpt:
-            move.w  status, sr                   ;" Restore CPU status
-            rts
-
-status:     dc.w    0                            ;" CPU status
 
 ;-------------------------------------------------------------------------------------)
 
@@ -150,6 +194,3 @@ no_byte:    clr.w   d2                           ;" For adding carries
 
 remain:     ds.w    1                            ;" Storage for last two length bits
 
-;-------------------------------------------------------------------------------------)
-
-            .end

@@ -17,7 +17,9 @@
  *   Evaluate Precedence
  */
 
-#define	PREC(x)		((x)>>5 & 7)       /* Calculate Precedence from IP tos  */
+#define	PREC(x)		(((x) >> 5) & 0x07)       /* Calculate Precedence from IP tos  */
+#define	PRECMASK(x)	((x) & 0xe0)
+
 
 
 
@@ -75,6 +77,9 @@ typedef  struct header  {
 #define  RETRAN      2          /* Flag indicating this is a retransmission */
 #define  CLOSING     4          /* Flag indicating background close action  */
 #define  DISCARD     8          /* Flag forcing discarding of CONNEC block  */
+#define  FLAG20      0x20
+#define  FLAG40      0x40
+#define  DEFERRED    0x80
 
 
 
@@ -127,6 +132,7 @@ typedef  struct connec  {
          int16    bufflen;           /*   Maximum amount of data in queue   */
          int16    count;             /*   Data (with flags) in queue        */
          uint32   ini_sequ;          /*   Initial sequence number           */
+         uint32   start;
          NDB      *queue;            /*   Send queue                        */
       } send;                        /* End of SEND info                    */
      struct {                        /* Structure containing RECEIVE info : */
@@ -146,13 +152,26 @@ typedef  struct connec  {
      struct {                        /* Structure for round trip timer :    */
          uint32   start;             /*   Starting time                     */
          uint8    mode;              /*   Mode flag : Running / Stopped     */
-         uint32   smooth;            /*   Smoothed round trip time          */
          uint32   sequ;              /*   Sequence number being timed       */
+         uint32   smooth;            /*   Smoothed round trip time          */
+         uint32   timeout;
       } rtrp;                        /* End of round trip timer info        */
      struct {                        /* Structure for closing timer :       */
          uint32   start;             /*   Starting time                     */
-         uint8    timeout;           /*   Timeout time                      */
+         uint32   timeout;           /*   Timeout time                      */
       } close;                       /* End of closing timer info           */
+
+     uint16 act_pass;
+     uint16 lport_orig;
+     uint16 rport_orig;
+     uint32 remote_IP_address_orig;
+     uint32 local_IP_address_orig;
+     uint16 handle;
+     uint16 o140;
+     uint16 o142;
+     uint32 smooth_start;
+     uint16 o148;
+
      int16     sema;                 /* Semaphore for locking structures    */
      int16     *result;              /* Return deferred results here        */
      uint32    last_work;            /* Last time work has been done        */
@@ -184,6 +203,18 @@ typedef  struct tcp_desc  {
 
 
 /*--------------------------------------------------------------------------*/
+
+#define sequ_within_range(actual, low, high) \
+	(0 <= (int32)(actual) - (int32)(low) && 0 <= (int32)(high) - (int32)(actual))
+
+#define sequ_outside_range(actual, low, high) \
+	(0 >= (int32)(actual) - (int32)(low) && 0 >= (int32)(high) - (int32)(actual))
+
+#define sequ_within(actual, low, high) \
+	((0 <= (int32) high - (int32) low) ? \
+		sequ_within_range(actual, low, high) : \
+        sequ_outside_range(actual, low, high))
+
 
 
 #endif /* TCP_H */
