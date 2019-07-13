@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     Low Level Port : LocalTalk Bus Schnittstelle                  */
@@ -8,7 +7,6 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -31,6 +29,7 @@ STX *stx;
 
 #ifdef __GNUC__
 #define _BasPag _base
+extern unsigned long _PgmSize;
 #endif
 
 

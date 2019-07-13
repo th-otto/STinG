@@ -8,8 +8,11 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
-#include <tos.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -18,6 +21,9 @@
 #include "transprt.h"
 #include "remctrl.h"
 
+#ifndef _WORD
+# define _WORD short
+#endif
 
 #define  DIAL_SCRIPT        "DIAL.SCR"
 #define  DIAL_MAX_NUMBER    5

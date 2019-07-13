@@ -39,7 +39,7 @@ rem_ctrl/request.prg: rem_ctrl/request.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean distclean::
-	$(RM) device/*.o device/*.pdb device/*.lib device/*.tos call_it/*.o call_it/*.prg rem_ctrl/*.o rem_ctrl/*.prg
+	$(RM) device/*.o device/*.pdb device/*.lib device/*.tos call_it/*.o call_it/*.prg call_it/*.pdb rem_ctrl/*.o rem_ctrl/*.prg rem_ctrl/*.pdb
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting/dialer

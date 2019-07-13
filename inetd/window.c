@@ -1,6 +1,10 @@
+#ifdef __GNUC__
 #include <aes.h>
 #include <vdi.h>
-#include <tos.h>
+#else
+#include <aes.h>
+#include <vdi.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include "module.h"

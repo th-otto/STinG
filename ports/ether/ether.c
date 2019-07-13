@@ -10,7 +10,6 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -27,6 +26,7 @@
 
 #ifdef __GNUC__
 #define _BasPag _base
+extern unsigned long _PgmSize;
 #endif
 
 #ifndef GNU_ASM_NAME

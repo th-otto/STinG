@@ -7,13 +7,15 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "transprt.h"
 #include "port.h"
 
+#ifdef __GNUC__
+extern unsigned long _PgmSize;
+#endif
 
 #define  M_YEAR    1998
 #define  M_MONTH   6

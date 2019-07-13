@@ -1,5 +1,9 @@
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
-#include <tos.h>
+#endif
+#include <stdio.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -8,6 +12,10 @@
 #include "window.h"
 #include "transprt.h"
 
+#ifdef __GNUC__
+# define DTA _DTA
+# define d_fname dta_name
+#endif
 
 TPL *tpl;
 ISM_PARA parameter;

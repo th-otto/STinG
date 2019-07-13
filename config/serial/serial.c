@@ -10,17 +10,33 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#include <mintbind.h>
+#else
 #include <aes.h>
 #include <vdi.h>
+#endif
 #undef BYTE
 #define BYTE char
-#include <tos.h>
+#ifndef WORD
+# define WORD short
+#endif
+#ifndef LONG
+# define LONG long
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 
 #include "serial.h"
+#include "transprt.h"
+
+#ifdef __GNUC__
+# define MAPTAB _MAPTAB
+# define BCONMAP _BCONMAP
+#endif
 
 
 #define  NUM_ENTRIES  16
@@ -986,6 +1002,7 @@ static void bconmap_init(void)
 			{
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wcast-function-type"
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 				array[port].port_driver.Rsconf = (unsigned long __CDECL (*)(short, short, short, short, short, short))my_Rsconf;
 #else
 				array[port].port_driver.Rsconf = my_Rsconf;

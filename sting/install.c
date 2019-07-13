@@ -10,7 +10,6 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -18,6 +17,11 @@
 
 #include "globdefs.h"
 
+#ifdef __GNUC__
+# define DTA _DTA
+# define d_fname dta_name
+extern unsigned long _PgmSize;
+#endif
 
 #define  MAX_SEMAPHOR    64
 

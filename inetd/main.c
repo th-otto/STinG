@@ -1,5 +1,8 @@
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
-#include <tos.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 
@@ -9,6 +12,10 @@
 
 
 #define  VA_START         0x4711
+
+#ifdef __GNUC__
+extern short _app;
+#endif
 
 int disp_offset;
 char ism_path[256];

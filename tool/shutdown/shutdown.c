@@ -8,9 +8,13 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
-#include <tos.h>
+#endif
 #include <mint/sysvars.h>
+#undef etv_critic
 #include <stdio.h>
 #include <string.h>
 

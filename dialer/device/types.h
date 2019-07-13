@@ -12,6 +12,13 @@
 
 #include <portab.h>
 
+#ifdef __GNUC__
+#include <mintbind.h>
+#define MAPTAB _MAPTAB
+#define BCONMAP _BCONMAP
+#define BASPAG BASEPAGE
+#endif
+
 /*--- defines               ---*/
 
 /*

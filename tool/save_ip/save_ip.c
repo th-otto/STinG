@@ -8,8 +8,11 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
-#include <tos.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>

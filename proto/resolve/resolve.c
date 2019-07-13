@@ -5,7 +5,6 @@
 /* Purpose:		High level STinG protocol for an Internet DNS resolver		  */
 /*----------------------------------------------------------------------------*/
 
-#include	<tos.h>
 #include	<ctype.h>
 #include	<stdio.h>
 #include	<string.h>
@@ -14,6 +13,10 @@
 #include	"transprt.h"
 #include	"layer.h"
 #include	"resolve.h"
+
+#ifdef __GNUC__
+extern unsigned long _PgmSize;
+#endif
 
 /*----------------------------------------------------------------------------*/
 

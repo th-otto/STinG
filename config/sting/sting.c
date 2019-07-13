@@ -10,11 +10,20 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
 #include <vdi.h>
+#endif
 #undef BYTE
 #define BYTE char
-#include <tos.h>
+#ifndef WORD
+# define WORD short
+#endif
+#ifndef LONG
+# define LONG long
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -10,7 +10,6 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -20,6 +19,9 @@
 #include "serial.h"
 #include "ppp_fcs.h"
 
+#ifdef __GNUC__
+#include <mintbind.h>
+#endif
 
 #undef FIONREAD
 #undef FIONWRITE

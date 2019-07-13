@@ -1,5 +1,8 @@
+#ifdef __GNUC__
 #include <aes.h>
-#include <tos.h>
+#else
+#include <aes.h>
+#endif
 #include <stdio.h>
 
 #include "../module.h"

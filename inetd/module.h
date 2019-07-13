@@ -1,3 +1,5 @@
+#include "transprt.h"
+
 /*
  *   Structures for interfacing to INetD ...
  */

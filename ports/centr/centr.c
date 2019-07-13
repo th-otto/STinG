@@ -7,7 +7,6 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -42,6 +41,7 @@
 
 #ifdef __GNUC__
 #define _BasPag _base
+extern unsigned long _PgmSize;
 #endif
 
 void send_dgram(void) GNU_ASM_NAME("send_dgram");

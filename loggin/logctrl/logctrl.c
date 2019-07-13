@@ -7,15 +7,22 @@
 /*********************************************************************/
 
 
-#include <tos.h>
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <vdi.h>
 #include <aes.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 
 #include "logctrl.h"
 
 #include "transprt.h"
+
+#ifdef __GNUC__
+extern unsigned long _PgmSize;
+#endif
 
 
 #ifndef TRUE
@@ -217,7 +224,7 @@ static void do_dialog(_WORD api)
 	box.fd_h = box_h;
 	box.fd_nplanes = planes;
 	box.fd_wdwidth = (box_w + 15) / 16;
-	box.fd_addr = Malloc(planes * (box_h * (box_w + 15L) / 8));
+	box.fd_addr = (void *)Malloc(planes * (box_h * (box_w + 15L) / 8));
 
 	xy[0] = box_x;
 	xy[2] = box_x + box_w - 1;

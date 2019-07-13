@@ -33,7 +33,7 @@
 
 /*--- includes              ---*/
 
-#if defined(__GNUC__) && 0
+#if defined(__GNUC__)
 #  include <osbind.h>
 #  define MAPTAB _MAPTAB
 #  define IOREC _IOREC

@@ -10,7 +10,6 @@
 /*********************************************************************/
 
 
-#include <tos.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -19,6 +18,9 @@
 
 #include "tcp.h"
 
+#ifdef __GNUC__
+extern unsigned long _PgmSize;
+#endif
 
 #define  M_YEAR    1999
 #define  M_MONTH   1

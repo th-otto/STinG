@@ -9,8 +9,11 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#else
 #include <aes.h>
-#include <tos.h>
+#endif
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -18,6 +21,9 @@
 #include "transprt.h"
 #include "remctrl.h"
 
+#ifndef _WORD
+# define _WORD short
+#endif
 
 #define  TIMEOUT   60
 

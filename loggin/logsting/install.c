@@ -7,8 +7,12 @@
 /*********************************************************************/
 
 
+#ifdef __GNUC__
+#include <gem.h>
+#else
+#include <vdi.h>
 #include <aes.h>
-#include <tos.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -16,8 +20,12 @@
 
 #include "transprt.h"
 #include "port.h"
+#undef INT16
 #include "logsting.h"
 
+#ifdef __GNUC__
+extern unsigned long _PgmSize;
+#endif
 
 TPL *tpl;
 STX *stx;

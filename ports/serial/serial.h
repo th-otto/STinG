@@ -8,6 +8,11 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#ifdef __GNUC__
+#define MAPTAB _MAPTAB
+#define BCONMAP _BCONMAP
+#endif
+
 
 
 /*--------------------------------------------------------------------------*/
