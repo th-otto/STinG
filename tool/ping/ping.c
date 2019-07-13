@@ -35,13 +35,14 @@ static uint16 max;
 static uint16 num_packets;
 static uint32 host;
 static char alert[200];
-static char const not_there[] = "[1][ |  STinG is not loaded or enabled !   ][ Hmmm ]";
-static char const corrupted[] = "[1][ |  STinG structures corrupted !   ][ Oooops ]";
-static char const found_it[] = "[3][ |  Driver \'%s\',|  by %s, found,   |  version %s.][ Okay ]";
-static char const no_module[] = "[1][ |  STinG Transport Driver not found !   ][ Grmbl ]";
-static char const takes[] = "[3][ |  This will take a little more   | |    than %d seconds.][ Okay ]";
-static char const first[] = "[3][  Ping Actions :| |    %u packets sent, %u received;   |    %ld %% lost.][ Okay ]";
-static char const second[] = "[3][  Ping Time Statistics :   | |    Minimum %5ld ms|    Average %5ld ms|    Maximum %5ld ms][ Okay ]";
+static char const not_there[] = "[1][ | STinG is not loaded or enabled ! ][ Hmmm ]";
+static char const corrupted[] = "[1][ | STinG structures corrupted ! ][ Oooops ]";
+static char const found_it[] = "[3][ | Driver \'%s\',|  by %s, found, | version %s.][ Okay ]";
+static char const no_module[] = "[1][ | STinG Transport Driver | not found ! ][ Grmbl ]";
+static char const no_handler[] = "[1][ | Cannot set ICMP handler ][ Grmbl ]";
+static char const takes[] = "[3][ | This will take a little more | | than %d seconds.][ Okay ]";
+static char const first[] = "[3][ Ping Actions :| %u packets sent | %u received | %ld %% lost.][ Okay ]";
+static char const second[] = "[3][ Ping Time Statistics : | | Minimum %5ld ms| Average %5ld ms| Maximum %5ld ms][ Okay ]";
 
 
 
@@ -156,6 +157,28 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 }
 
 
+static _WORD do_alert(const char *str)
+{
+	_WORD ret;
+	_WORD message[8];
+	_WORD dummy;
+	
+	ret = form_alert(1, str);
+	/*
+	 * let other windows redraw in multitask-AES
+	 */
+	evnt_multi(MU_MESAG | MU_TIMER,
+		0, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		message,
+		0,
+		&dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
+	
+	return ret;
+}
+
+
 static void do_some_work(void)
 {
 	int count;
@@ -166,14 +189,17 @@ static void do_some_work(void)
 		return;
 
 	sprintf(alert, takes, (num_packets + 1) / 10);
-	form_alert(1, alert);
+	do_alert(alert);
 
 	sent = received = 0;
 	min = 50000u;
 	ave = max = 0;
 
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
+	{
+		do_alert(no_handler);
 		return;
+	}
 
 	for (count = 0; count < num_packets; count++)
 	{
@@ -187,12 +213,12 @@ static void do_some_work(void)
 	ICMP_handler(receive_echo, HNDLR_REMOVE);
 
 	sprintf(alert, first, sent, received, (sent - received) * 100L / sent);
-	form_alert(1, alert);
+	do_alert(alert);
 
 	if (received)
 	{
 		sprintf(alert, second, min * 5L, ave * 5L / received, max * 5L);
-		form_alert(1, alert);
+		do_alert(alert);
 	}
 }
 
@@ -203,12 +229,12 @@ static void gem_program(void)
 
 	if (sting_drivers == 0)
 	{
-		form_alert(1, not_there);
+		do_alert(not_there);
 		return;
 	}
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
-		form_alert(1, corrupted);
+		do_alert(corrupted);
 		return;
 	}
 
@@ -217,11 +243,11 @@ static void gem_program(void)
 	if (tpl != NULL)
 	{
 		sprintf(alert, found_it, tpl->module, tpl->author, tpl->version);
-		form_alert(1, alert);
+		do_alert(alert);
 		do_some_work();
 	} else
 	{
-		form_alert(1, no_module);
+		do_alert(no_module);
 	}
 }
 
@@ -230,8 +256,8 @@ int main(void)
 {
 	appl_init();
 
-	if (rsrc_load("PING.RSC") == 0)
-		form_alert(1, "[1][ No RSC File !  ][ Hmpf ]");
+	if (rsrc_load("ping.rsc") == 0)
+		do_alert("[1][ No RSC File !  ][ Hmpf ]");
 	else
 		gem_program();
 

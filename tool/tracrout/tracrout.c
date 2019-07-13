@@ -78,6 +78,10 @@ static char const found_it[] = "[3][ |  Driver \'%s\',|  by %s, found,   |  vers
 static char const no_module[] = "[1][ |  STinG Transport Driver not found !   ][ Grmbl ]";
 static char const format[] = "[0][ |  Hop #%u :| |     Address %u.%u.%u.%u   ][ Okay ]";
 static char const timeout[] = "[1][ |  Timeout awaiting   | |    response  !][ Retry | Cancel ]";
+static char const no_route[] = "[1][ |   No Route !   ][ Hmmm ]";
+static char const no_memory[] = "[1][ |   Out of internal memory !   ][ Ooops ]";
+static char const no_handler[] = "[1][ | Cannot set ICMP handler ][ Grmbl ]";
+static char const no_stik[] = "[1][ | Don't use this Program | |  with STiK !][ Abort ]";
 
 
 
@@ -156,6 +160,28 @@ static void fetch_parameters(void)
 }
 
 
+static _WORD do_alert(const char *str)
+{
+	_WORD ret;
+	_WORD message[8];
+	_WORD dummy;
+	
+	ret = form_alert(1, str);
+	/*
+	 * let other windows redraw in multitask-AES
+	 */
+	evnt_multi(MU_MESAG | MU_TIMER,
+		0, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		message,
+		0,
+		&dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
+	
+	return ret;
+}
+
+
 static void do_some_work(void)
 {
 	uint16 *walk;
@@ -171,7 +197,7 @@ static void do_some_work(void)
 
 	if (PRTCL_get_parameters(host, &packet.ps_hdr.src_ip, NULL, NULL) != E_NORMAL)
 	{
-		form_alert(1, "[1][ |   No Route !   ][ Hmmm ]");
+		do_alert(no_route);
 		return;
 	}
 	packet.ps_hdr.dest_ip = host;
@@ -190,13 +216,16 @@ static void do_some_work(void)
 	packet.udp_packet.chk_sum = ~(uint16) ((chksum & 0xffffL) + ((chksum >> 16) & 0xffffL));
 
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
+	{
+		do_alert(no_handler);
 		return;
+	}
 
 	for (count = 1; count <= max_ttl; count++)
 	{
 		if ((dgram = KRmalloc(sizeof(UDP_PCKT))) == NULL)
 		{
-			form_alert(1, "[1][ |   Out of internal memory !   ][ Ooops ]");
+			do_alert(no_memory);
 			ICMP_handler(receive_echo, HNDLR_REMOVE);
 			return;
 		}
@@ -209,7 +238,7 @@ static void do_some_work(void)
 
 		if (what == E_NOMEM || what == E_UNREACHABLE)
 		{
-			form_alert(1, "[1][ |   Problem sending packet !   ][ Hmmm ]");
+			do_alert("[1][ |   Problem sending packet !   ][ Hmmm ]");
 			KRfree(dgram);
 			ICMP_handler(receive_echo, HNDLR_REMOVE);
 			return;
@@ -225,7 +254,7 @@ static void do_some_work(void)
 		switch (response)
 		{
 		case 0:
-			if (form_alert(1, timeout) == 1)
+			if (do_alert(timeout) == 1)
 			{
 				count--;
 				break;
@@ -234,10 +263,10 @@ static void do_some_work(void)
 			return;
 		case ICMP_TTL_EXCEED:
 			sprintf(alert, format, count, hop_a, hop_b, hop_c, hop_d);
-			form_alert(1, alert);
+			do_alert(alert);
 			break;
 		case ICMP_DEST_UNREACH:
-			form_alert(1, (code == ICMP_DU_PRTCL || code == ICMP_DU_PORT) ?
+			do_alert(code == ICMP_DU_PRTCL || code == ICMP_DU_PORT ?
 					   "[3][ |   We've reached| |     the destination !  ][ Great ]" :
 					   "[1][ |   We can't get to| |     the destination !  ][ Pity ]");
 			ICMP_handler(receive_echo, HNDLR_REMOVE);
@@ -268,12 +297,12 @@ static void gem_program(void)
 
 	if (sting_drivers == 0L)
 	{
-		form_alert(1, not_there);
+		do_alert(not_there);
 		return;
 	}
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
-		form_alert(1, corrupted);
+		do_alert(corrupted);
 		return;
 	}
 
@@ -282,12 +311,18 @@ static void gem_program(void)
 
 	if (tpl != NULL)
 	{
-		sprintf(alert, found_it, tpl->module, tpl->author, tpl->version);
-		form_alert(1, alert);
-		do_some_work();
+		if (stx == NULL)
+		{
+			do_alert(no_stik);
+		} else
+		{
+			sprintf(alert, found_it, tpl->module, tpl->author, tpl->version);
+			do_alert(alert);
+			do_some_work();
+		}
 	} else
 	{
-		form_alert(1, no_module);
+		do_alert(no_module);
 	}
 }
 
@@ -296,8 +331,8 @@ int main(void)
 {
 	appl_init();
 
-	if (rsrc_load("TRACROUT.RSC") == 0)
-		form_alert(1, "[1][ No RSC File !  ][ Hmpf ]");
+	if (rsrc_load("tracrout.rsc") == 0)
+		do_alert("[1][ No RSC File !  ][ Hmpf ]");
 	else
 		gem_program();
 

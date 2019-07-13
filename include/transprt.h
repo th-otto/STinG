@@ -647,12 +647,14 @@ extern TPL *tpl;
 #define STinG_wf_wpwl(func, x1,x2,x3,x4)	((func)((x1),(x2),(x3),(x4)))
 #define STinG_wf_LBBpW(func, x1,x2,x3,x4,x5)	((func)((x1),(x2),(x3),(x4),(x5)))
 /*--------------------------------------------------------------------------*/
+
 #else	/* else __GNUC__ is defined */
+
 /*--------------------------------------------------------------------------*/
 /* The macros below allow Gnu C to function with STinG API regardless of	*/
 /* whether default 'int' size is 16 or 32 bits, despite the fact that the	*/
-/* latter setting normally causes Gnu C to pass short arguments wrongly.	*/
-/* (As defined by the standards set by Atari for TOS compatible systems.)	*/
+/* latter setting normally causes Gnu C to pass short arguments promoted to */
+/* int                                                                      */
 /*--------------------------------------------------------------------------*/
 #ifndef AND_MEMORY		/* because 'osbind.h' uses similar methods... */
 #if		((__GNUC__ > 2) && (__GNUC_MINOR__ > 5))
@@ -662,11 +664,7 @@ extern TPL *tpl;
 #define __extension__
 #endif
 #endif
-/*--------------------------------------------------------------------------*/
-/* The macros below allow Gnu C to function with STinG API regardless of	*/
-/* whether default 'int' size is 16 or 32 bits, despite the fact that the	*/
-/* latter setting normally causes Gnu C to pass short arguments wrongly.	*/
-/* (As defined by the standards set by Atari for TOS compatible systems.)	*/
+
 /*--------------------------------------------------------------------------*/
 #define STinG_vf_v(func)				\
 __extension__							\
