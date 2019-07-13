@@ -23,10 +23,10 @@
 extern unsigned long _PgmSize;
 #endif
 
-#define  M_YEAR    2000
-#define  M_MONTH   8
-#define  M_DAY     26
-#define  M_VERSION "01.40"
+#define  M_YEAR    2018
+#define  M_MONTH   7
+#define  M_DAY     17
+#define  M_VERSION "01.41"
 #define  M_AUTHOR  "Peter Rottengatter|     &  STinG Evolution Team"
 
 #ifdef __GNUC__

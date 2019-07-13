@@ -250,6 +250,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 		{
 			process_sync(conn, datagram);
 		}
+#if 0 /* causes immediate transfer aborts with some providers */
 		if (hdr->ack && PREC(datagram->hdr.tos) != PREC(conn->tos))
 		{
 			conn->rtrp.mode = 0;
@@ -258,6 +259,7 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 			my_conf.generic.stat_dropped++;
 			return;
 		}
+#endif
 		if (hdr->sync)
 		{
 			if (hdr->ack)
@@ -393,7 +395,11 @@ void do_arrive(CONNEC *conn, IP_DGRAM *datagram)
 			return;
 		}
 
-		if (PREC(net_data->tos) != PREC(conn->tos) || hdr->sync)
+		if (
+#if 0 /* causes immediate transfer aborts with some providers */
+		PREC(net_data->tos) != PREC(conn->tos) ||
+#endif
+			hdr->sync)
 		{
 			datagram->pkt_data = hdr;
 			datagram->pkt_length = len;
