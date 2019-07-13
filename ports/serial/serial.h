@@ -342,7 +342,7 @@ typedef struct ppp_data
 	uint8 *data;
 	int16 cp_send_len;
 	int16 length;
-	int16 mtu2;
+	uint16 mtu2;
 	int16 vjhc_max1;
 	int16 vjhc_max2;
 	char *message;

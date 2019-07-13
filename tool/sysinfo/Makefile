@@ -8,11 +8,11 @@ SRCS = \
 	$(empty)
 OBJS = $(SRCS:.c=.o)
 
-all:: sysinfo.ttp
+all:: sysinfo.tos
 
-sysinfo.ttp: $(OBJS)
+sysinfo.tos: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting/tools
-	cp -a sysinfo.ttp $(RELEASE_DIR)/sting/tools
+	cp -a sysinfo.tos $(RELEASE_DIR)/sting/tools

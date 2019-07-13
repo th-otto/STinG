@@ -64,21 +64,21 @@ static int16 send_length;
 static uint8 *send_buffer;
 
 static PORT my_port = {
-	"Centronics",
-	L_PAR_PTP,
-	FALSE,
-	0L,
-	0xffffffffUL,
-	0xffffffffUL,
-	8192,
-	8192,
-	0L,
-	NULL,
-	0L,
-	NULL,
-	0,
-	NULL,
-	NULL
+	"Centronics",   /* name */
+	L_PAR_PTP,      /* type */
+	FALSE,          /* active */
+	0,              /* flags */
+	0xffffffffUL,   /* ip_addr */
+	0xffffffffUL,   /* sub_mask */
+	8192,           /* mtu */
+	8192,           /* max_mtu */
+	0,              /* stat_sd_data */
+	NULL,           /* send */
+	0,              /* stat_rcv_data */
+	NULL,           /* receive */
+	0,              /* stat_dropped */
+	NULL,           /* driver */
+	NULL            /* next */
 };
 
 static DRIVER my_driver;

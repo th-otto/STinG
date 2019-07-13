@@ -22,8 +22,8 @@ struct port_desc {
 	uint32	  flags;			/* Type dependent operational flags 		*/
 	uint32	  ip_addr;			/* IP address of this network adapter		*/
 	uint32	  sub_mask; 		/* Subnet mask of attached network			*/
-	int16	  mtu;				/* Maximum packet size to go through		*/
-	int16	  max_mtu;			/* Maximum allowed value for mtu			*/
+	uint16	  mtu;				/* Maximum packet size to go through		*/
+	uint16	  max_mtu;			/* Maximum allowed value for mtu			*/
 	int32	  stat_sd_data; 	/* Statistics of sent data					*/
 	IP_DGRAM  *send;			/* Link to first entry in send queue		*/
 	int32	  stat_rcv_data;	/* Statistics of received data				*/

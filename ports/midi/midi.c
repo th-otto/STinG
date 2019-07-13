@@ -33,21 +33,21 @@ STX *stx;
 
 
 static PORT my_port = {
-	"MidiNet",
-	L_SER_RING,
-	FALSE,
-	0L,
-	0xffffffffUL,
-	0xffffffffUL,
-	4096,
-	4096,
-	0L,
-	NULL,
-	0L,
-	NULL,
-	0,
-	NULL,
-	NULL
+	"MidiNet",      /* name */
+	L_SER_RING,     /* type */
+	FALSE,          /* active */
+	0,              /* flags */
+	0xffffffffUL,   /* ip_addr */
+	0xffffffffUL,   /* sub_mask */
+	4096,           /* mtu */
+	4096,           /* max_mtu */
+	0,              /* stat_sd_data */
+	NULL,           /* send */
+	0,              /* stat_rcv_data */
+	NULL,           /* receive */
+	0,              /* stat_dropped */
+	NULL,           /* driver */
+	NULL            /* next */
 };
 
 static char const fault[] = "MIDI.STX : STinG extension module. Only to be started by STinG !\r\n";

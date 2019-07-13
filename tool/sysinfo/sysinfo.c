@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /*                                                                   */
 /*     STinG : List System Info Tool                                 */
@@ -19,10 +18,8 @@
 
 
 
-
-
 static DRV_LIST *sting_drivers;
-static STIK_CONFIG *config;
+static STING_CONFIG *config;
 TPL *tpl;
 STX *stx;
 
@@ -39,7 +36,7 @@ static char const port_type[][30] = {
 
 static char const not_there[] = "STinG is not loaded or enabled !";
 static char const corrupted[] = "STinG structures corrupted !";
-
+static char const no_module[] = "STinG Transport Driver not found";
 
 
 static long get_sting_cookie(void)
@@ -100,19 +97,19 @@ static void do_some_work(void)
 			if (port->driver == driv)
 				num_ports++;
 		}
-		printf("Driver \"%s\" (%d port%s)\n", driv->name, num_ports, (num_ports > 1) ? "s" : "");
+		printf("Driver \"%s\" (%d port%s)\n", driv->name, num_ports, num_ports > 1 ? "s" : "");
 		printf("  Version %s, %d/%d/%d by %s\n", driv->version,
-			   driv->date & 0x1f, (driv->date >> 5) & 0xf, 80 + ((driv->date >> 9) & 0x7f), driv->author);
+			   driv->date & 0x1f, (driv->date >> 5) & 0xf, 1980 + ((driv->date >> 9) & 0x7f), driv->author);
 		printf("  Basepage address : 0x%lx\n", (unsigned long)driv->basepage);
 		for (port = config->ports; port; port = port->next)
 		{
 			if (port->driver == driv)
 			{
-				printf("Port \"%s\" (%sctive)\n", port->name, (port->active) ? "A" : "Ina");
+				printf("Port \"%s\" (%sctive)\n", port->name, port->active ? "A" : "Ina");
 				printf("  Type : %s\n", port_type[port->type]);
 				printf("  IP-Address : %ld.%ld.%ld.%ld,", (port->ip_addr >> 24) & 0xff,
 					   (port->ip_addr >> 16) & 0xff, (port->ip_addr >> 8) & 0xff, port->ip_addr & 0xff);
-				printf("  MTU : %d  (%d maximum)\n", port->mtu, port->max_mtu);
+				printf("  MTU : %u  (%u maximum)\n", port->mtu, port->max_mtu);
 				printf("  Statistics : %ld bytes sent, %ld bytes received, %d packets dropped\n",
 					   port->stat_sd_data, port->stat_rcv_data, port->stat_dropped);
 			}
@@ -138,28 +135,39 @@ static void do_some_work(void)
 
 int main(int argc, char **argv)
 {
+	int retval = 1;
+
 	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
-	if (sting_drivers == 0L)
+	if (sting_drivers == 0)
 	{
 		puts(not_there);
-		return 1;
-	}
-	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
+	} else if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
 		puts(corrupted);
-		return 1;
+	} else
+	{
+		config = sting_drivers->cfg.sting;
+
+		tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
+		stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
+
+		/*
+		 * the stx pointer is not directly used here,
+		 * but if it is not found, the cookie is maybe from STiK,
+		 * and we should not access the config structure
+		 */
+		if (tpl != NULL && stx != NULL)
+		{
+			do_some_work();
+			retval = 0;
+		} else
+		{
+			puts(no_module);
+		}
 	}
-	
-	config = sting_drivers->cfg;
-
-	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
-	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
-
-	if (tpl != NULL && stx != NULL)
-		do_some_work();
 
 	if (argc == 0 || argv[0] == NULL || argv[0][0] == '\0')
-		getchar();
-	return 0;
+		(void) Cconin();
+	return retval;
 }

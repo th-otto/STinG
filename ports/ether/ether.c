@@ -53,21 +53,21 @@ TPL *tpl;
 STX *stx;
 
 PORT my_port = {
-	"EtherNet",
-	L_SER_BUS,
-	FALSE,
-	0L,
-	0xffffffffUL,
-	0xffffffffUL,
-	1500,
-	1500,
-	0L,
-	NULL,
-	0L,
-	NULL,
-	0,
-	NULL,
-	NULL
+	"EtherNet",     /* name */
+	L_SER_BUS,      /* type */
+	FALSE,          /* active */
+	0,              /* flags */
+	0xffffffffUL,   /* ip_addr */
+	0xffffffffUL,   /* sub_mask */
+	1500,           /* mtu */
+	1500,           /* max_mtu */
+	0,              /* stat_sd_data */
+	NULL,           /* send */
+	0,              /* stat_rcv_data */
+	NULL,           /* receive */
+	0,              /* stat_dropped */
+	NULL,           /* driver */
+	NULL            /* next */
 };
 
 static DRIVER my_driver;

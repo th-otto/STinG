@@ -25,21 +25,21 @@
 static char const internal[] = "Internal";
 
 PORT my_port = {
-	internal,
-	L_INTERNAL,
-	TRUE,
-	0L,
-	LOOPBACK,
-	0xffffffffUL,
-	32768U,
-	32768U,
-	0,
-	NULL,
-	0,
-	NULL,
-	0,
-	NULL,
-	NULL
+	internal,       /* name */
+	L_INTERNAL,     /* type */
+	TRUE,           /* active */
+	0,              /* flags */
+	LOOPBACK,       /* ip_addr */
+	0xffffffffUL,   /* sub_mask */
+	32768U,         /* mtu */
+	32768U,         /* max_mtu */
+	0,              /* stat_sd_data */
+	NULL,           /* send */
+	0,              /* stat_rcv_data */
+	NULL,           /* receive */
+	0,              /* stat_dropped */
+	NULL,           /* driver */
+	NULL            /* next */
 };
 
 static PORT *search_port(const char *port_name)
@@ -143,10 +143,10 @@ int16 cdecl cntrl_port(const char *port_name, uint32 argument, int16 code)
 		*((uint32 *) argument) = this->sub_mask;
 		break;
 	case CTL_GENERIC_GET_MTU:
-		*((int16 *) argument) = this->mtu;
+		*((uint16 *) argument) = this->mtu;
 		break;
 	case CTL_GENERIC_GET_MMTU:
-		*((int16 *) argument) = this->max_mtu;
+		*((uint16 *) argument) = this->max_mtu;
 		break;
 	case CTL_GENERIC_GET_TYPE:
 		*((int16 *) argument) = this->type;
@@ -168,11 +168,11 @@ int16 cdecl cntrl_port(const char *port_name, uint32 argument, int16 code)
 		switch (code)
 		{
 		case CTL_GENERIC_SET_MTU:
-			if ((int32)argument > this->max_mtu)
+			if (argument > this->max_mtu)
 				argument = this->max_mtu;
 			if (argument < 68)
 				argument = 68;
-			this->mtu = (int16) argument;
+			this->mtu = (uint16) argument;
 			result = E_NORMAL;
 			break;
 		case CTL_GENERIC_SET_IP:

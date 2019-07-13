@@ -38,22 +38,22 @@ static int magx;
 
 
 
-static PORT init_dummy = {
-	"",
-	L_SER_PTP,
-	FALSE,
-	0,
-	0xffffffffUL,
-	0xffffffffUL,
-	4096,
-	4096,
-	0,
-	NULL,
-	0,
-	NULL,
-	0,
-	NULL,
-	NULL
+static PORT const init_dummy = {
+	NULL,           /* name */
+	L_SER_PTP,      /* type */
+	FALSE,          /* active */
+	0,              /* flags */
+	0xffffffffUL,   /* ip_addr */
+	0xffffffffUL,   /* sub_mask */
+	4096,           /* mtu */
+	4096,           /* max_mtu */
+	0,              /* stat_sd_data */
+	NULL,           /* send */
+	0,              /* stat_rcv_data */
+	NULL,           /* receive */
+	0,              /* stat_dropped */
+	NULL,           /* driver */
+	NULL            /* next */
 };
 
 static RSVF_DEV *rsvf_head;
@@ -529,16 +529,16 @@ static int16 cdecl my_cntrl(PORT *port, uint32 argument, int16 code)
 		break;
 
 	case CTL_GENERIC_SET_MTU:
-		if (argument < 68 || argument > (uint16)port->max_mtu)
+		if (argument < 68 || argument > port->max_mtu)
 			return E_PARAMETER;
 		if (status)
 		{
 			close_ppp(serial);
-			port->mtu = (int16) argument;
+			port->mtu = (uint16) argument;
 			open_ppp(serial);
 		} else
 		{
-			port->mtu = (int16) argument;
+			port->mtu = (uint16) argument;
 		}
 		result = E_NORMAL;
 		break;
