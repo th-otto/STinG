@@ -202,7 +202,7 @@ typedef  struct route_entry {
 #undef set_route_entry
 
 
-extern STIK_CONFIG conf;
+extern STING_CONFIG conf;
 extern PORT my_port;
 extern IP_PRTCL ip[];
 extern uint32 sting_clock GNU_ASM_NAME("sting_clock");

@@ -28,14 +28,14 @@ typedef struct driver
 	char magic[10];
 	DRV_HDR *cdecl (*get_drvfunc) (const char *);
 	int16 cdecl (*ETM_exec) (const char *);
-	STIK_CONFIG *cfg;
+	STING_CONFIG *cfg;
 	BASPAG *basepage;
 	DRV_HDR *layer[NUM_LAYER];
 } GENERIC;
 
 extern GENERIC cookie;
 
-STIK_CONFIG conf;
+STING_CONFIG conf;
 
 
 

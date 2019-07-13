@@ -45,7 +45,7 @@ char eff_passwd[32];
 int masque_there;
 
 static const char *all_ports[20];
-static STIK_CONFIG *conf_block;
+static STING_CONFIG *conf_block;
 static LAYER *all_layers[20];
 static ASSOC asso[20];
 static int num_asso;
@@ -91,7 +91,7 @@ int get_version(char *sting_version)
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 		return 2;
 
-	conf_block = sting_drivers->cfg;
+	conf_block = sting_drivers->cfg.sting;
 
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
 	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);

@@ -80,7 +80,7 @@ static long remove_mem(void)
 	BASPAG *sting;
 	BASPAG **process;
 	BASPAG *old_proc;
-	STIK_CONFIG *conf;
+	STING_CONFIG *conf;
 	OSHEADER *oshdr = *(OSHEADER **) 0x4f2L;
 
 	disable_interrupts();
@@ -95,7 +95,7 @@ static long remove_mem(void)
 	query_chains(NULL, &driver, &layer);
 
 	sting = (BASPAG *) sting_drivers->sting_basepage;
-	conf = sting_drivers->cfg;
+	conf = sting_drivers->cfg.sting;
 
 	*process = sting;
 
