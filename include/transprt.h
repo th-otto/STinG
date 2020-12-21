@@ -311,16 +311,16 @@ typedef struct pnta
 /*--------------------------------------------------------------------------*/
 /*	Command opcodes for cntrl_port().										*/
 /*--------------------------------------------------------------------------*/
-#define CTL_KERN_FIRST_PORT		(('K' << 8) | 'F')   /* Kernel              */
-#define CTL_KERN_NEXT_PORT		(('K' << 8) | 'N')   /* Kernel              */
-#define CTL_KERN_FIND_PORT		(('K' << 8) | 'G')   /* Kernel              */
+#define CTL_KERN_FIRST_PORT	(('K' << 8) | 'F')   /* Kernel              */
+#define CTL_KERN_NEXT_PORT	(('K' << 8) | 'N')   /* Kernel              */
+#define CTL_KERN_FIND_PORT	(('K' << 8) | 'G')   /* Kernel              */
 
-#define CTL_GENERIC_SET_IP		(('G' << 8) | 'H')   /* Kernel, all ports */
-#define CTL_GENERIC_GET_IP		(('G' << 8) | 'I')   /* Kernel, all ports */
+#define CTL_GENERIC_SET_IP	(('G' << 8) | 'H')   /* Kernel, all ports */
+#define CTL_GENERIC_GET_IP	(('G' << 8) | 'I')   /* Kernel, all ports */
 #define CTL_GENERIC_SET_MASK	(('G' << 8) | 'L')   /* Kernel, all ports */
 #define CTL_GENERIC_GET_MASK	(('G' << 8) | 'M')   /* Kernel, all ports */
-#define CTL_GENERIC_SET_MTU		(('G' << 8) | 'N')   /* Kernel, all ports */
-#define CTL_GENERIC_GET_MTU		(('G' << 8) | 'O')   /* Kernel, all ports */
+#define CTL_GENERIC_SET_MTU	(('G' << 8) | 'N')   /* Kernel, all ports */
+#define CTL_GENERIC_GET_MTU	(('G' << 8) | 'O')   /* Kernel, all ports */
 #define CTL_GENERIC_GET_MMTU	(('G' << 8) | 'P')   /* Kernel, all ports */
 #define CTL_GENERIC_GET_TYPE	(('G' << 8) | 'T')   /* Kernel, all ports */
 #define CTL_GENERIC_GET_STAT	(('G' << 8) | 'S')   /* Kernel, all ports */
@@ -330,18 +330,20 @@ typedef struct pnta
 #define CTL_SERIAL_GET_PRTCL	(('S' << 8) | 'Q')   /* Serial Driver     */
 #define CTL_SERIAL_SET_LOGBUFF	(('S' << 8) | 'L')   /* Serial Driver     */
 #define CTL_SERIAL_SET_LOGGING	(('S' << 8) | 'F')   /* Serial Driver     */
-#define CTL_SERIAL_SET_AUTH		(('S' << 8) | 'A')   /* Serial Driver     */
-#define CTL_SERIAL_SET_PAP		(('S' << 8) | 'B')   /* Serial Driver     */
+#define CTL_SERIAL_SET_AUTH	(('S' << 8) | 'A')   /* Serial Driver     */
+#define CTL_SERIAL_SET_PAP	(('S' << 8) | 'B')   /* Serial Driver     */
 #define CTL_SERIAL_INQ_STATE	(('S' << 8) | 'S')   /* Serial Driver     */
 
-#define CTL_ETHER_SET_MAC		(('E' << 8) | 'M')   /* EtherNet          */
-#define CTL_ETHER_GET_MAC		(('E' << 8) | 'N')   /* EtherNet          */
+#define CTL_ETHER_SET_MAC	(('E' << 8) | 'M')   /* EtherNet          */
+#define CTL_ETHER_GET_MAC	(('E' << 8) | 'N')   /* EtherNet          */
 #define CTL_ETHER_INQ_SUPPTYPE	(('E' << 8) | 'Q')   /* EtherNet          */
-#define CTL_ETHER_SET_TYPE		(('E' << 8) | 'T')   /* EtherNet          */
-#define CTL_ETHER_GET_TYPE		(('E' << 8) | 'U')   /* EtherNet          */
+#define CTL_ETHER_SET_TYPE	(('E' << 8) | 'T')   /* EtherNet          */
+#define CTL_ETHER_GET_TYPE	(('E' << 8) | 'U')   /* EtherNet          */
+#define CTL_ETHER_GET_STAT	(('E' << 8) | 'S')   /* Ethernet, statistics */
+#define CTL_ETHER_GET_ARP	(('E' << 8) | 'A')   /* Ethernet, ARP */
 
-#define CTL_MASQUE_SET_PORT		(('M' << 8) | 'P')   /* Masquerade        */
-#define CTL_MASQUE_GET_PORT		(('M' << 8) | 'Q')   /* Masquerade        */
+#define CTL_MASQUE_SET_PORT	(('M' << 8) | 'P')   /* Masquerade        */
+#define CTL_MASQUE_GET_PORT	(('M' << 8) | 'Q')   /* Masquerade        */
 #define CTL_MASQUE_SET_MASKIP	(('M' << 8) | 'M')   /* Masquerade        */
 #define CTL_MASQUE_GET_MASKIP	(('M' << 8) | 'N')   /* Masquerade        */
 #define CTL_MASQUE_GET_REALIP	(('M' << 8) | 'R')   /* Masquerade        */
