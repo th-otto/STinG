@@ -14,12 +14,17 @@
 
 
 /*
+ * Hardware address length, 6 bytes for Ethernet
+ */
+#define ETH_ALEN 6
+
+/*
  *   Ethernet packet header.
  */
 
 typedef  struct eth_hdr {
-     uint8   destination[6];    /* Destination hardware address             */
-     uint8   source[6];         /* Source hardware address                  */
+     uint8   destination[ETH_ALEN];    /* Destination hardware address             */
+     uint8   source[ETH_ALEN];         /* Source hardware address                  */
      uint16  type;              /* Ethernet protocol type                   */
      uint8   data[0];           /* Data block                               */
  } ETH_HDR;
@@ -43,9 +48,9 @@ typedef  struct arp_pkt {
      uint8   hardware_len;      /* Length of hardware address               */
      uint8   protocol_len;      /* Length of protocol address               */
      uint16  op_code;           /* Operation Code                           */
-     uint8   src_ether[6];      /* Sender's hardware address                */
+     uint8   src_ether[ETH_ALEN];      /* Sender's hardware address                */
      uint32  src_ip;            /* Sender's protocol address                */
-     uint8   dest_ether[6];     /* Target's hardware address                */
+     uint8   dest_ether[ETH_ALEN];     /* Target's hardware address                */
      uint32  dest_ip;           /* Target's protocol address                */
  } ARP;
 
@@ -63,7 +68,7 @@ typedef  struct arp_pkt {
 typedef  struct arp_entry {
      int16   valid;             /* Validity flag                            */
      uint32  ip_addr;           /* IP address                               */
-     uint8   ether[6];          /* EtherNet station address                 */
+     uint8   ether[ETH_ALEN];          /* EtherNet station address                 */
      struct arp_entry  *next;   /* Address of next ARP in chain             */
  } ARP_ENTRY;
 
@@ -114,7 +119,7 @@ typedef  struct rbd {
 
 typedef  struct lance_init {
      uint16  mode;              /* Mode word                                */
-     uint8   addr[6];           /* Hardware address of this Etherport       */
+     uint8   addr[ETH_ALEN];    /* Hardware address of this Etherport       */
      uint32  ladrf[2];          /* Logical address filter for multicasting  */
      DRP     rdrp;              /* Pointer to receive descriptor ring       */
      DRP     tdrp;              /* Pointer to transmit descriptor ring      */
@@ -246,10 +251,10 @@ typedef  struct bab {
 
 extern PORT my_port;
 extern BAB *this_xmit;
-extern uint8 address[6];
+extern uint8 address[ETH_ALEN];
 
 int16 xmit_dgram(IP_DGRAM *dgram, BAB *txbab);
-int16 send_dgram(IP_DGRAM *dgram, uint8 ether[6], BAB *txbab);
+int16 send_dgram(IP_DGRAM *dgram, uint8 ether[ETH_ALEN], BAB *txbab);
 int16 launch_arp(uint32 ip_address, BAB *txbab);
 int16 fetch_dgram(IP_DGRAM ** dgram);
 void recve_dgram(BAB *rxbab);

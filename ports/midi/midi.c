@@ -140,11 +140,11 @@ static int16 install(void)
 }
 
 
-int main(int argc, char **argv)
+int main(void)
 {
 	DRV_LIST *sting_drivers;
 
-	if (argc != 2 || strcmp(argv[1], "STinG_Load") != 0)
+	if (strcmp(_BasPag->p_cmdlin, "\012STinG_Load") != 0)
 	{
 		(void) Cconws(fault);
 		return 1;

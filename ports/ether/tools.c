@@ -96,14 +96,14 @@ int16 xmit_dgram(IP_DGRAM *dgram, BAB *txbab)
 }
 
 
-int16 send_dgram(IP_DGRAM *dgram, uint8 ether[6], BAB *txbab)
+int16 send_dgram(IP_DGRAM *dgram, uint8 ether[ETH_ALEN], BAB *txbab)
 {
 	ETH_HDR *ethptr;
 	uint8 *work;
 
 	ethptr = txbab->data;
-	memcpy(&ethptr->destination[0], ether, 6);
-	memcpy(&ethptr->source[0], address, 6);
+	memcpy(&ethptr->destination[0], ether, ETH_ALEN);
+	memcpy(&ethptr->source[0], address, ETH_ALEN);
 	ethptr->type = TYPE_IP;
 
 	work = &ethptr->data[0];
@@ -124,17 +124,17 @@ int16 launch_arp(uint32 ip_address, BAB *txbab)
 	ARP *arp;
 
 	ethptr = txbab->data;
-	memset(&ethptr->destination[0], 0xff, 6);
-	memcpy(&ethptr->source[0], address, 6);
+	memset(&ethptr->destination[0], 0xff, ETH_ALEN);
+	memcpy(&ethptr->source[0], address, ETH_ALEN);
 	ethptr->type = TYPE_ARP;
 
 	arp = (ARP *) & ethptr->data[0];
 	arp->hardware_space = ARP_HARD_ETHER;
-	arp->hardware_len = 6;
+	arp->hardware_len = ETH_ALEN;
 	arp->protocol_space = TYPE_IP;
 	arp->protocol_len = 4;
 	arp->op_code = 1;
-	memcpy(&arp->src_ether[0], address, 6);
+	memcpy(&arp->src_ether[0], address, ETH_ALEN);
 	arp->src_ip = my_port.ip_addr;
 	arp->dest_ip = ip_address;
 
@@ -155,7 +155,7 @@ int16 fetch_dgram(IP_DGRAM **dgram)
 }
 
 
-static void arp_enter(uint32 ip_addr, uint8 ether_addr[6])
+static void arp_enter(uint32 ip_addr, uint8 ether_addr[ETH_ALEN])
 {
 	ARP_ENTRY *walk;
 	ARP_ENTRY **previous;
@@ -165,7 +165,7 @@ static void arp_enter(uint32 ip_addr, uint8 ether_addr[6])
 	*previous = NULL;
 	walk->valid = TRUE;
 	walk->ip_addr = ip_addr;
-	memcpy(&walk->ether[0], &ether_addr[0], 6);
+	memcpy(&walk->ether[0], &ether_addr[0], ETH_ALEN);
 
 	walk->next = cache;
 	cache = walk;
@@ -182,7 +182,7 @@ static void process_arp(uint8 *buffer)
 
 	arp = (ARP *) buffer;
 
-	if (arp->hardware_space != ARP_HARD_ETHER || arp->hardware_len != 6)
+	if (arp->hardware_space != ARP_HARD_ETHER || arp->hardware_len != ETH_ALEN)
 		return;
 	if (arp->protocol_space != TYPE_IP || arp->protocol_len != 4)
 		return;
@@ -190,7 +190,7 @@ static void process_arp(uint8 *buffer)
 	if (arp_cache(arp->src_ip, &entry))
 	{
 		update = TRUE;
-		memcpy(&entry->ether[0], &arp->src_ether[0], 6);
+		memcpy(&entry->ether[0], &arp->src_ether[0], ETH_ALEN);
 	}
 
 	if (arp->dest_ip != my_port.ip_addr)
@@ -206,14 +206,14 @@ static void process_arp(uint8 *buffer)
 		return;
 
 	arp->dest_ip = arp->src_ip;
-	memcpy(&arp->dest_ether[0], &arp->src_ether[0], 6);
+	memcpy(&arp->dest_ether[0], &arp->src_ether[0], ETH_ALEN);
 	arp->src_ip = my_port.ip_addr;
-	memcpy(&arp->src_ether[0], address, 6);
+	memcpy(&arp->src_ether[0], address, ETH_ALEN);
 	arp->op_code = 2;
 
 	ethptr = this_xmit->data;
-	memcpy(&ethptr->destination[0], &arp->dest_ether[0], 6);
-	memcpy(&ethptr->source[0], &arp->src_ether[0], 6);
+	memcpy(&ethptr->destination[0], &arp->dest_ether[0], ETH_ALEN);
+	memcpy(&ethptr->source[0], &arp->src_ether[0], ETH_ALEN);
 	ethptr->type = TYPE_ARP;
 	memcpy(&ethptr->data[0], arp, sizeof(ARP));
 

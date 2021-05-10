@@ -71,7 +71,7 @@ PORT my_port = {
 };
 
 static DRIVER my_driver;
-uint8 address[6];
+uint8 address[ETH_ALEN];
 BAB *this_xmit;
 
 static TMD *tmd_array;
@@ -402,11 +402,11 @@ static int16 cdecl my_cntrl(PORT *port, uint32 argument, int16 code)
 	{
 	case CTL_ETHER_SET_MAC:
 		if (memory)
-			memcpy(&((LANCE_INIT *) memory)->addr[0], (uint8 *) argument, 6);
+			memcpy(&((LANCE_INIT *) memory)->addr[0], (uint8 *) argument, ETH_ALEN);
 		break;
 	case CTL_ETHER_GET_MAC:
 		if (memory)
-			memcpy((uint8 *) argument, &((LANCE_INIT *) memory)->addr[0], 6);
+			memcpy((uint8 *) argument, &((LANCE_INIT *) memory)->addr[0], ETH_ALEN);
 		break;
 	case CTL_ETHER_INQ_SUPPTYPE:
 		*((char ***) argument) = &hardware[0];
@@ -475,11 +475,11 @@ static void install(void)
 }
 
 
-int main(int argc, char **argv)
+int main(void)
 {
 	DRV_LIST *sting_drivers;
 
-	if (argc != 2 || strcmp(argv[1], "STinG_Load") != 0)
+	if (strcmp(_BasPag->p_cmdlin, "\012STinG_Load") != 0)
 	{
 		(void) Cconws(fault);
 		return 1;
