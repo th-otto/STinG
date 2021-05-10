@@ -107,6 +107,8 @@ static int16 compare(const char *string_1, const char *string_2, int16 number)
 			return FALSE;
 	}
 	
+	while (string_1[count] == ' ' || string_1[count] == '\t')
+		count++;
 	if (string_1[count] != '=')
 		return FALSE;
 
@@ -145,7 +147,7 @@ static int16 init_cfg(char fname[])
 	char *tmp;
 
 	if ((status = Fopen(fname, FO_READ)) < 0)
-		return -1;
+		return -4;
 	handle = (int16) status;
 
 	length = Fseek(0, handle, 2);
@@ -154,7 +156,7 @@ static int16 init_cfg(char fname[])
 	if ((cfg_ptr = (char *) Malloc(length + 3)) == NULL)
 	{
 		Fclose(handle);
-		return -1;
+		return -3;
 	}
 	status = Fread(handle, length, cfg_ptr);
 	Fclose(handle);
@@ -177,11 +179,13 @@ static int16 init_cfg(char fname[])
 			if (search_value(&work) != 0)
 			{
 				Mfree(cfg_ptr);
-				return -1;
+				puts("missing value for ALLOCMEM!");
+				return -2;
 			}
 			if ((memory = atol(work)) < 1024)
 			{
 				Mfree(cfg_ptr);
+				puts("ALLOCMEM must be at least 1024 bytes!");
 				return -2;
 			}
 			if (KRinitialize(memory) < 0)
@@ -192,8 +196,9 @@ static int16 init_cfg(char fname[])
 
 	if (count >= length)
 	{
+		puts("missing ALLOCMEM entry");
 		Mfree(cfg_ptr);
-		return -1;
+		return -2;
 	}
 
 	for (count = 0; count <= STIK_CFG_NUM; count++)
@@ -305,16 +310,20 @@ int main(void)
 
 	switch (init_cfg(def_conf))
 	{
+	case -4:
+		puts("Problem finding DEFAULT.CFG ! No installation ...");
+		uninst_PrivVio();
+		return 1;
 	case -3:
 		puts("Could not allocate enough memory ! No installation ...");
 		uninst_PrivVio();
 		return 1;
 	case -2:
-		puts("ALLOCMEM must be at least 1024 bytes ! No installation ...");
+		puts("No installation ...");
 		uninst_PrivVio();
 		return 1;
 	case -1:
-		puts("Problem finding/reading DEFAULT.CFG ! No installation ...");
+		puts("Problem reading DEFAULT.CFG ! No installation ...");
 		uninst_PrivVio();
 		return 1;
 	}
