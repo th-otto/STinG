@@ -183,26 +183,44 @@ static int16 fetch_line(char **location, ROUTE_ENTRY *route)
 			count = 98;
 	}
 
-	if (buffer[0] < '0' || '9' < buffer[0])
-		return 0;
+#define ISSPACE(c) ((c) == ' ' || (c) == '\t')
 
 	net = &buffer[0];
-	if ((mask = strchr(net, '\t')) == NULL)
+	while (ISSPACE(*net))
+		net++;
+	if (net[0] < '0' || '9' < net[0])
 		return 0;
-	*mask = '\0';
-	while (*++mask == '\t')
-		;
-	if ((port = strchr(mask, '\t')) == NULL)
-		return 0;
-	*port = '\0';
-	while (*++port == '\t')
-		;
-	if ((gate = strchr(port, '\t')) == NULL)
-		return 0;
-	*gate = '\0';
-	while (*++gate == '\t')
-		;
 
+	mask = net;
+	while (*mask && !ISSPACE(*mask))
+		mask++;
+	if (*mask)
+	{
+		*mask++ = '\0';
+		while (ISSPACE(*mask))
+			mask++;
+	}
+	
+	port = mask;
+	while (*port && !ISSPACE(*port))
+		port++;
+	if (*port)
+	{
+		*port++ = '\0';
+		while (ISSPACE(*port))
+			port++;
+	}
+
+	gate = port;
+	while (*gate && !ISSPACE(*gate))
+		gate++;
+	if (*gate)
+	{
+		*gate++ = '\0';
+		while (ISSPACE(*gate))
+			gate++;
+	}
+	
 	if (get_ip_addr(net, &route->template) == 0)
 		return 0;
 
@@ -222,6 +240,8 @@ static int16 fetch_line(char **location, ROUTE_ENTRY *route)
 		return 0;
 
 	route->template &= route->netmask;
+
+#undef ISSPACE
 
 	return 1;
 }

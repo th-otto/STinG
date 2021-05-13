@@ -69,7 +69,7 @@ void install(void)
 
 	conf.client_ip = LOOPBACK;
 	conf.max_num_ports = conf.active = 0;
-	conf.thread_rate = 10;
+	conf.thread_rate = fraction = 10;
 	conf.ports = NULL;
 	conf.drivers = NULL;
 	conf.ttl = 64;

@@ -95,21 +95,21 @@ static void get_path(void)
 }
 
 
-static int16 compare(const char *string_1, const char *string_2, int16 number)
+static int16 compare(const char *value, const char *name, int16 number)
 {
 	int16 count;
 
 	for (count = 0; count < number; count++)
 	{
-		if (toupper(string_1[count]) != toupper(string_2[count]))
+		if (toupper(value[count]) != toupper(name[count]))
 			return FALSE;
-		if (!string_1[count] || !string_2[count])
+		if (!value[count] || !name[count])
 			return FALSE;
 	}
 	
-	while (string_1[count] == ' ' || string_1[count] == '\t')
+	while (value[count] == ' ' || value[count] == '\t')
 		count++;
-	if (string_1[count] != '=')
+	if (value[count] != '=')
 		return FALSE;
 
 	return TRUE;
@@ -392,7 +392,7 @@ int16 cdecl setvstr(const char *name, const char *value)
 	{
 		if (conf.cv[count])
 		{
-			if (compare(name, conf.cv[count], length))
+			if (compare(conf.cv[count], name, length))
 				break;
 		} else
 		{
@@ -455,7 +455,7 @@ const char *cdecl getvstr(const char *name)
 	{
 		if (conf.cv[count])
 		{
-			if (compare(name, conf.cv[count], length))
+			if (compare(conf.cv[count], name, length))
 				break;
 		} else
 		{
