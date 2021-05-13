@@ -256,7 +256,7 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	uint8 type;
 	uint8 code;
 
-	if ((my_conf.generic.flags & 0x10000ul) == 0)
+	if ((my_conf.generic.flags & PROTO_DO_ICMP) == 0)
 		return FALSE;
 
 	type = *(uint8 *) dgram->pkt_data;

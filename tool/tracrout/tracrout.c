@@ -20,12 +20,8 @@
 #include "transprt.h"
 #include "layer.h"
 #include "tracrout.h"
+#include "icmp.h"
 
-
-#define  ICMP_DEST_UNREACH    3
-#define  ICMP_DU_PRTCL        2
-#define  ICMP_DU_PORT         3
-#define  ICMP_TTL_EXCEED     11
 
 #define  UDP_PORT         65530u
 
@@ -92,7 +88,7 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 
 	icmp = datagram->pkt_data;
 
-	if (*icmp != ICMP_TTL_EXCEED && *icmp != ICMP_DEST_UNREACH)
+	if (*icmp != ICMP_TIME_EXCEED && *icmp != ICMP_DEST_UNREACH)
 		return FALSE;
 
 	if (((IP_HDR *) & icmp[8])->protocol != P_UDP)
@@ -261,7 +257,7 @@ static void do_some_work(void)
 			}
 			ICMP_handler(receive_echo, HNDLR_REMOVE);
 			return;
-		case ICMP_TTL_EXCEED:
+		case ICMP_TIME_EXCEED:
 			sprintf(alert, format, count, hop_a, hop_b, hop_c, hop_d);
 			do_alert(alert);
 			break;

@@ -15,6 +15,7 @@
 #include "layer.h"
 
 #include "udp.h"
+#include "icmp.h"
 
 #ifdef __GNUC__
 #define _BasPag _base
@@ -759,13 +760,13 @@ static int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	uint8 type;
 	uint8 code;
 
-	if ((my_conf.flags & 0x10000ul) == 0)
+	if ((my_conf.flags & PROTO_DO_ICMP) == 0)
 		return FALSE;
 
 	type = *(uint8 *) dgram->pkt_data;
 	code = *((uint8 *) dgram->pkt_data + 1);
 
-	if (type != 3 && type != 4 && type != 11)
+	if (type != ICMP_DEST_UNREACH && type != ICMP_SRC_QUENCH && type != ICMP_TIME_EXCEED)
 		return FALSE;
 
 	ip = (IP_HDR *) ((uint8 *) dgram->pkt_data + 8);
@@ -795,13 +796,13 @@ static int16 cdecl do_ICMP(IP_DGRAM *dgram)
 
 		switch (type)
 		{
-		case 3:
+		case ICMP_DEST_UNREACH:
 			connect->net_error = E_UNREACHABLE;
 			break;
-		case 4:
+		case ICMP_SRC_QUENCH:
 			connect->net_error = E_CNTIMEOUT;
 			break;
-		case 11:
+		case ICMP_TIME_EXCEED:
 			connect->net_error = E_TTLEXCEED;
 			break;
 		}
@@ -891,8 +892,8 @@ static int16 install(void)
 		my_conf.flags |= read_word(config);
 	}
 	config = getvstr("UDP_ICMP");
-	my_conf.flags &= 0xfffefffful;
-	my_conf.flags |= config[0] != '0' ? 0x10000ul : 0ul;
+	my_conf.flags &= ~PROTO_DO_ICMP;
+	my_conf.flags |= config[0] != '0' ? PROTO_DO_ICMP : 0ul;
 
 	if ((last_port = my_conf.flags & 0xfffful) >= 30000)
 		last_port = 29999;

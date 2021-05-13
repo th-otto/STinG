@@ -33,6 +33,7 @@ struct lay_desc {
 	BASPAG			 *basepage; 	 /* Basepage of this module 			*/
 };
 
+#define PROTO_DO_ICMP 0x10000ul
 
 /*--------------------------------------------------------------------------*/
 

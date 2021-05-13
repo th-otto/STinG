@@ -21,15 +21,8 @@
 #include "transprt.h"
 #include "port.h"
 #include "window.h"
+#include "icmp.h"
 
-
-#define  ICMP_ECHO_REPLY      0
-#define  ICMP_ECHO            8
-
-#define  ICMP_DEST_UNREACH    3
-#define  ICMP_DU_PRTCL        2
-#define  ICMP_DU_PORT         3
-#define  ICMP_TTL_EXCEED     11
 
 #define  UDP_PORT         65530u
 
@@ -898,7 +891,7 @@ static int16 cdecl trace_echo(IP_DGRAM *datagram)
 
 	icmp = datagram->pkt_data;
 
-	if (*icmp != ICMP_TTL_EXCEED && *icmp != ICMP_DEST_UNREACH)
+	if (*icmp != ICMP_TIME_EXCEED && *icmp != ICMP_DEST_UNREACH)
 		return FALSE;
 
 	if (((IP_HDR *) & icmp[8])->protocol != P_UDP)

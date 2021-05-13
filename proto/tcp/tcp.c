@@ -981,8 +981,8 @@ static int16 install(void)
 		my_conf.generic.flags |= read_word(config);
 	}
 	config = getvstr("TCP_ICMP");
-	my_conf.generic.flags &= 0xfffefffful;
-	my_conf.generic.flags |= config[0] != '0' ? 0x10000ul : 0ul;
+	my_conf.generic.flags &= ~PROTO_DO_ICMP;
+	my_conf.generic.flags |= config[0] != '0' ? PROTO_DO_ICMP : 0ul;
 
 	config = getvstr("MSS");
 	if (config[1])

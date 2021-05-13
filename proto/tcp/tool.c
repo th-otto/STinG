@@ -16,6 +16,7 @@
 #include "layer.h"
 
 #include "tcp.h"
+#include "icmp.h"
 
 
 static uint32 ini_sequ;
@@ -257,13 +258,13 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	uint8 type;
 	uint8 code;
 
-	if ((my_conf.generic.flags & 0x10000ul) == 0)
+	if ((my_conf.generic.flags & PROTO_DO_ICMP) == 0)
 		return FALSE;
 
 	type = *(uint8 *) dgram->pkt_data;
 	code = *((uint8 *) dgram->pkt_data + 1);
 
-	if (type != 3 && type != 4 && type != 11)
+	if (type != ICMP_DEST_UNREACH && type != ICMP_SRC_QUENCH && type != ICMP_TIME_EXCEED)
 		return FALSE;
 
 	ip = (IP_HDR *) ((uint8 *) dgram->pkt_data + 8);
@@ -309,13 +310,13 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	{
 		switch (type)
 		{
-		case 3:
+		case ICMP_DEST_UNREACH:
 			connect->net_error = E_UNREACHABLE;
 			break;
-		case 4:
+		case ICMP_SRC_QUENCH:
 			connect->net_error = E_CNTIMEOUT;
 			break;
-		case 11:
+		case ICMP_TIME_EXCEED:
 			connect->net_error = E_TTLEXCEED;
 			break;
 		}

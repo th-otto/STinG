@@ -37,17 +37,17 @@ static uint16 icmp_id = 0;
 
 
 
-static uint16 layer_checksum(uint8 *packet, int16 length)
+static uint16 layer_checksum(struct icmp_header *header, int16 length)
 {
 	uint32 chksum;
 	uint16 *walk;
 	uint16 count;
 
-	*((uint16 *) packet + 1) = 0;
+	header->checksum = 0;
 
 	chksum = 0;
 
-	for (walk = (uint16 *) packet, count = 0; count < length / 2; walk++, count++)
+	for (walk = (uint16 *) header, count = 0; count < length / 2; walk++, count++)
 		chksum += *walk;
 
 	if (length & 1)
@@ -68,12 +68,13 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 	uint16 length;
 	uint16 status;
 	uint8 *packet;
+	struct icmp_header *header;
 
 	ip = dgram->hdr.ip_src;
 
 	if (ip == 0L || (ip >> 24) == 0xe0 || dgram->hdr.frag_ofst)
 	{
-		IP_discard(dgram, TRUE);
+		ICMP_discard(dgram);
 		return FALSE;
 	}
 
@@ -91,7 +92,7 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 		if ((packet = KRmalloc(length)) == NULL)
 		{
 			icmp_desc.stat_dropped++;
-			IP_discard(dgram, TRUE);
+			ICMP_discard(dgram);
 			return FALSE;
 		}
 		memcpy(packet + 8, &dgram->hdr, 20);
@@ -121,15 +122,15 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 		break;
 	default:
 		icmp_desc.stat_dropped++;
-		IP_discard(dgram, TRUE);
+		ICMP_discard(dgram);
 		return FALSE;
 	}
 
-	*(uint8 *) dgram->pkt_data = type;
-	*((uint8 *) dgram->pkt_data + 1) = code;
+	header = (struct icmp_header *)dgram->pkt_data;
+	header->type = type;
+	header->code = code;
 
-	*((uint16 *) dgram->pkt_data + 1) = 0;
-	*((uint16 *) dgram->pkt_data + 1) = layer_checksum(dgram->pkt_data, dgram->pkt_length);
+	header->checksum = layer_checksum(header, dgram->pkt_length);
 
 	dgram->hdr.length = dgram->hdr.hd_len * 4 + dgram->pkt_length;
 	dgram->hdr.ident = icmp_id++;
@@ -165,18 +166,20 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 int16 cdecl ICMP_process(IP_DGRAM *dgram)
 {
 	FUNC_LIST *walk;
+	struct icmp_header *header;
 	uint16 checksum;
+		
+	header = (struct icmp_header *)dgram->pkt_data;
 
-	checksum = *((uint16 *) dgram->pkt_data + 1);
-
-	if (checksum != layer_checksum(dgram->pkt_data, dgram->pkt_length))
+	checksum = header->checksum;
+	if (checksum != layer_checksum(header, dgram->pkt_length))
 	{
 		icmp_desc.stat_dropped++;
-		IP_discard(dgram, TRUE);
+		ICMP_discard(dgram);
 		return TRUE;
 	}
 
-	switch (*(uint8 *) dgram->pkt_data)
+	switch (header->type)
 	{
 	case ICMP_ECHO:
 		ICMP_reply(ICMP_ECHO_REPLY, 0, dgram, 0L);
@@ -198,7 +201,7 @@ int16 cdecl ICMP_process(IP_DGRAM *dgram)
 		if (walk == NULL)
 		{
 			icmp_desc.stat_dropped++;
-			IP_discard(dgram, TRUE);
+			ICMP_discard(dgram);
 		}
 	}
 
@@ -210,19 +213,21 @@ int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, const void *data, uin
 {
 	uint16 length;
 	uint8 *packet;
+	struct icmp_header *header;
 
-	if (dest == 0L || (dest >> 24) == 0xe0)
+	if (dest == 0 || (dest >> 24) == 0xe0)
 		return E_BADDNAME;
 
 	if ((packet = KRmalloc((length = 4 + dat_length) + 1)) == NULL)
 		return E_NOMEM;
 
+	header = (struct icmp_header *)packet;
 	memcpy(packet + 4, data, dat_length);
 	packet[length] = '\0';
-	*(uint8 *) packet = type;
-	*((uint8 *) packet + 1) = code;
+	header->type = type;
+	header->code = code;
 
-	*((uint16 *) packet + 1) = layer_checksum(packet, length);
+	header->checksum = layer_checksum(header, length);
 
 	if (IP_send(0, dest, 0, 1, conf.ttl, P_ICMP, icmp_id++, packet, length, NULL, 0) != E_NORMAL)
 	{
