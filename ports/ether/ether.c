@@ -70,7 +70,6 @@ PORT my_port = {
 	NULL            /* next */
 };
 
-static DRIVER my_driver;
 uint8 address[ETH_ALEN];
 BAB *this_xmit;
 
@@ -79,43 +78,42 @@ static RMD *rmd_array;
 static BAB xmit_bab[8];
 static BAB recve_bab[32];
 static BAB *this_recve;
-static long cookie;
-static uint16 ck_flag;
-static uint16 gtype;
-static char *hardware[6];
+static char *hardware[] = {
+	"PAMs EMega",
+	"PAMs VME",
+	"Riebl Mega",
+	"Riebl Mega (Mod.)",
+	"Riebl VME",
+	NULL
+};
 static int16 ctrl_type = -1;
 
 static char const fault[] = "ETHER.STX : STinG extension module. Only to be started by STinG !\r\n";
 
 
 
-static long read_cookie(void)
+static long get_jar(void)
 {
-	long *work;
-
-	ck_flag = FALSE;
-
-	work = *(long **) 0x5a0L;
-	if (work == NULL)
-		return 0;
-
-	for (; *work != 0; work += 2)
-		if (*work == cookie)
-		{
-			ck_flag = TRUE;
-			return *++work;
-		}
-
-	return -1;
+	return *((long *)0x5a0L);
 }
 
 
 static int get_cookie(long which, long *value)
 {
-	cookie = which;
-	*value = Supexec(read_cookie);
+	long *work;
 
-	return ck_flag;
+	*value = 0;
+	work = (long *)Supexec(get_jar);
+	if (work)
+	{
+		for (; *work != 0; work += 2)
+			if (*work == which)
+			{
+				*value = *++work;
+				return TRUE;
+			}
+	}
+	return FALSE;
 }
 
 
@@ -123,7 +121,7 @@ static void cdecl my_send(PORT *port)
 {
 	IP_DGRAM *dgram;
 
-	if (port != &my_port || my_port.active == 0)
+	if (port != &my_port || port->active == 0)
 		return;
 
 	cache_off();
@@ -144,7 +142,7 @@ static void cdecl my_send(PORT *port)
 
 static void cdecl my_receive(PORT *port)
 {
-	if (port != &my_port || my_port.active == 0)
+	if (port != &my_port || port->active == 0)
 		return;
 
 	cache_off();
@@ -379,8 +377,6 @@ static int fetch_addresses(int type)
 		break;
 	}
 
-	gtype = type;
-
 	return result;
 }
 
@@ -409,7 +405,7 @@ static int16 cdecl my_cntrl(PORT *port, uint32 argument, int16 code)
 			memcpy((uint8 *) argument, &((LANCE_INIT *) memory)->addr[0], ETH_ALEN);
 		break;
 	case CTL_ETHER_INQ_SUPPTYPE:
-		*((char ***) argument) = &hardware[0];
+		*((char ***) argument) = hardware;
 		break;
 	case CTL_ETHER_SET_TYPE:
 		ctrl_type = argument & 7;
@@ -454,7 +450,7 @@ static void install(void)
 	query_chains(&ports, &driver, NULL);
 
 	my_port.driver = &my_driver;
-	my_port.driver->basepage = _BasPag;
+	my_driver.basepage = _BasPag;
 
 	while (ports->next)
 		ports = ports->next;
@@ -465,13 +461,6 @@ static void install(void)
 		driver = driver->next;
 
 	driver->next = &my_driver;
-
-	hardware[0] = "PAMs EMega";
-	hardware[1] = "PAMs VME";
-	hardware[2] = "Riebl Mega";
-	hardware[3] = "Riebl Mega (Mod.)";
-	hardware[4] = "Riebl VME";
-	hardware[5] = NULL;
 }
 
 

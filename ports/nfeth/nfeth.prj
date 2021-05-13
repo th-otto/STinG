@@ -1,0 +1,24 @@
+c:\sting\nfeth.stx
+
+.C[-I..\..\include]
+
+.C[-A-]
+.C[-P-]
+.C[-M]
+.C[-K]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=1024]
+
+=
+cstart0.o
+nfeth.c
+tools.c
+nf_ops.c
+nfethasm.s
+
+pctoslib.lib
+pcstdlib.lib

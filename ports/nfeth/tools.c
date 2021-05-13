@@ -16,13 +16,12 @@
 #include "transprt.h"
 #include "port.h"
 
-#include "ether.h"
+#include "nfeth.h"
 
 
 #define  ARP_NUM     32
 #define ARP_REQUEST 1
 #define ARP_REPLY   2
-
 
 
 static ARP_ENTRY arp_entries[ARP_NUM];
@@ -57,55 +56,38 @@ static int16 arp_cache(uint32 ip_addr, ARP_ENTRY **entry)
 }
 
 
-int16 xmit_dgram(IP_DGRAM *dgram, BAB *txbab)
+static int16 launch_arp(MYPORT *port, uint32 ip_address, uint8 *data)
 {
-	ARP_ENTRY *entry;
-	int16 length;
-	uint32 network;
-	uint32 ip_address;
+	ETH_HDR *ethptr;
+	ARP *arp;
 
-	network = my_port.ip_addr & my_port.sub_mask;
+	ethptr = (ETH_HDR *)data;
+	memset(&ethptr->destination[0], 0xff, ETH_ALEN);
+	memcpy(&ethptr->source[0], port->address, ETH_ALEN);
+	ethptr->type = TYPE_ARP;
 
-	if ((dgram->hdr.ip_dest & my_port.sub_mask) == network)
-	{
-		ip_address = dgram->hdr.ip_dest;
-	} else
-	{
-		if ((dgram->ip_gateway & my_port.sub_mask) != network)
-		{
-			my_port.stat_dropped++;
-			IP_discard(dgram, TRUE);
-			return FALSE;
-		} else
-		{
-			ip_address = dgram->ip_gateway;
-		}
-	}
+	arp = (ARP *) & ethptr->data[0];
+	arp->hardware_space = ARP_HARD_ETHER;
+	arp->hardware_len = ETH_ALEN;
+	arp->protocol_space = TYPE_IP;
+	arp->protocol_len = 4;
+	arp->op_code = ARP_REQUEST;
+	memcpy(&arp->src_ether[0], port->address, ETH_ALEN);
+	arp->src_ip = port->generic.ip_addr;
+	arp->dest_ip = ip_address;
 
-	if (arp_cache(ip_address, &entry))
-		length = send_dgram(dgram, entry->ether, txbab);
-	else
-		length = launch_arp(ip_address, txbab);
-
-	length = length > 60 ? length : 60;
-	txbab->buffer.xmit_buff->bcount = -length;
-	txbab->buffer.xmit_buff->status |= DS_OWN;
-
-	IP_discard(dgram, TRUE);
-	my_port.stat_sd_data += length;
-
-	return TRUE;
+	return sizeof(ETH_HDR) + sizeof(ARP);
 }
 
 
-int16 send_dgram(IP_DGRAM *dgram, uint8 ether[ETH_ALEN], BAB *txbab)
+static int16 send_dgram(MYPORT *port, IP_DGRAM *dgram, uint8 ether[ETH_ALEN], uint8 *data)
 {
 	ETH_HDR *ethptr;
 	uint8 *work;
 
-	ethptr = txbab->data;
+	ethptr = (ETH_HDR *)data;
 	memcpy(&ethptr->destination[0], ether, ETH_ALEN);
-	memcpy(&ethptr->source[0], address, ETH_ALEN);
+	memcpy(&ethptr->source[0], port->address, ETH_ALEN);
 	ethptr->type = TYPE_IP;
 
 	work = &ethptr->data[0];
@@ -120,37 +102,52 @@ int16 send_dgram(IP_DGRAM *dgram, uint8 ether[ETH_ALEN], BAB *txbab)
 }
 
 
-int16 launch_arp(uint32 ip_address, BAB *txbab)
+int16 xmit_dgram(MYPORT *port, IP_DGRAM *dgram, uint8 *data)
 {
-	ETH_HDR *ethptr;
-	ARP *arp;
+	ARP_ENTRY *entry;
+	int16 length;
+	uint32 network;
+	uint32 ip_address;
 
-	ethptr = txbab->data;
-	memset(&ethptr->destination[0], 0xff, ETH_ALEN);
-	memcpy(&ethptr->source[0], address, ETH_ALEN);
-	ethptr->type = TYPE_ARP;
+	network = port->generic.ip_addr & port->generic.sub_mask;
 
-	arp = (ARP *) & ethptr->data[0];
-	arp->hardware_space = ARP_HARD_ETHER;
-	arp->hardware_len = ETH_ALEN;
-	arp->protocol_space = TYPE_IP;
-	arp->protocol_len = 4;
-	arp->op_code = ARP_REQUEST;
-	memcpy(&arp->src_ether[0], address, ETH_ALEN);
-	arp->src_ip = my_port.ip_addr;
-	arp->dest_ip = ip_address;
+	if ((dgram->hdr.ip_dest & port->generic.sub_mask) == network)
+	{
+		ip_address = dgram->hdr.ip_dest;
+	} else
+	{
+		if ((dgram->ip_gateway & port->generic.sub_mask) != network)
+		{
+			port->generic.stat_dropped++;
+			IP_discard(dgram, TRUE);
+			return 0;
+		} else
+		{
+			ip_address = dgram->ip_gateway;
+		}
+	}
 
-	return sizeof(ETH_HDR) + sizeof(ARP);
+	if (arp_cache(ip_address, &entry))
+		length = send_dgram(port, dgram, entry->ether, data);
+	else
+		length = launch_arp(port, ip_address, data);
+
+	length = length > 60 ? length : 60;
+
+	IP_discard(dgram, TRUE);
+	port->generic.stat_sd_data += length;
+
+	return length;
 }
 
 
-int16 fetch_dgram(IP_DGRAM **dgram)
+int16 fetch_dgram(MYPORT *port, IP_DGRAM **dgram)
 {
 	do
 	{
-		if ((*dgram = my_port.send) == NULL)
+		if ((*dgram = port->generic.send) == NULL)
 			return FALSE;
-		my_port.send = (*dgram)->next;
+		port->generic.send = (*dgram)->next;
 	} while (check_dgram_ttl(*dgram) != E_NORMAL);
 
 	return TRUE;
@@ -162,7 +159,8 @@ static void arp_enter(uint32 ip_addr, uint8 ether_addr[ETH_ALEN])
 	ARP_ENTRY *walk;
 	ARP_ENTRY **previous;
 
-	for (walk = *(previous = &cache); walk->next; walk = *(previous = &walk->next)) ;
+	for (walk = *(previous = &cache); walk->next; walk = *(previous = &walk->next))
+		;
 
 	*previous = NULL;
 	walk->valid = TRUE;
@@ -174,15 +172,14 @@ static void arp_enter(uint32 ip_addr, uint8 ether_addr[ETH_ALEN])
 }
 
 
-static void process_arp(uint8 *buffer)
+static void process_arp(MYPORT *port, ETH_HDR *ethptr)
 {
 	ARP *arp;
 	ARP_ENTRY *entry;
-	ETH_HDR *ethptr;
 	int16 update = FALSE;
 	int16 length;
 
-	arp = (ARP *) buffer;
+	arp = (ARP *) ethptr->data;
 
 	if (arp->hardware_space != ARP_HARD_ETHER || arp->hardware_len != ETH_ALEN)
 		return;
@@ -195,7 +192,7 @@ static void process_arp(uint8 *buffer)
 		memcpy(&entry->ether[0], &arp->src_ether[0], ETH_ALEN);
 	}
 
-	if (arp->dest_ip != my_port.ip_addr)
+	if (arp->dest_ip != port->generic.ip_addr)
 		return;
 
 	if (update == FALSE)
@@ -204,16 +201,12 @@ static void process_arp(uint8 *buffer)
 	if (arp->op_code == ARP_REPLY)
 		return;
 
-	if (this_xmit->buffer.xmit_buff->status & DS_OWN)
-		return;
-
 	arp->dest_ip = arp->src_ip;
 	memcpy(&arp->dest_ether[0], &arp->src_ether[0], ETH_ALEN);
-	arp->src_ip = my_port.ip_addr;
-	memcpy(&arp->src_ether[0], address, ETH_ALEN);
+	arp->src_ip = port->generic.ip_addr;
+	memcpy(&arp->src_ether[0], port->address, ETH_ALEN);
 	arp->op_code = ARP_REPLY;
 
-	ethptr = this_xmit->data;
 	memcpy(&ethptr->destination[0], &arp->dest_ether[0], ETH_ALEN);
 	memcpy(&ethptr->source[0], &arp->src_ether[0], ETH_ALEN);
 	ethptr->type = TYPE_ARP;
@@ -221,44 +214,13 @@ static void process_arp(uint8 *buffer)
 
 	length = sizeof(ETH_HDR) + sizeof(ARP);
 	length = length > 60 ? length : 60;
-	this_xmit->buffer.xmit_buff->bcount = -length;
-	this_xmit->buffer.xmit_buff->status |= DS_OWN;
 
-	this_xmit = this_xmit->next_bab;
-	my_port.stat_sd_data += length;
+	send_block(port->ethX, ethptr, length);
+	port->generic.stat_sd_data += length;
 }
 
 
-void recve_dgram(BAB *rxbab)
-{
-	ETH_HDR *ethptr;
-	int16 length;
-
-	length = rxbab->buffer.recve_buff->mcount;
-	ethptr = rxbab->data;
-
-	if ((rxbab->buffer.recve_buff->status & (DS_ERR | DS_STP | DS_ENP)) == (DS_STP | DS_ENP))
-	{
-		switch (ethptr->type)
-		{
-		case TYPE_IP:
-			retrieve_dgram(&ethptr->data[0], length);
-			break;
-		case TYPE_ARP:
-			process_arp(&ethptr->data[0]);
-			break;
-		}
-		my_port.stat_rcv_data += length;
-	} else
-	{
-		my_port.stat_dropped++;
-	}
-
-	rxbab->buffer.recve_buff->status |= DS_OWN;
-}
-
-
-void retrieve_dgram(uint8 *buffer, int16 length)
+static void retrieve_dgram(MYPORT *port, uint8 *buffer, int16 length)
 {
 	IP_DGRAM *dgram;
 	IP_DGRAM *walk;
@@ -266,7 +228,7 @@ void retrieve_dgram(uint8 *buffer, int16 length)
 
 	if ((dgram = KRmalloc(sizeof(IP_DGRAM))) == NULL)
 	{
-		my_port.stat_dropped++;
+		port->generic.stat_dropped++;
 		return;
 	}
 
@@ -276,7 +238,7 @@ void retrieve_dgram(uint8 *buffer, int16 length)
 	if (dgram->hdr.length > length || dgram->hdr.hd_len < 5 || (dgram->hdr.hd_len << 2) > length)
 	{
 		KRfree(dgram);
-		my_port.stat_dropped++;
+		port->generic.stat_dropped++;
 		return;
 	}
 
@@ -286,19 +248,39 @@ void retrieve_dgram(uint8 *buffer, int16 length)
 	if (dgram->options == NULL || dgram->pkt_data == NULL)
 	{
 		IP_discard(dgram, TRUE);
-		my_port.stat_dropped++;
+		port->generic.stat_dropped++;
 		return;
 	}
 
 	memcpy(dgram->options, buffer, dgram->opt_length);
 	memcpy(dgram->pkt_data, buffer + dgram->opt_length, dgram->pkt_length);
 
-	dgram->recvd = &my_port;
+	dgram->recvd = port;
 	dgram->next = NULL;
 	set_dgram_ttl(dgram);
 
-	for (walk = *(previous = &my_port.receive); walk; walk = *(previous = &walk->next)) ;
+	for (walk = *(previous = &port->generic.receive); walk; walk = *(previous = &walk->next))
+		;
 	*previous = dgram;
+}
+
+
+void recve_dgram(MYPORT *port, uint8 *data, int16 length)
+{
+	ETH_HDR *ethptr;
+
+	ethptr = (ETH_HDR *)data;
+
+	switch (ethptr->type)
+	{
+	case TYPE_IP:
+		retrieve_dgram(port, &ethptr->data[0], length);
+		break;
+	case TYPE_ARP:
+		process_arp(port, ethptr);
+		break;
+	}
+	port->generic.stat_rcv_data += length;
 }
 
 
