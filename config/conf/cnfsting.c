@@ -41,7 +41,8 @@ static int locate_sting(void)
 {
 	PORT *port_ptr;
 	DRV_LIST *sting_drivers;
-
+	PORT *allports;
+	
 	sting_drivers = (DRV_LIST *) Supexec(get_sting_cookie);
 
 	if (sting_drivers == 0)
@@ -56,11 +57,10 @@ static int locate_sting(void)
 	if (tpl == NULL || stx == NULL)
 		return FALSE;
 
-	if ((long) (port_ptr = (PORT *) (long)query_port("")) < 1024) /* WTF? query_port returns flag only */
-		return FALSE;
+	query_chains(&allports, NULL, NULL);
 
-	for (port_num = 0; port_ptr; port_ptr = port_ptr->next)
-		if (port_ptr->type)
+	for (port_num = 0, port_ptr = allports; port_ptr; port_ptr = port_ptr->next)
+		if (port_ptr->type != L_INTERNAL)
 			if (port_num < 12)
 				ports[port_num++] = port_ptr;
 
@@ -134,7 +134,7 @@ static int read_config_file(void)
 		} else
 		{
 			fetch_line(handle, temp);
-			ports[count]->active = (atoi(temp)) ? 1 : 0;
+			ports[count]->active = atoi(temp) ? 1 : 0;
 			fetch_line(handle, temp);
 			ports[count]->flags = hextoul(temp);
 			fetch_line(handle, temp);

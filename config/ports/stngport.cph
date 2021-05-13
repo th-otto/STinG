@@ -1,6 +1,6 @@
 Flags: bootinit
 Id: 'STiP'
-Version: 0x0113
+Version: 0x0114
 IconText: 'Networking'
 Icon: 00 60 01 e0 03 9e 01 1c 1c 01 e1 c4 70 00 3f 3c 4f 00 01 e0 40 f0 01 3c 40 0f 01 03 40 80 f0 0f 42 20 0f 31 48 80 90 c1 42 3e 48 99 40 45 24 99 40 84 80 81 59 04 40 81 59 04 40 81 41 0c 60 81 41 31 e0 81 39 c7 e0 99 07 1f ec 99 00 7f ec 81 01 ff 20 83 07 fc 20 8c 1f f0 1e b0 7f c0 01 c0
 IconColor: 0x1000

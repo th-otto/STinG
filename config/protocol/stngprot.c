@@ -259,7 +259,7 @@ static void set_sting_data(void)
 				layers[ICMP]->flags |= (int32) config.i_gmt_lag << 16;
 				break;
 			case TCP:
-				layers[TCP]->flags = config.t_beg_port | ((config.t_do_icmp) ? 0x10000L : 0L);
+				layers[TCP]->flags = config.t_beg_port | (config.t_do_icmp ? PROTO_DO_ICMP : 0L);
 				((TCP_CONF *) layers[TCP])->mss = config.t_mss;
 				((TCP_CONF *) layers[TCP])->rcv_window = config.t_rcv_win;
 				((TCP_CONF *) layers[TCP])->def_ttl = config.t_def_ttl;
@@ -267,7 +267,7 @@ static void set_sting_data(void)
 				((TCP_CONF *) layers[TCP])->max_slt = config.t_def_rtt * 4;
 				break;
 			case UDP:
-				layers[UDP]->flags = config.u_beg_port | ((config.u_do_icmp) ? 0x10000L : 0L);
+				layers[UDP]->flags = config.u_beg_port | (config.u_do_icmp ? PROTO_DO_ICMP : 0L);
 				break;
 			case RESOLVE:
 				for (cnt = 0, temp[0] = buff[3] = '\0'; cnt < 5; cnt++)
@@ -348,7 +348,7 @@ static void get_sting_data(void)
 				break;
 			case TCP:
 				config.t_beg_port = layers[TCP]->flags & 0xfffful;
-				config.t_do_icmp = (layers[TCP]->flags & 0x10000ul) ? 1 : 0;
+				config.t_do_icmp = (layers[TCP]->flags & PROTO_DO_ICMP) ? 1 : 0;
 				config.t_mss = ((TCP_CONF *) layers[TCP])->mss;
 				config.t_rcv_win = ((TCP_CONF *) layers[TCP])->rcv_window;
 				config.t_def_ttl = ((TCP_CONF *) layers[TCP])->def_ttl;
@@ -356,7 +356,7 @@ static void get_sting_data(void)
 				break;
 			case UDP:
 				config.u_beg_port = layers[UDP]->flags & 0xfffful;
-				config.u_do_icmp = (layers[UDP]->flags & 0x10000ul) ? 1 : 0;
+				config.u_do_icmp = (layers[UDP]->flags & PROTO_DO_ICMP) ? 1 : 0;
 				break;
 			case RESOLVE:
 				dns_ptr = getvstr("NAMESERVER");
@@ -623,13 +623,11 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 
 	if (!params->SkipRshFix)
 	{
-		(*params->rsh_fix) (NUM_OBS, NUM_FRSTR, NUM_FRIMG, NUM_TREE,
-							rs_object, rs_tedinfo, rs_strings, rs_iconblk,
-							rs_bitblk, rs_frstr, rs_frimg, rs_trindex, rs_imdope);
-		box = rs_object;
+		box = rs_trindex[STING];
 
 		for (count = 0; count < NUM_OBS; count++)
 		{
+			params->rsh_obfix(box, count);
 			if (box[count].ob_type & 0x7f00)
 				if ((box[count].ob_state & CROS_CHK) == CROS_CHK)
 				{

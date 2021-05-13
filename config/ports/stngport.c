@@ -33,8 +33,7 @@
 /*
  *  String for the path to the sting.prt file. Must be array, and first variable !!!
  */
-char inf_file[] = "\0.34567890123456789012345678901234567890123456789012345678901234"
-	"1234567890123456789012345678901234567890123456789012345678901234";
+char inf_file[128] = "\0:\\STING\\STING.PRT";
 
 #include "sting.rsh"
 #include "transprt.h"
@@ -90,9 +89,6 @@ static char const type_name[][30] = {
 	"IP Masquerade Pseudo Port   "
 };
 static const char *const mode_name[2] = { "  Addressing ", "  General    " };
-
-static char const no_act[] = "[1][  |   Activation of port \'%s\'   | |      failed !][ Ooops ]";
-static char const no_MAC_set[] = "[1][  |   MAC for \'%s\' cannot   | |      be set !][ Ooops ]";
 
 static _WORD const type_box[] = {
 	0, BOX_PAR1, BOX_PAR2, BOX_PAR3, BOX_PAR4, BOX_PAR5, BOX_PAR6, BOX_PAR7
@@ -226,84 +222,93 @@ static void set_value(char *conf, const char *name, const char *value)
 }
 
 
-static void get_sting_data(void)
+static void get_port_data(int count)
 {
 	uint32 number32;
 	uint16 number16;
 	int16 sign16;
-	int count;
 	char *conf;
 	char buffer[32];
 
-	for (count = 0; count < port_num; count++)
+	ports[count].settings[0] = ports[count].changed[0] = '\0';
+	conf = ports[count].settings;
+
+	set_value(conf, "ACTIVE", query_port(ports[count].port) ? "1" : "0");
+
+	cntrl_port(ports[count].port, (uint32) & number32, CTL_GENERIC_GET_IP);
+	sprintf(buffer, "%08lx", number32);
+	set_value(conf, "IP", buffer);
+
+	if (ports[count].type != L_SER_PTP)
 	{
-		ports[count].settings[0] = ports[count].changed[0] = '\0';
-		conf = ports[count].settings;
-
-		set_value(conf, "ACTIVE", query_port(ports[count].port) ? "1" : "0");
-
-		cntrl_port(ports[count].port, (uint32) & number32, CTL_GENERIC_GET_IP);
-		sprintf(buffer, "%08lx", number32);
-		set_value(conf, "IP", buffer);
-
-		if (ports[count].type != L_SER_PTP)
+		if (ports[count].type != L_PAR_PTP)
 		{
-			if (ports[count].type != L_PAR_PTP)
-			{
-				cntrl_port(ports[count].port, (uint32) & number32, CTL_GENERIC_GET_MASK);
-				sprintf(buffer, "%08lx", number32);
-				set_value(conf, "SUBMASK", buffer);
-			}
+			cntrl_port(ports[count].port, (uint32) & number32, CTL_GENERIC_GET_MASK);
+			sprintf(buffer, "%08lx", number32);
+			set_value(conf, "SUBMASK", buffer);
 		}
-
-		cntrl_port(ports[count].port, (uint32) & number16, CTL_GENERIC_GET_MTU);
-		sprintf(buffer, "%d", number16);
-		set_value(conf, "MTU", buffer);
-
-		switch (ports[count].type)
-		{
-		case L_SER_PTP:
-			cntrl_port(ports[count].port, (uint32) & number16, CTL_SERIAL_GET_PRTCL);
-			sprintf(buffer, "%d", number16);
-			set_value(conf, "PROTO", buffer);
-			break;
-		case L_PAR_PTP:
-			/* Nothing to be handled here */
-			break;
-		case L_SER_BUS:
-			cntrl_port(ports[count].port, (uint32) & sign16, CTL_ETHER_GET_TYPE);
-			sprintf(buffer, "%d", sign16);
-			set_value(conf, "TYPE", buffer);
-			if (sign16 > 0)
-			{
-				cntrl_port(ports[count].port, (uint32) & buffer[20], CTL_ETHER_GET_MAC);
-				sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", buffer[20], buffer[21],
-						buffer[22], buffer[23], buffer[24], buffer[25]);
-				set_value(conf, "MAC", buffer);
-			}
-			break;
-		case L_PAR_BUS:
-		case L_SER_RING:
-		case L_PAR_RING:
-			/* Not in use yet */
-			break;
-		case L_MASQUE:
-			cntrl_port(ports[count].port, (uint32) & number32, CTL_MASQUE_GET_PORT);
-			if (number32)
-			{
-				set_value(conf, "MASKPORT", ((PORT *) number32)->name);
-			}
-			cntrl_port(ports[count].port, (uint32) & number32, CTL_MASQUE_GET_MASKIP);
-			if (number32)
-			{
-				sprintf(buffer, "%08lx", number32);
-				set_value(conf, "MASKIP", buffer);
-			}
-			break;
-		}
-
-		ports[count].changed[0] = '\0';
 	}
+
+	cntrl_port(ports[count].port, (uint32) & number16, CTL_GENERIC_GET_MTU);
+	sprintf(buffer, "%d", number16);
+	set_value(conf, "MTU", buffer);
+
+	switch (ports[count].type)
+	{
+	case L_SER_PTP:
+		cntrl_port(ports[count].port, (uint32) & number16, CTL_SERIAL_GET_PRTCL);
+		sprintf(buffer, "%d", number16);
+		set_value(conf, "PROTO", buffer);
+		break;
+	case L_PAR_PTP:
+		/* Nothing to be handled here */
+		break;
+	case L_SER_BUS:
+		cntrl_port(ports[count].port, (uint32) & sign16, CTL_ETHER_GET_TYPE);
+		sprintf(buffer, "%d", sign16);
+		set_value(conf, "TYPE", buffer);
+		if (cntrl_port(ports[count].port, (uint32) buffer, CTL_ETHER_GET_MAC) >= 0)
+		{
+			sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x",
+				(unsigned char)buffer[0],
+				(unsigned char)buffer[1],
+				(unsigned char)buffer[2],
+				(unsigned char)buffer[3],
+				(unsigned char)buffer[4],
+				(unsigned char)buffer[5]);
+			set_value(conf, "MAC", buffer);
+		}
+		break;
+	case L_PAR_BUS:
+	case L_SER_RING:
+	case L_PAR_RING:
+		/* Not in use yet */
+		break;
+	case L_MASQUE:
+		cntrl_port(ports[count].port, (uint32) & number32, CTL_MASQUE_GET_PORT);
+		if (number32)
+		{
+			set_value(conf, "MASKPORT", ((PORT *) number32)->name);
+		}
+		cntrl_port(ports[count].port, (uint32) & number32, CTL_MASQUE_GET_MASKIP);
+		if (number32)
+		{
+			sprintf(buffer, "%08lx", number32);
+			set_value(conf, "MASKIP", buffer);
+		}
+		break;
+	}
+
+	ports[count].changed[0] = '\0';
+}
+
+
+static void get_sting_data(void)
+{
+	int count;
+
+	for (count = 0; count < port_num; count++)
+		get_port_data(count);
 }
 
 
@@ -329,7 +334,7 @@ static uint32 hextoul(const char *string)
 }
 
 
-static void set_sting_data(int alert_flag, int boot_flag)
+static int set_sting_data(int alert_flag, int boot_flag, int act_port)
 {
 	uint32 number32;
 	uint16 number16;
@@ -341,15 +346,19 @@ static void set_sting_data(int alert_flag, int boot_flag)
 	const char *prev;
 	const char *posi;
 	char buffer[32];
-
+	int locked;
+	
+	locked = 0;
 	for (count = 0; count < port_num; count++)
 	{
 		if (boot_flag)
 		{
-			conf = ports[count].settings, prev = "";
+			conf = ports[count].settings;
+			prev = "";
 		} else
 		{
-			conf = ports[count].changed, prev = ports[count].settings;
+			conf = ports[count].changed;
+			prev = ports[count].settings;
 		}
 
 		if (*conf == '\0' || strcmp(conf, prev) == 0)
@@ -358,12 +367,16 @@ static void set_sting_data(int alert_flag, int boot_flag)
 		if ((posi = chk_value(conf, prev, "IP")) != NULL)
 		{
 			if (hextoul(posi))
-				cntrl_port(ports[count].port, hextoul(posi), CTL_GENERIC_SET_IP);
+				if (cntrl_port(ports[count].port, hextoul(posi), CTL_GENERIC_SET_IP) == E_LOCKED)
+					if (count == act_port)
+						locked = 1;
 		}
 		if ((posi = chk_value(conf, prev, "SUBMASK")) != NULL)
 		{
 			if (hextoul(posi))
-				cntrl_port(ports[count].port, hextoul(posi), CTL_GENERIC_SET_MASK);
+				if (cntrl_port(ports[count].port, hextoul(posi), CTL_GENERIC_SET_MASK) == E_LOCKED)
+					if (count == act_port)
+						locked = 1;
 		}
 		if ((posi = chk_value(conf, prev, "MTU")) != NULL)
 		{
@@ -406,11 +419,13 @@ static void set_sting_data(int alert_flag, int boot_flag)
 					posi += 3;
 				}
 				cnt = cntrl_port(ports[count].port, (uint32) &buffer[0], CTL_ETHER_SET_MAC);
+				if (cnt == E_LOCKED && count == act_port)
+					locked = 1;
 				if (cnt != E_NORMAL)
 				{
 					if (alert_flag == TRUE)
 					{
-						sprintf(alert, no_MAC_set, ports[count].port);
+						sprintf(alert, rs_frstr[NO_MAC_SET], ports[count].port);
 						form_alert(1, alert);
 					}
 				}
@@ -438,6 +453,9 @@ static void set_sting_data(int alert_flag, int boot_flag)
 			break;
 		}
 
+		if (locked && count == act_port)
+			get_port_data(count);
+
 		if ((posi = chk_value(conf, prev, "ACTIVE")) != NULL)
 		{
 			if (*posi == '1')
@@ -448,7 +466,7 @@ static void set_sting_data(int alert_flag, int boot_flag)
 					{
 						if (alert_flag)
 						{
-							sprintf(alert, no_act, ports[count].port);
+							sprintf(alert, rs_frstr[NO_ACT], ports[count].port);
 							form_alert(1, alert);
 						}
 					}
@@ -460,6 +478,7 @@ static void set_sting_data(int alert_flag, int boot_flag)
 			}
 		}
 	}
+	return locked;
 }
 
 
@@ -576,7 +595,7 @@ static void save_config_file(void)
 	}
 	handle = (int) error;
 
-	(*params->CPX_Save) (buffer, 128L); /* WTF: buffer for non-volatile data is 64 bytes only */
+	(*params->CPX_Save) (buffer, sizeof(inf_file));
 
 	Fwrite(handle, 42, "#\r\n#  Do not edit this file by hand !!!\r\n#");
 
@@ -845,14 +864,21 @@ static void set_rsc_data(int act_port)
 			hard_num = 0;
 			strcpy(box[SBL_HARD].ob_spec.free_string, "Unknown");
 		}
-		if ((posi = get_value(&ports[act_port], "MAC")) == NULL)
-		{
-			buffer[0] = '\0';
-		} else
+		buffer[0] = '\0';
+		if ((posi = get_value(&ports[act_port], "MAC")) != NULL)
 		{
 			for (count = 0; count < 6; count++)
 				strncpy(&buffer[2 * count], &posi[3 * count], 2);
 			buffer[12] = '\0';
+		} else if (cntrl_port(ports[act_port].port, (uint32) buffer, CTL_ETHER_GET_MAC) >= 0)
+		{
+			sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x",
+				(unsigned char)buffer[0],
+				(unsigned char)buffer[1],
+				(unsigned char)buffer[2],
+				(unsigned char)buffer[3],
+				(unsigned char)buffer[4],
+				(unsigned char)buffer[5]);
 		}
 		strcpy(box[SBL_MAC].ob_spec.tedinfo->te_ptext, buffer);
 		break;
@@ -936,7 +962,7 @@ static _WORD cdecl cpx_call(GRECT *wind)
 			if ((*params->XGen_Alert) (SAVE_DEFAULTS))
 			{
 				get_rsc_data(act_port);
-				set_sting_data(TRUE, FALSE);
+				set_sting_data(TRUE, FALSE, act_port);
 				get_sting_data();
 				save_config_file();
 				set_rsc_data(act_port);
@@ -946,7 +972,8 @@ static _WORD cdecl cpx_call(GRECT *wind)
 			break;
 		case SET:
 			get_rsc_data(act_port);
-			set_sting_data(TRUE, FALSE);
+			if (set_sting_data(TRUE, FALSE, act_port))
+				set_rsc_data(act_port);
 			if (reload)
 			{
 				if ((type = load_routing_table()) != 0)
@@ -965,7 +992,7 @@ static _WORD cdecl cpx_call(GRECT *wind)
 			if (msg_buff[0] == WM_CLOSED)
 			{
 				get_rsc_data(act_port);
-				set_sting_data(FALSE, FALSE);
+				set_sting_data(FALSE, FALSE, act_port);
 				abort_flg = TRUE;
 			}
 			if (msg_buff[0] == AC_CLOSE)
@@ -1140,6 +1167,8 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 	if (tpl == NULL || stx == NULL)
 		return NULL;
 
+	appl_init();
+	
 	pnta.port_name = pnta_buffer;
 	pnta.name_len = 32;
 	port_num = mask_num = 0;
@@ -1184,20 +1213,18 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 		if (inf_file[0] != '\0' && *getvstr("CONFSTING") == '0')
 		{
 			load_config_file();
-			set_sting_data(FALSE, TRUE);
+			set_sting_data(FALSE, TRUE, -1);
 		}
 		return (CPXINFO *)1;
 	}
 
 	if (!params->SkipRshFix)
 	{
-		(*params->rsh_fix) (NUM_OBS, NUM_FRSTR, NUM_FRIMG, NUM_TREE,
-								rs_object, rs_tedinfo, rs_strings, rs_iconblk,
-								rs_bitblk, rs_frstr, rs_frimg, rs_trindex, rs_imdope);
-		box = rs_object;
+		box = rs_trindex[STING];
 
 		for (count = 0; count < NUM_OBS; count++)
 		{
+			params->rsh_obfix(box, count);
 			if (box[count].ob_type & 0x7f00)
 				if ((box[count].ob_state & CROS_CHK) == CROS_CHK)
 				{
