@@ -238,9 +238,12 @@ static int collect_drivers(void)
 
 	for (walk = my_drivers; walk != NULL; walk = walk->next)
 	{
+		int len;
+
 		number++;
-		if (max_len < (int)strlen(walk->name))
-			max_len = (int)strlen(walk->name);
+		len = (int)strlen(walk->name);
+		if (max_len < len)
+			max_len = len;
 	}
 
 	if (number == 0)
@@ -352,27 +355,29 @@ static _WORD cdecl cpx_call(GRECT *wind)
 			if ((count = collect_protocols()) == 0)
 				break;
 			choice = (*parameters->Popup) ((const char *const *)ptrs, count, -1, IBM, &rect, wind);
+			if (choice != -1)
+			{
+				decode_date(prots[choice]->date);
+				version = prots[choice]->version;
+				sprintf(alert, template, prots[choice]->name, *version == '0' ? version + 1 : version,
+						dat_str, prots[choice]->author);
+				form_alert(1, alert);
+			}
 			KRfree(ptrs);
-			if (choice == -1)
-				break;
-			decode_date(prots[choice]->date);
-			version = prots[choice]->version;
-			sprintf(alert, template, prots[choice]->name, *version == '0' ? version + 1 : version,
-					dat_str, prots[choice]->author);
-			form_alert(1, alert);
 			break;
 		case DRIVERS:
 			if ((count = collect_drivers()) == 0)
 				break;
 			choice = (*parameters->Popup) ((const char *const *)ptrs, count, -1, IBM, &rect, wind);
+			if (choice != -1)
+			{
+				decode_date(drivs[choice]->date);
+				version = drivs[choice]->version;
+				sprintf(alert, template, drivs[choice]->name, *version == '0' ? version + 1 : version,
+						dat_str, drivs[choice]->author);
+				form_alert(1, alert);
+			}
 			KRfree(ptrs);
-			if (choice == -1)
-				break;
-			decode_date(drivs[choice]->date);
-			version = drivs[choice]->version;
-			sprintf(alert, template, drivs[choice]->name, *version == '0' ? version + 1 : version,
-					dat_str, drivs[choice]->author);
-			form_alert(1, alert);
 			break;
 		case MEMORY:
 			count = (Supexec(get_blocks)) ? 3 : 2;
@@ -495,6 +500,8 @@ CPXINFO *cdecl cpx_init(XCPB *para)
 
 	if (tpl == NULL || stx == NULL)
 		return NULL;
+
+	appl_init();
 
 	if (parameters->booting)
 	{
