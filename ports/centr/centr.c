@@ -81,8 +81,6 @@ static PORT my_port = {
 	NULL            /* next */
 };
 
-static DRIVER my_driver;
-
 static char const fault[] = "CENTR.STX : STinG extension module. Only to be started by STinG !\r\n";
 
 
@@ -149,7 +147,7 @@ static void cdecl my_send(PORT *port)
 	IP_DGRAM *dgram;
 	uint8 *work;
 
-	if (port->driver != &my_driver || !port->active)
+	if (port != &my_port || !port->active)
 		return;
 
 	if (sending)
@@ -201,7 +199,7 @@ static void cdecl my_receive(PORT *port)
 	int16 num_entry;
 	int16 count;
 
-	if (port->driver != &my_driver || !port->active)
+	if (port != &my_port || !port->active)
 		return;
 
 	if (recve_pend == 0)
@@ -339,7 +337,7 @@ static int16 install(void)
 	query_chains(&ports, &driver, NULL);
 
 	my_port.driver = &my_driver;
-	my_port.driver->basepage = _BasPag;
+	my_driver.basepage = _BasPag;
 
 	while (ports->next)
 		ports = ports->next;

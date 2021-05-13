@@ -51,8 +51,6 @@ static PORT my_port = {
 	NULL             /* next */
 };
 
-static DRIVER my_driver;
-
 static int ck_flag;
 static long cookie;
 
@@ -154,7 +152,8 @@ static int16 install(void)
 
 	query_chains(&ports, &driver, NULL);
 
-	(my_port.driver = &my_driver)->basepage = _BasPag;
+	my_port.driver = &my_driver;
+	my_driver.basepage = _BasPag;
 
 	while (ports->next)
 		ports = ports->next;
