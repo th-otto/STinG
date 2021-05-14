@@ -20,5 +20,5 @@ clean::
 	$(RM) *.hyp *.ref
 
 release::
-	$(MKDIR) $(RELEASE_DIR)
-	cp -a sting.hyp sting.ref $(RELEASE_DIR)
+	$(MKDIR) $(RELEASE_DIR)/doc
+	cp -a sting.hyp sting.ref stingnfo.txt stfsting.txt $(RELEASE_DIR)/doc

@@ -17,4 +17,4 @@ clean distclean::
 
 release::
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a centr.stx $(RELEASE_DIR)/sting
+	cp -a centr.stx $(RELEASE_DIR)/sting/centr.sty

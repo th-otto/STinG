@@ -1,0 +1,38 @@
+                STinG v1.26 information by Ronald Andersson
+     _________________________________________________________________
+   
+STinG 1.26  (426K)
+
+         This is the second full STinG release made on these pages, and it
+         includes some changes made as late as 2000.07.06 (the release date).
+         Documentation has been improved and now includes better installation
+         guides (step-by-step) for beginners, and a full description of all
+         STinG API functions for programmers.
+
+         Since release of STinG 1.26 some modules have been updated. Note
+         that you should at least update to the latest TCP module, as this
+         affects performance of all clients.
+  __________________________________________________________________________
+
+Serial port module 1.21  (15K)
+
+         This serial port module fixes a problem with some PPP commands, not
+         used by most ISPs.  Some ISPs use them to implement 'detmon' service
+         to disconnect users who have crashed or turned off computers with a
+         modem still active.  The PPP commands are used to check if the user
+         computer is 'awake' and can send a proper PPP echo. That would cause
+         ST and STe machines (using 68000) to bomb when using an older module.
+  __________________________________________________________________________
+
+TCP 1.40  (20K)
+
+         This TCP module contains important fixes that raise efficiency of
+         all normal clients.
+  __________________________________________________________________________
+
+       Further updates and information as well as many more files and
+       utilities can be found at Ronald Andersson's STinG homepage at:
+
+                            www.ettnet.se/~dlanor
+
+  -------------------------------------------------------------------------

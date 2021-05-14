@@ -1,3 +1,5 @@
+include ../configvars
+
 SUBDIRS = logctrl logsting
 
 all clean distclean::

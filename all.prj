@@ -27,6 +27,7 @@ ports\midi\midi.prj
 ports\plip\cen_plip.prj
 ports\plip\cen_plep.prj
 ports\serial\serial.prj
+ports\nfeth\nfeth.prj
 
 proto\resolve\resolve.prj
 proto\tcp\tcp.prj

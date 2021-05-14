@@ -1,3 +1,5 @@
+include ../configvars
+
 SUBDIRS = ping save_ip shutdown sysinfo tracrout
 
 all clean distclean::

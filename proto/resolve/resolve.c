@@ -218,7 +218,8 @@ static int16 cdecl my_resolve(const char *domain_p, char **real_domain_p_p, uint
 		return result;				/* return with cache result */
 	}
 
-	for (result = 0, (server = getvstr("NAMESERVER")); (server && *server); (server = next_dip(server)))
+	server = getvstr("NAMESERVER");
+	for (result = 0; server && *server; server = next_dip(server))
 	{
 		main_dns = diptobip(server);
 		if (qtype == DNS_PTR)

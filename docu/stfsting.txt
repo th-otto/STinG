@@ -1,0 +1,373 @@
+
+                               Setting Up
+                STinG 1.26 and CAB 1.5 on a 1 mb 1040 STf
+                          ____________________
+
+                by Tony Cianfaglione <ab616@chebucto.ca>
+
+   In our user group, we have many members who are still using a plain
+'vanilla' 1 mb (non-expandable) 1040 STf.  These members would like to be
+able to access the Internet, even if it is text-only, as most ISPs today
+only offer PPP access.  Locally, we are also fortunate to have one ISP
+offering Lynx text dialup so that members currently access the Internet
+using a terminal program such as Flash or Teddy Term.
+
+   For those who wish to use the TCP/IP package, STinG v1.26 by Peter
+Rottengarter and Ronald Andersson and CAB (Crystal Atari Browser) v1.5,
+this info sheet is for you.  I have tested this setup on several 1040's
+and a Mega2 and it works very well.  I have not tried CAB v2.7 because 
+there is so much to that program that it would be difficult to fit onto a
+720k disk.  Both STinG 1.26 and CAB 1.5 in this document are run from 720k
+disks and are fully optimized (thanks to many helpful suggestions from
+Ronald Andersson).
+
+-----------------------
+
+STEP 1: (Setting up STinG 1.26)
+
+   My final configuration files are included at the end of this document
+so that you can compare them to what you have in the event you can't get
+it to work just right.
+
+   I started out by formatting 2 - 720k double sided, double density
+disks; one for STinG, the other for CAB.  You can download STinG 1.26
+directly from Ronald's homepage (at www.ettnet.se/~dlanor) or from our
+mirror site: www.chebucto.ca/Services/PDA/atariST.shtml.  Make sure you
+also download at least the 2 extra STX modules (TCP140 and Serial121 as
+they have been updated for STinG 1.26.
+
+   On the STinG disk, I created several directories:
+
+AUTO\
+CPX\
+STING\
+
+   I placed the following files in the auto directory in the following
+order so that they would load in that particular order:
+
+           DRVIN.PRG, MFP.PRG, STING.INF, STING.PRG
+
+   DRVIN.PRG and MFP.PRG are from the file: HSMODA07.LZH and STING.INF and
+STING.PRG are from the STinG zipfile.  Unzipping STinG 1.26 creates the
+various files you need in their various sub-directories.
+
+   You should get the file called XCONTROL.ACC (version 1.31 is available
+from: www.chebucto.ca/Services/PDA/atariST.shtml) and put it in your root
+directory as it is essential to load the CPX's and it will also create 
+your drop down Control Panel menu.  Once STinG is unzipped and all files
+are set up properly, your disk directory should look like this:
+
+A:\CONTROL.INF
+A:\XCONTROL.ACC
+A:\AUTO\DRVIN.PRG
+A:\AUTO\MFP.PRG
+A:\AUTO\STING.INF
+A:\AUTO\STING.PRG
+A:\CPX\SERIAL.CPX
+A:\CPX\STING.CPX
+A:\CPX\STING.PRT
+A:\CPX\STNGPORT.CPX
+A:\CPX\STNGPROT.CPX
+A:\STING\CACHE.DNS
+A:\STING\STING.HYP
+A:\STING\DEFAULT.CFG
+A:\STING\ROUTE.TAB
+A:\STING\TCP.STX
+A:\STING\UDP.STX
+A:\STING\SERIAL.STX
+A:\STING\RESOLVE.STX
+A:\STING\DIALER\DIALER.APP
+A:\STING\DIALER\DIAL.RSC
+A:\STING\DIALER\DIAL.INF
+A:\STING\DIALER\ICON.RSC
+A:\STING\DIALER\DIAL.SCR
+A:\STING\DIALER\LOCAL.FEE
+A:\STING\DIALER\LOGIN.BAT
+A:\STING\DIALER\DIAL.LOG
+A:\STING\DIALER\IP.INF
+A:\STING\DIALER\CALL_IT\CALL_IT.PC
+A:\STING\DIALER\CALL_IT\CALL_IT.PRG
+A:\STING\DIALER\REM_CTRL\REMCTRL.H
+A:\STING\DIALER\REM_CTRL\FAKE.PRG
+A:\STING\DIALER\REM_CTRL\REQUEST.PRG
+A:\STING\DIALER\DEV_KIT\LOGSTRING
+A:\STING\DIALER\TOOLS\PING.PRG
+A:\STING\DIALER\TOOLS\PING.RSC
+A:\STING\DIALER\TOOLS\TRACROUT.PRG
+A:\STING\DIALER\TOOLS\TRACROUT.RSC
+A:\STING\DIALER\TOOLS\SAVE_IP.TTP
+A:\STING\DIALER\TOOLS\SYSINFO.TTP
+A:\STING\DIALER\TOOLS\SHUTDOWN.PRG
+
+   You will notice that there are some programs missing.  Not all of the
+programs included in the STinG 1.26 archive are necessary and can be
+deleted to save precious RAM and disk space.  Make sure that data in any
+of the INF files (which are used to supply information to the program
+files) are all in uppercase (CAPITAL) letters as STinG looks for the
+uppercase letters.  Also ensure that RESOLVE.STX is loaded last.
+
+----------------------
+
+STEP 2: (Setting up CAB 1.5)
+
+   The CAB disk directory should look like this:
+
+A:\CAB\CAB.APP
+A:\CAB\CAB.INF
+A:\CAB\CAB.OVL
+A:\CAB\CAB.RSC
+A:\CAB\CABOVL.CFG
+A:\CAB\START.HTM
+A:\CAB\HOTLIST.HTM
+A:\CAB\MODULES\CAB_JPEG.OVL
+A:\CAB\CACHE\NEWCACHE
+A:\CAB\CACHE\CACHE.CAB
+A:\CAB\CACHE\ subdirectories A through Z (needed for caching files)
+
+   You should have 293,406 bytes space remaining on the disk.
+
+   Start CAB.APP *without* having the CAB.OVL present in the same folder.
+That saves some RAM, and ensures that no attempt is made to contact STinG,
+which was not booted this time around.  With some luck this should allow
+CAB to start up properly, though naturally only with offline capability.
+
+   Next go through the display settings and turn off all image displays,
+and set the RAM cache to some really low value (Try 0, it works here).
+That cache won't really be needed anyway for most text pages, and you
+can't get reliable graphics display without more RAM.  Save these new
+settings, and just to make sure, restart CAB to check that it is not
+allergic to the settings saved (which has happened on some occasions).
+
+   Next, delete any STX files that you don't need, as they will only steal
+RAM, and that may be more than just program size, if they need buffers.
+The STXs you will not need are ETHER.STX and MASQUE.STX  Since you will
+not be using multitasked STinG clients or servers either, you can also try
+setting the ALLOCMEM value in DEFAULT.CFG to a lower value, such as 50000
+or 60000.  Now reboot with the necessary STING.PRG, and XCONTROL, and the
+other stuff you want, but still avoiding wasteful RAM usage.  Don't use
+the latest version NVDI or THING desktop as they are ram wasters.
+
+-----------------------
+
+STEP 3: (Configuring the RAM and disk settings)
+
+   Ensure that you are using the 68000 version of CAB.OVL as I made the
+early mistake of copying my Falcon install over, including the 68030
+version which caused it to crash with 3 bombs.  Using the correct version 
+fixed that problem.
+
+The 68030 version is 288970 bytes.
+The 68000 version is 290040 bytes.
+
+   All other files in the CAB 1.5 package are shared, so it is only the
+program file that needs to be changed if you have the wrong one.
+
+   There are also '030 versions of some of the CAB.OVL releases.  These
+may also bomb when loaded by CAB on a 68000 machine.  It's recommended you
+test without any CAB.OVL present with CAB, either in the same folder, or
+in the 'MODULES' subfolder.  Do this to make sure that CAB itself will run
+properly, then install various CAB.OVL versions until you find one that
+works.
+
+   Set RAM CACHE to 0, left images on as a trial.  CAB 1.5 connected
+and images worked fine for first 3 pages then lockup.
+
+   Using graphics enabled, you need to flush your disk cache every 5 pages
+on average; with graphics disabled, it would be every 15 - 20 pages unless
+they are massively sized pages.
+
+   Using an SM124 or 125 monochrome monitor, I am able to enable images
+although they are monochrome.  Using an SC1224 colour monitor, I cannot
+enable monochrome or colour mode for some reason but the text version
+works well.  With or without images, just being able to surf the 'Net
+using a 1040 STf (1 mb) machine is quite encouraging.
+
+   Please note that the DIAL.LOG file in the STING\DIALER directory will
+grow with each login (successful or unsuccessful) and must be edited
+occasionally to remove the stored lines otherwise it will eat up valuable
+disk space.
+
+------------------------------------------------------
+
+The following configuration files are supplied to help in your setup:
+
+CONTROL.INF:
+
+A:\CPX\*.CPX
+0
+5
+1
+
+----------------------------------------
+
+STING.INF:
+
+A:\STING\
+
+---------------------------------------
+
+DIAL.INF:
+
+A:\STING\DIALER\
+
+---------------------------------------
+
+LOGIN.BAT:
+
+A:\STING\TOOLS\SAVE_IP.TTP A:\STING\DIALER\IP.INF Modem 1
+
+----------------------------------------
+
+START.HTM:  (this is just a small html file I created to give CAB 1.5
+something to look for as it will not seek an online page upon startup and
+will crash if you don't supply it with a start page.  The one included in
+the CAB zipfile is quite large and takes a lot of RAM and disk space so I
+am including my small start page here.)
+
+<html>
+<center>
+<h1>Welcome To STinG 1.26<br>& CAB 1.5</h1>
+<hr width=50%><center>
+Use the hotlist or enter a URL for Internet startup.
+</center></center>
+</html>
+
+----------------------------------------
+
+DEFAULT.CFG:  (the MSS may differ with your ISP.  The one supplied works
+with mine.  You can check with your ISP for their settings).
+
+#
+#  This is the STinG relevant stuff.
+#
+ALLOCMEM    = 50000
+#
+THREADING   = 50
+FRAG_TTL    = 60
+#
+ICMP_GMT    = -60
+ICMP_AD     = 10
+ICMP_FLAG   = 0
+#
+TCP_PORT    = 1024
+MSS         = 956
+RCV_WND     = 3824
+DEF_RTT     = 500
+DEF_TTL     = 128
+TCP_ICMP    = 1
+#
+UDP_PORT    = 1024
+UDP_ICMP    = 1
+#
+USERNAME    = 
+HOSTNAME    = 
+FULLNAME    = 
+#
+NAMESERVER  = 
+DOMAIN      = sting.org
+DNS_CACHE   = 64
+DNS_SAVE    = TRUE
+#
+PAP_ID      = 
+PAP_PASSWD  = 
+#
+#  Here starts the client relevant stuff.
+#
+# Used by the Dialer :
+#
+DIALER      = 0.0.0.0
+LOGIN_BATCH = A:\STING\DIALER\LOGIN.BAT
+#
+
+----------------------------------------
+
+DIAL.SCR:  (the MTU may differ with your ISP.  The one supplied works with
+mine.  You can check with your ISP for their settings.)
+
+#
+#
+#   General Parameters
+#
+SERIALPORT      = Modem 1
+DEF_ROUTE       = TRUE
+MASQUERADE      = FALSE
+EXEC_BATCH      = TRUE
+CIX_LOGIN       = FALSE
+RESIDENT        = FALSE
+DEBUGGING       = FALSE
+#
+#
+#   Port Parameters
+#
+CLIENT_IP       = 0.0.0.0
+MTU             = 1006
+PAP_ID          = username (if applicable)
+PAP_PASSWORD    = password (if applicable)
+PAP_PROMPT      = FALSE
+PROTOCOL        = 1
+VJHC            = TRUE
+LAN_PORT        = FALSE
+#
+#
+#   Addressing
+#
+USERNAME        = username (fill in yours)
+FULLNAME        = full name (fill in yours)
+HOSTNAME        = hostname (fill in yours)
+NAMESERVER      = your IP DNS number here (ie...123.45.67.890)
+FETCH_DNS       = FALSE
+#
+#
+#   Modem Specifics
+#
+INIT            = ATZ
+PREFIX          = ATDT
+HANGUP          = +++,ATH
+CONNECT_WAIT    = 60
+REDIAL_DELAY    = 0
+SUCCESS         = CONNECT
+FAILURE         = BUSY
+FAILURE         = NO CARRIER
+ABORT           = NO DIALTONE
+#
+#
+#   Telephone
+#
+PHONE_NUMBER    = put your ISP phone # here
+FEE_FILE        = LOCAL.FEE
+ISP_TIME        = 0, 0.00
+ISP_SENT        = 0, 0.00
+ISP_RECVD       = 0, 0.00
+#
+#
+#   Network Environment
+#
+#
+#
+#   Dial Script
+#
+FIND_TIMEOUT    = 30
+#
+DIAL_SCRIPT
+#
+
+------------------------------------------------------------------------
+
+SUPPORT URLs:
+
+Ronald Andersson:
+^^^^^^^^^^^^^^^^^
+dlanor@ettnet.se
+ICQ:38857203
+http://dlanor.atari.org/        
+http://www.ettnet.se/~dlanor/
+
+ASH homepage:
+^^^^^^^^^^^^^
+http://www.application-systems.de/
+
+Atari ST Quick FAQ:
+^^^^^^^^^^^^^^^^^^^
+http://www.megacom.net/~q-funk/ST/
+
+===============================================================================

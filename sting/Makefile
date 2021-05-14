@@ -23,6 +23,5 @@ sting.prg: $(OBJS)
 release::
 	$(MKDIR) $(RELEASE_DIR)/auto
 	$(MKDIR) $(RELEASE_DIR)/sting
-	cp -a sting.prg $(RELEASE_DIR)/auto
-	echo "C:\\STING\\" > $(RELEASE_DIR)/auto/sting.inf
+	cp -a sting.prg sting.inf $(RELEASE_DIR)/auto
 	cp -a default.cfg route.tab update.txt $(RELEASE_DIR)/sting
