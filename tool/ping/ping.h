@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        16
+ * Number of Strings:        32
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 0
  * Number of Color Icons:    0
- * Number of Tedinfos:       2
- * Number of Free Strings:   8
+ * Number of Tedinfos:       5
+ * Number of Free Strings:   7
  * Number of Free Images:    0
- * Number of Objects:        5
+ * Number of Objects:        17
  * Number of Trees:          1
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          828
+ * Total file size:          1436
  */
 
 #undef RSC_NAME
@@ -35,40 +35,48 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 16
-#define NUM_FRSTR 8
+#define NUM_STRINGS 32
+#define NUM_FRSTR 7
 #define NUM_UD 0
 #define NUM_IMAGES 0
 #define NUM_BB 0
 #define NUM_FRIMG 0
 #define NUM_IB 0
 #define NUM_CIB 0
-#define NUM_TI 2
-#define NUM_OBS 5
+#define NUM_TI 5
+#define NUM_OBS 17
 #define NUM_TREE 1
 #endif
 
 
 
 #define PING                               0 /* form/dialog */
-#define HOST                               2 /* FTEXT in tree PING */
-#define NUM                                3 /* FTEXT in tree PING */
+#define MODULE                             2 /* TEXT in tree PING */
+#define AUTHOR                             4 /* TEXT in tree PING */
+#define VERSION                            6 /* TEXT in tree PING */
+#define HOST                               7 /* FTEXT in tree PING */
+#define NUM                                8 /* FTEXT in tree PING */
+#define INFO_BOX                          10 /* BOX in tree PING */
+#define INFO_1                            11 /* STRING in tree PING */
+#define INFO_2                            12 /* STRING in tree PING */
+#define INFO_3                            13 /* STRING in tree PING */
+#define INFO_4                            14 /* STRING in tree PING */
+#define CANCEL                            15 /* BUTTON in tree PING */
+#define START                             16 /* BUTTON in tree PING */
 
-#define FOUND_IT                           0 /* Alert string */
+#define NOT_THERE                          0 /* Alert string */
 
-#define NOT_THERE                          1 /* Alert string */
+#define CORRUPTED                          1 /* Alert string */
 
-#define CORRUPTED                          2 /* Alert string */
+#define NO_MODULE                          2 /* Alert string */
 
-#define NO_MODULE                          3 /* Alert string */
+#define NO_HANDLER                         3 /* Alert string */
 
-#define NO_HANDLER                         4 /* Alert string */
+#define TAKES                              4 /* Alert string */
 
-#define TAKES                              5 /* Alert string */
+#define FIRST                              5 /* Alert string */
 
-#define FIRST                              6 /* Alert string */
-
-#define SECOND                             7 /* Alert string */
+#define SECOND                             6 /* Alert string */
 
 
 

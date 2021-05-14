@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mint/arch/nf_ops.h>
 
 #include "transprt.h"
 #include "ping.h"
@@ -32,7 +33,54 @@ static uint16 max;
 static uint16 num_packets;
 static uint32 host;
 static char alert[200];
+static int show_ping_echo;
+static _WORD next_info;
+static OBJECT *ping_tree;
+#define NUM_INFOS (INFO_4 - INFO_1 + 1)
+static char info_buf[NUM_INFOS][200];
+static volatile int info_dirty;
+static GRECT gr;
 
+
+
+
+static char *rs_frstr(_WORD num)
+{
+	char *str = NULL;
+	rsrc_gaddr(R_STRING, num, &str);
+	return str;
+}
+
+
+static OBJECT *rs_tree(_WORD num)
+{
+	OBJECT *tree = NULL;
+	rsrc_gaddr(R_TREE, num, &tree);
+	return tree;
+}
+
+
+static _WORD do_alert(const char *str)
+{
+	_WORD ret;
+	_WORD message[8];
+	_WORD dummy;
+	
+	graf_mouse(ARROW, NULL);
+	ret = form_alert(1, str);
+	/*
+	 * let other windows redraw in multitask-AES
+	 */
+	evnt_multi(MU_MESAG | MU_TIMER,
+		0, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		message,
+		0,
+		&dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
+	
+	return ret;
+}
 
 
 static long get_sting_cookie(void)
@@ -46,50 +94,14 @@ static long get_sting_cookie(void)
 		if (*work == STIK_COOKIE_MAGIC)
 			return *++work;
 
-	return (0L);
+	return 0;
 }
 
 
-static void fetch_parameters(void)
+static void set_str(OBJECT *tree, _WORD obj, const char *str)
 {
-	OBJECT *tree;
-	char txt[20];
-	_WORD x, y, w, h, c_x, c_y;
-
-	graf_mouse(ARROW, NULL);
-
-	rsrc_gaddr(R_TREE, PING, &tree);
-
-	wind_update(BEG_UPDATE);
-
-	form_center(tree, &x, &y, &w, &h);
-	c_x = x + w / 2;
-	c_y = y + h / 2;
-	form_dial(FMD_START, c_x, c_y, 0, 0, x, y, w, h);
-	form_dial(FMD_GROW, c_x, c_y, 0, 0, x, y, w, h);
-
-	strcpy(tree[HOST].ob_spec.tedinfo->te_ptext, "127  0  0  1");
-	strcpy(tree[NUM].ob_spec.tedinfo->te_ptext, "50");
-
-	objc_draw(tree, ROOT, MAX_DEPTH, x, y, w, h);
-	form_do(tree, HOST);
-
-	form_dial(FMD_SHRINK, c_x, c_y, 0, 0, x, y, w, h);
-	form_dial(FMD_FINISH, c_x, c_y, 0, 0, x, y, w, h);
-
-	wind_update(END_UPDATE);
-
-	num_packets = atoi(tree[NUM].ob_spec.tedinfo->te_ptext);
-	strcpy(txt, tree[HOST].ob_spec.tedinfo->te_ptext);
-	txt[12] = '\0';
-	h = atoi(&txt[9]);
-	txt[9] = '\0';
-	w = atoi(&txt[6]);
-	txt[6] = '\0';
-	y = atoi(&txt[3]);
-	txt[3] = '\0';
-	x = atoi(&txt[0]);
-	host = ((uint32) x << 24) | ((uint32) y << 16) | ((uint32) w << 8) | (uint32) h;
+	TEDINFO *ted = tree[obj].ob_spec.tedinfo;
+	strncpy(ted->te_ptext, str, ted->te_txtlen - 1);
 }
 
 
@@ -125,13 +137,17 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 {
 	uint16 *data;
 	uint16 delay;
-
+	uint16 sequence;
+	static char ip[20];
+	int i;
+	
 	data = datagram->pkt_data;
 
 	if (data[0] != (ICMP_ECHO_REPLY << 8) || data[2] != 0xaffeu)
 		return FALSE;
 
 	received++;
+	sequence = data[3];
 	delay = (uint16) (fetch_clock() - *(long *) &data[4]);
 
 	if (min > delay)
@@ -140,74 +156,104 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 		max = delay;
 	ave += delay;
 
+	if (show_ping_echo)
+	{
+		sprintf(ip, "%d.%d.%d.%d",
+			(int)(datagram->hdr.ip_src >> 24) & 0xff,
+			(int)(datagram->hdr.ip_src >> 16) & 0xff,
+			(int)(datagram->hdr.ip_src >> 8) & 0xff,
+			(int)(datagram->hdr.ip_src) & 0xff);
+		if (next_info == (NUM_INFOS - 1))
+		{
+			for (i = 1; i < NUM_INFOS; i++)
+				strcpy(info_buf[i - 1], info_buf[i]);
+		} else
+		{
+			next_info++;
+		}
+		sprintf(info_buf[next_info], "%5d %-15s %5u %3u %5u", datagram->pkt_length, ip, sequence, datagram->hdr.ttl, delay);
+		/*
+		 * this function is called from the timer interrupt,
+		 * and we must not call AES functions here.
+		 * Update of the dialog has to be done below.
+		 */
+		info_dirty++;
+	}
+	
 	ICMP_discard(datagram);
 
 	return TRUE;
 }
 
 
-static char *rs_frstr(int num)
+static int show_echos(OBJECT *tree, long delay)
 {
-	char *str = NULL;
-	rsrc_gaddr(R_STRING, num, &str);
-	return str;
+	_WORD events;
+	_WORD mox, moy, key, dummy;
+	_WORD msg[8];
+	int i;
+	
+	events = evnt_multi(MU_TIMER | MU_BUTTON | MU_KEYBD,
+		1, 1, 1,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		msg,
+		delay,
+		&mox, &moy, &dummy, &dummy, &key, &dummy);
+	if (info_dirty)
+	{
+		info_dirty = 0;
+		objc_draw_grect(tree, INFO_BOX, MAX_DEPTH, &gr);
+	}
+	if (events & MU_BUTTON)
+	{
+		evnt_button(1, 1, 0, &mox, &moy, &dummy, &dummy);
+		if (objc_find(tree, ROOT, MAX_DEPTH, mox, moy) == CANCEL)
+			return TRUE;
+	}
+	if (events & MU_KEYBD)
+	{
+		if ((key & 0xff) == 0x1b) /* Esc */
+			return TRUE;
+	}
+	return FALSE;
 }
 
 
-static _WORD do_alert(const char *str)
-{
-	_WORD ret;
-	_WORD message[8];
-	_WORD dummy;
-	
-	ret = form_alert(1, str);
-	/*
-	 * let other windows redraw in multitask-AES
-	 */
-	evnt_multi(MU_MESAG | MU_TIMER,
-		0, 0, 0,
-		0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0,
-		message,
-		0,
-		&dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
-	
-	return ret;
-}
-
-
-static void do_some_work(void)
+static void run_ping(OBJECT *tree)
 {
 	int count;
-
-	fetch_parameters();
-
-	if (host == 0 || num_packets == 0)
-		return;
-
+	int done;
+	
+#if 0
 	sprintf(alert, rs_frstr(TAKES), (num_packets + 1) / 10);
 	do_alert(alert);
+#endif
 
 	sent = received = 0;
 	min = 50000u;
 	ave = max = 0;
 
-	if (!ICMP_handler(receive_echo, HNDLR_SET))
-	{
-		do_alert(rs_frstr(NO_HANDLER));
-		return;
-	}
-
-	for (count = 0; count < num_packets; count++)
+	show_ping_echo = TRUE;
+	ping_tree = tree;
+	
+	done = FALSE;
+	graf_mouse(BUSY_BEE, NULL);
+	
+	for (count = 0; !done && (num_packets == 0 || count < num_packets); count++)
 	{
 		send_echo();
-		evnt_timer(100);
+		done = show_echos(tree, 1000);
 	}
 
+	/*
+	 * if not all answers have been received yet,
+	 * wait a little bit more
+	 */
 	for (count = 0; count < 50 && received != sent; count++)
-		evnt_timer(200);
+		done = show_echos(tree, 200);
 
-	ICMP_handler(receive_echo, HNDLR_REMOVE);
+	show_ping_echo = FALSE;
 
 	sprintf(alert, rs_frstr(FIRST), sent, received, (sent - received) * 100L / sent);
 	do_alert(alert);
@@ -217,6 +263,72 @@ static void do_some_work(void)
 		sprintf(alert, rs_frstr(SECOND), min * 5L, ave * 5L / received, max * 5L);
 		do_alert(alert);
 	}
+}
+
+
+static void do_ping_dialog(void)
+{
+	OBJECT *tree;
+	char txt[20];
+	_WORD button;
+	int i;
+	
+	graf_mouse(ARROW, NULL);
+
+	if (!ICMP_handler(receive_echo, HNDLR_SET))
+	{
+		do_alert(rs_frstr(NO_HANDLER));
+		return;
+	}
+
+	tree = rs_tree(PING);
+
+	set_str(tree, MODULE, tpl->module);
+	set_str(tree, AUTHOR, tpl->author);
+	set_str(tree, VERSION, tpl->version);
+	
+	wind_update(BEG_UPDATE);
+
+	form_center_grect(tree, &gr);
+	form_dial_grect(FMD_START, &gr, &gr);
+
+	for (i = 0; i < NUM_INFOS; i++)
+		tree[INFO_1 + i].ob_spec.free_string = info_buf[i];
+	next_info = -1;
+	
+	objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
+	
+	for (;;)
+	{
+		button = form_do(tree, HOST);
+		if (button == CANCEL)
+			break;
+		if (button == START)
+		{
+			num_packets = atoi(tree[NUM].ob_spec.tedinfo->te_ptext);
+			strcpy(txt, tree[HOST].ob_spec.tedinfo->te_ptext);
+			txt[12] = '\0';
+			host = atoi(&txt[9]) & 0xff;
+			txt[9] = '\0';
+			host |= ((uint32)atoi(&txt[6]) & 0xff) << 8;
+			txt[6] = '\0';
+			host |= ((uint32)atoi(&txt[3]) & 0xff) << 16;
+			txt[3] = '\0';
+			host |= ((uint32)atoi(&txt[0]) & 0xff) << 24;
+			if (host != 0)
+			{
+				run_ping(tree);
+			}
+			tree[button].ob_state &= ~OS_SELECTED;
+			objc_draw_grect(tree, button, MAX_DEPTH, &gr);
+		}
+	}
+	
+	form_dial_grect(FMD_FINISH, &gr, &gr);
+
+	wind_update(END_UPDATE);
+
+	ICMP_handler(receive_echo, HNDLR_REMOVE);
 }
 
 
@@ -239,9 +351,7 @@ static void gem_program(void)
 
 	if (tpl != NULL)
 	{
-		sprintf(alert, rs_frstr(FOUND_IT), tpl->module, tpl->author, tpl->version);
-		do_alert(alert);
-		do_some_work();
+		do_ping_dialog();
 	} else
 	{
 		do_alert(rs_frstr(NO_MODULE));

@@ -153,6 +153,11 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 
 	status = lock_exec(0);
 
+	/*
+	 * Add it to the tail of the internal receive queue.
+	 * These will be processed in process_dgram(),
+	 * and added to the appropriate drivers send queue.
+	 */
 	for (walk = *(previous = &my_port.receive); walk; walk = *(previous = &walk->next))
 		;
 	*previous = dgram;
@@ -182,15 +187,14 @@ int16 cdecl ICMP_process(IP_DGRAM *dgram)
 	switch (header->type)
 	{
 	case ICMP_ECHO:
-		ICMP_reply(ICMP_ECHO_REPLY, 0, dgram, 0L);
+		ICMP_reply(ICMP_ECHO_REPLY, 0, dgram, 0);
 		break;
 	case ICMP_STAMP_REQU:
-		ICMP_reply(ICMP_STAMP_REPLY, 0, dgram, 0L);
+		ICMP_reply(ICMP_STAMP_REPLY, 0, dgram, 0);
 		break;
 	case ICMP_MASK_REQU:
-		if ((icmp_desc.flags & 1) == 0)
-			break;
-		ICMP_reply(ICMP_MASK_REPLY, 0, dgram, 0L);
+		if ((icmp_desc.flags & 1) != 0)
+			ICMP_reply(ICMP_MASK_REPLY, 0, dgram, 0);
 		break;
 	default:
 		for (walk = conf.icmp; walk; walk = walk->next)
