@@ -33,7 +33,7 @@
 /*
  *  String for the path to the sting.prt file. Must be array, and first variable !!!
  */
-char inf_file[128] = "\0:\\STING\\STING.PRT";
+char inf_file[128] = "C:\\STING\\STING.PRT";
 
 #include "sting.rsh"
 #include "transprt.h"

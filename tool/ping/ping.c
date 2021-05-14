@@ -19,10 +19,7 @@
 
 #include "transprt.h"
 #include "ping.h"
-
-
-#define  ICMP_ECHO_REPLY      0
-#define  ICMP_ECHO            8
+#include "icmp.h"
 
 
 TPL *tpl;
@@ -35,14 +32,6 @@ static uint16 max;
 static uint16 num_packets;
 static uint32 host;
 static char alert[200];
-static char const not_there[] = "[1][ | STinG is not loaded or enabled ! ][ Hmmm ]";
-static char const corrupted[] = "[1][ | STinG structures corrupted ! ][ Oooops ]";
-static char const found_it[] = "[3][ | Driver \'%s\',|  by %s, found, | version %s.][ Okay ]";
-static char const no_module[] = "[1][ | STinG Transport Driver | not found ! ][ Grmbl ]";
-static char const no_handler[] = "[1][ | Cannot set ICMP handler ][ Grmbl ]";
-static char const takes[] = "[3][ | This will take a little more | | than %d seconds.][ Okay ]";
-static char const first[] = "[3][ Ping Actions :| %u packets sent | %u received | %ld %% lost.][ Okay ]";
-static char const second[] = "[3][ Ping Time Statistics : | | Minimum %5ld ms| Average %5ld ms| Maximum %5ld ms][ Okay ]";
 
 
 
@@ -64,7 +53,7 @@ static long get_sting_cookie(void)
 static void fetch_parameters(void)
 {
 	OBJECT *tree;
-	char *txt;
+	char txt[20];
 	_WORD x, y, w, h, c_x, c_y;
 
 	graf_mouse(ARROW, NULL);
@@ -91,7 +80,7 @@ static void fetch_parameters(void)
 	wind_update(END_UPDATE);
 
 	num_packets = atoi(tree[NUM].ob_spec.tedinfo->te_ptext);
-	txt = tree[HOST].ob_spec.tedinfo->te_ptext;
+	strcpy(txt, tree[HOST].ob_spec.tedinfo->te_ptext);
 	txt[12] = '\0';
 	h = atoi(&txt[9]);
 	txt[9] = '\0';
@@ -157,6 +146,14 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 }
 
 
+static char *rs_frstr(int num)
+{
+	char *str = NULL;
+	rsrc_gaddr(R_STRING, num, &str);
+	return str;
+}
+
+
 static _WORD do_alert(const char *str)
 {
 	_WORD ret;
@@ -188,7 +185,7 @@ static void do_some_work(void)
 	if (host == 0 || num_packets == 0)
 		return;
 
-	sprintf(alert, takes, (num_packets + 1) / 10);
+	sprintf(alert, rs_frstr(TAKES), (num_packets + 1) / 10);
 	do_alert(alert);
 
 	sent = received = 0;
@@ -197,7 +194,7 @@ static void do_some_work(void)
 
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
 	{
-		do_alert(no_handler);
+		do_alert(rs_frstr(NO_HANDLER));
 		return;
 	}
 
@@ -212,12 +209,12 @@ static void do_some_work(void)
 
 	ICMP_handler(receive_echo, HNDLR_REMOVE);
 
-	sprintf(alert, first, sent, received, (sent - received) * 100L / sent);
+	sprintf(alert, rs_frstr(FIRST), sent, received, (sent - received) * 100L / sent);
 	do_alert(alert);
 
 	if (received)
 	{
-		sprintf(alert, second, min * 5L, ave * 5L / received, max * 5L);
+		sprintf(alert, rs_frstr(SECOND), min * 5L, ave * 5L / received, max * 5L);
 		do_alert(alert);
 	}
 }
@@ -229,12 +226,12 @@ static void gem_program(void)
 
 	if (sting_drivers == 0)
 	{
-		do_alert(not_there);
+		do_alert(rs_frstr(NOT_THERE));
 		return;
 	}
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
-		do_alert(corrupted);
+		do_alert(rs_frstr(CORRUPTED));
 		return;
 	}
 
@@ -242,12 +239,12 @@ static void gem_program(void)
 
 	if (tpl != NULL)
 	{
-		sprintf(alert, found_it, tpl->module, tpl->author, tpl->version);
+		sprintf(alert, rs_frstr(FOUND_IT), tpl->module, tpl->author, tpl->version);
 		do_alert(alert);
 		do_some_work();
 	} else
 	{
-		do_alert(no_module);
+		do_alert(rs_frstr(NO_MODULE));
 	}
 }
 
