@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        32
+ * Number of Strings:        34
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 0
  * Number of Color Icons:    0
  * Number of Tedinfos:       5
- * Number of Free Strings:   7
+ * Number of Free Strings:   9
  * Number of Free Images:    0
  * Number of Objects:        17
  * Number of Trees:          1
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          1436
+ * Total file size:          1514
  */
 
 #undef RSC_NAME
@@ -35,8 +35,8 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 32
-#define NUM_FRSTR 7
+#define NUM_STRINGS 34
+#define NUM_FRSTR 9
 #define NUM_UD 0
 #define NUM_IMAGES 0
 #define NUM_BB 0
@@ -77,6 +77,10 @@
 #define FIRST                              5 /* Alert string */
 
 #define SECOND                             6 /* Alert string */
+
+#define NO_MULTICAST                       7 /* Alert string */
+
+#define STING_STRERROR                     8 /* Alert string */
 
 
 

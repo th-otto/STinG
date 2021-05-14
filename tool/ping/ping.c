@@ -22,6 +22,8 @@
 #include "ping.h"
 #include "icmp.h"
 
+#define	IN_CLASSD(a)		((((a)) & 0xf0000000UL) == 0xe0000000UL)
+#define	IN_MULTICAST(a)		IN_CLASSD(a)
 
 TPL *tpl;
 static DRV_LIST *sting_drivers;
@@ -40,7 +42,6 @@ static OBJECT *ping_tree;
 static char info_buf[NUM_INFOS][200];
 static volatile int info_dirty;
 static GRECT gr;
-
 
 
 
@@ -111,11 +112,12 @@ static long fetch_clock(void)
 }
 
 
-static void send_echo(void)
+static int send_echo(void)
 {
 	uint16 buffer[16];
 	static uint16 sequence = 0;
 	long *pl;
+	int16 ret;
 	
 	buffer[0] = 0xaffeu;
 	buffer[1] = sequence++;
@@ -127,9 +129,16 @@ static void send_echo(void)
 	buffer[6] = 0x0f0fu;
 	buffer[7] = 0xf0f0u;
 
-	ICMP_send(host, ICMP_ECHO, 0, buffer, 32);
+	if ((ret = ICMP_send(host, ICMP_ECHO, 0, buffer, 32)) < 0)
+	{
+		sprintf(alert, rs_frstr(STING_STRERROR), get_err_text(ret));
+		do_alert(alert);
+		return TRUE;
+	}
 
 	sent++;
+
+	return FALSE;
 }
 
 
@@ -171,7 +180,7 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 		{
 			next_info++;
 		}
-		sprintf(info_buf[next_info], "%5d %-15s %5u %3u %5u", datagram->pkt_length, ip, sequence, datagram->hdr.ttl, delay);
+		sprintf(info_buf[next_info], "%5d %-15s %5u %3u %5lu", datagram->pkt_length, ip, sequence, datagram->hdr.ttl, delay * 5L);
 		/*
 		 * this function is called from the timer interrupt,
 		 * and we must not call AES functions here.
@@ -222,7 +231,7 @@ static int show_echos(OBJECT *tree, long delay)
 
 static void run_ping(OBJECT *tree)
 {
-	int count;
+	uint16 count;
 	int done;
 	
 #if 0
@@ -240,10 +249,14 @@ static void run_ping(OBJECT *tree)
 	done = FALSE;
 	graf_mouse(BUSY_BEE, NULL);
 	
-	for (count = 0; !done && (num_packets == 0 || count < num_packets); count++)
+	if (num_packets == 0)
+		num_packets = 65534;
+	
+	for (count = 0; !done && count < num_packets; count++)
 	{
-		send_echo();
-		done = show_echos(tree, 1000);
+		done = send_echo();
+		if (!done)
+			done = show_echos(tree, 1000);
 	}
 
 	/*
@@ -275,18 +288,17 @@ static void do_ping_dialog(void)
 	
 	graf_mouse(ARROW, NULL);
 
+	tree = rs_tree(PING);
+
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
 	{
 		do_alert(rs_frstr(NO_HANDLER));
 		return;
 	}
-
-	tree = rs_tree(PING);
-
 	set_str(tree, MODULE, tpl->module);
 	set_str(tree, AUTHOR, tpl->author);
 	set_str(tree, VERSION, tpl->version);
-	
+
 	wind_update(BEG_UPDATE);
 
 	form_center_grect(tree, &gr);
@@ -317,7 +329,13 @@ static void do_ping_dialog(void)
 			host |= ((uint32)atoi(&txt[0]) & 0xff) << 24;
 			if (host != 0)
 			{
-				run_ping(tree);
+				if (IN_MULTICAST(host))
+				{
+					do_alert(rs_frstr(NO_MULTICAST));
+				} else
+				{
+					run_ping(tree);
+				}
 			}
 			tree[button].ob_state &= ~OS_SELECTED;
 			objc_draw_grect(tree, button, MAX_DEPTH, &gr);
@@ -341,21 +359,20 @@ static void gem_program(void)
 		do_alert(rs_frstr(NOT_THERE));
 		return;
 	}
+
 	if (strcmp(sting_drivers->magic, STIK_DRVR_MAGIC) != 0)
 	{
 		do_alert(rs_frstr(CORRUPTED));
 		return;
 	}
-
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
-
-	if (tpl != NULL)
-	{
-		do_ping_dialog();
-	} else
+	if (tpl == NULL)
 	{
 		do_alert(rs_frstr(NO_MODULE));
+		return;
 	}
+
+	do_ping_dialog();
 }
 
 

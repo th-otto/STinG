@@ -72,7 +72,8 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 
 	ip = dgram->hdr.ip_src;
 
-	if (ip == 0L || (ip >> 24) == 0xe0 || dgram->hdr.frag_ofst)
+	/* silently drop multicast requests */
+	if (ip == 0 || (ip >> 24) == 0xe0 || dgram->hdr.frag_ofst)
 	{
 		ICMP_discard(dgram);
 		return FALSE;
@@ -219,6 +220,7 @@ int16 cdecl ICMP_send(uint32 dest, uint8 type, uint8 code, const void *data, uin
 	uint8 *packet;
 	struct icmp_header *header;
 
+	/* silently drop multicast requests */
 	if (dest == 0 || (dest >> 24) == 0xe0)
 		return E_BADDNAME;
 
