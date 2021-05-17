@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <mint/arch/nf_ops.h>
 
 #include "transprt.h"
@@ -33,6 +34,7 @@ static uint16 min;
 static uint16 ave;
 static uint16 max;
 static uint16 num_packets;
+static int interval;
 static uint32 host;
 static char alert[200];
 static int show_ping_echo;
@@ -109,6 +111,114 @@ static void set_str(OBJECT *tree, _WORD obj, const char *str)
 static long fetch_clock(void)
 {
 	return (*(long *) 0x4baL);
+}
+
+
+/*
+ * Check whether "cp" is a valid ascii representation
+ * of an Internet address and convert to a binary address.
+ * Returns 1 if the address is valid, 0 if not.
+ * This replaces inet_addr, the return value from which
+ * cannot distinguish between failure and a local broadcast address.
+ */
+static int inet_aton(const char *cp, uint32 *addr)
+{
+	uint32 val;
+	int base;
+	int n;
+	unsigned char c;
+	unsigned long parts[4];
+	unsigned long *pp = parts;
+
+	c = *cp;
+	for (;;)
+	{
+		/*
+		 * Collect number up to ``.''.
+		 * Values are specified as for C:
+		 * 0x=hex, 0=octal, isdigit=decimal.
+		 */
+		if (!isdigit(c))
+			return 0;
+		base = 10;
+		if (c == '0')
+		{
+			c = *++cp;
+			if (c == 'x' || c == 'X')
+				base = 16, c = *++cp;
+			else
+				base = 8;
+		}
+		val = 0;
+		for (;;)
+		{
+			if (isascii(c) && isdigit(c))
+			{
+				val = (val * base) + (c - '0');
+				c = *++cp;
+			} else if (base == 16 && isascii(c) && isxdigit(c))
+			{
+				val = (val << 4) |
+					(c + 10 - (islower(c) ? 'a' : 'A'));
+				c = *++cp;
+			} else
+				break;
+		}
+		if (c == '.')
+		{
+			/*
+			 * Internet format:
+			 *	a.b.c.d
+			 *	a.b.c	(with c treated as 16 bits)
+			 *	a.b	(with b treated as 24 bits)
+			 */
+			if (pp >= parts + 3)
+				return 0;
+			*pp++ = val;
+			c = *++cp;
+		} else
+			break;
+	}
+	/*
+	 * Check for trailing characters.
+	 */
+	if (c != '\0' && (!isascii(c) || !isspace(c)))
+		return 0;
+	/*
+	 * Concoct the address according to
+	 * the number of parts specified.
+	 */
+	n = (int)(pp - parts + 1);
+	switch (n)
+	{
+	case 0:
+		return 0;		/* initial nondigit */
+
+	case 1:				/* a -- 32 bits */
+		break;
+
+	case 2:				/* a.b -- 8.24 bits */
+		if (parts[0] > 0xff || val > 0xffffffUL)
+			return 0;
+		val |= parts[0] << 24;
+		break;
+
+	case 3:				/* a.b.c -- 8.8.16 bits */
+		if (parts[0] > 0xff || parts[1] > 0xff || val > 0xffffUL)
+			return 0;
+		val |= (parts[0] << 24) | (parts[1] << 16);
+		break;
+
+	case 4:				/* a.b.c.d -- 8.8.8.8 bits */
+		if (parts[0] > 0xff || parts[1] > 0xff || parts[2] > 0xff || val > 0xff)
+			return 0;
+		val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
+		break;
+	}
+	if (addr)
+		*addr = htonl(val);
+
+	return 1;
 }
 
 
@@ -200,7 +310,6 @@ static int show_echos(OBJECT *tree, long delay)
 	_WORD events;
 	_WORD mox, moy, key, dummy;
 	_WORD msg[8];
-	int i;
 	
 	events = evnt_multi(MU_TIMER | MU_BUTTON | MU_KEYBD,
 		1, 1, 1,
@@ -234,11 +343,6 @@ static void run_ping(OBJECT *tree)
 	uint16 count;
 	int done;
 	
-#if 0
-	sprintf(alert, rs_frstr(TAKES), (num_packets + 1) / 10);
-	do_alert(alert);
-#endif
-
 	sent = received = 0;
 	min = 50000u;
 	ave = max = 0;
@@ -250,31 +354,31 @@ static void run_ping(OBJECT *tree)
 	graf_mouse(BUSY_BEE, NULL);
 	
 	if (num_packets == 0)
-		num_packets = 65534;
+		num_packets = 65534U;
 	
 	for (count = 0; !done && count < num_packets; count++)
 	{
 		done = send_echo();
 		if (!done)
-			done = show_echos(tree, 1000);
+			done = show_echos(tree, interval);
 	}
 
 	/*
 	 * if not all answers have been received yet,
 	 * wait a little bit more
 	 */
-	for (count = 0; count < 50 && received != sent; count++)
+	for (count = 0; count < 10 && received != sent; count++)
 		done = show_echos(tree, 200);
 
 	show_ping_echo = FALSE;
 
 	sprintf(alert, rs_frstr(FIRST), sent, received, (sent - received) * 100L / sent);
-	do_alert(alert);
+	set_str(tree, INFOLINE1, alert);
 
 	if (received)
 	{
 		sprintf(alert, rs_frstr(SECOND), min * 5L, ave * 5L / received, max * 5L);
-		do_alert(alert);
+		set_str(tree, INFOLINE2, alert);
 	}
 }
 
@@ -282,12 +386,9 @@ static void run_ping(OBJECT *tree)
 static void do_ping_dialog(void)
 {
 	OBJECT *tree;
-	char txt[20];
 	_WORD button;
 	int i;
 	
-	graf_mouse(ARROW, NULL);
-
 	tree = rs_tree(PING);
 
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
@@ -298,6 +399,10 @@ static void do_ping_dialog(void)
 	set_str(tree, MODULE, tpl->module);
 	set_str(tree, AUTHOR, tpl->author);
 	set_str(tree, VERSION, tpl->version);
+	set_str(tree, HOST, "127.0.0.1");
+	set_str(tree, INTERVAL, "1000");
+	set_str(tree, INFOLINE1, "");
+	set_str(tree, INFOLINE2, "");
 
 	wind_update(BEG_UPDATE);
 
@@ -308,37 +413,35 @@ static void do_ping_dialog(void)
 		tree[INFO_1 + i].ob_spec.free_string = info_buf[i];
 	next_info = -1;
 	
-	objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
-	
 	for (;;)
 	{
+		objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
+		graf_mouse(ARROW, NULL);
 		button = form_do(tree, HOST);
 		if (button == CANCEL)
 			break;
 		if (button == START)
 		{
 			num_packets = atoi(tree[NUM].ob_spec.tedinfo->te_ptext);
-			strcpy(txt, tree[HOST].ob_spec.tedinfo->te_ptext);
-			txt[12] = '\0';
-			host = atoi(&txt[9]) & 0xff;
-			txt[9] = '\0';
-			host |= ((uint32)atoi(&txt[6]) & 0xff) << 8;
-			txt[6] = '\0';
-			host |= ((uint32)atoi(&txt[3]) & 0xff) << 16;
-			txt[3] = '\0';
-			host |= ((uint32)atoi(&txt[0]) & 0xff) << 24;
-			if (host != 0)
+			interval = atoi(tree[INTERVAL].ob_spec.tedinfo->te_ptext);
+			if (inet_aton(tree[HOST].ob_spec.tedinfo->te_ptext, &host))
 			{
 				if (IN_MULTICAST(host))
 				{
 					do_alert(rs_frstr(NO_MULTICAST));
 				} else
 				{
+					set_str(tree, INFOLINE1, "");
+					set_str(tree, INFOLINE2, "");
+					objc_draw_grect(tree, INFOLINE1, MAX_DEPTH, &gr);
+					objc_draw_grect(tree, INFOLINE2, MAX_DEPTH, &gr);
 					run_ping(tree);
 				}
+			} else
+			{
+				do_alert(rs_frstr(INVALID_ADDR));
 			}
 			tree[button].ob_state &= ~OS_SELECTED;
-			objc_draw_grect(tree, button, MAX_DEPTH, &gr);
 		}
 	}
 	
