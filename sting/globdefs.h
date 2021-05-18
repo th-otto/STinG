@@ -85,13 +85,14 @@ typedef  struct route_entry {
 
 
 /*
- *   Router return values.
+ * Router return values.
+ * (must match subcodes of ICMP_DEST_UNREACH)
  */
 
-#define  NET_UNREACH     ((void *)  0L)    /* No entry for IP found         */
-#define  HOST_UNREACH    ((void *) -1L)    /* Entry found but port inactive */
-#define  NO_NETWORK      ((void *) -6L)    /* Routing table empty           */
-#define  NO_HOST         ((void *) -7L)    /* Currently unused              */
+#define  NET_UNREACH     ((void *)  0L)    /* ICMP_NET_UNREACH: No entry for IP found          */
+#define  HOST_UNREACH    ((void *) -1L)    /* ICMP_HOST_UNREACH: Entry found but port inactive */
+#define  NO_NETWORK      ((void *) -6L)    /* ICMP_NET_UNKNOWN: Routing table empty            */
+#define  NO_HOST         ((void *) -7L)    /* ICMP_HOST_UNKNOWN: Currently unused              */
 
 
 

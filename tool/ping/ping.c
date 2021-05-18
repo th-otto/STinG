@@ -262,7 +262,7 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 	
 	data = datagram->pkt_data;
 
-	if (data[0] != (ICMP_ECHO_REPLY << 8) || data[2] != 0xaffeu)
+	if (data[0] != (ICMP_ECHOREPLY << 8) || data[2] != 0xaffeu)
 		return FALSE;
 
 	received++;

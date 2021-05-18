@@ -678,7 +678,7 @@ static int16 cdecl ping_echo(IP_DGRAM *datagram)
 
 	data = datagram->pkt_data;
 
-	if (data[0] != (ICMP_ECHO_REPLY << 8) || data[2] != 0xaffeu)
+	if (data[0] != (ICMP_ECHOREPLY << 8) || data[2] != 0xaffeu)
 		return FALSE;
 
 	num_recvd++;
@@ -891,7 +891,7 @@ static int16 cdecl trace_echo(IP_DGRAM *datagram)
 
 	icmp = datagram->pkt_data;
 
-	if (*icmp != ICMP_TIME_EXCEED && *icmp != ICMP_DEST_UNREACH)
+	if (*icmp != ICMP_TIME_EXCEEDED && *icmp != ICMP_DEST_UNREACH)
 		return FALSE;
 
 	if (((IP_HDR *) & icmp[8])->protocol != P_UDP)

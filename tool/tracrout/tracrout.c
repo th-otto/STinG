@@ -96,7 +96,7 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 
 	icmp = datagram->pkt_data;
 
-	if (*icmp != ICMP_TIME_EXCEED && *icmp != ICMP_DEST_UNREACH)
+	if (*icmp != ICMP_TIME_EXCEEDED && *icmp != ICMP_DEST_UNREACH)
 		return FALSE;
 
 	if (((IP_HDR *) & icmp[8])->protocol != P_UDP)
@@ -373,7 +373,7 @@ static void do_some_work(void)
 			}
 			count = max_ttl;
 			break;
-		case ICMP_TIME_EXCEED:
+		case ICMP_TIME_EXCEEDED:
 			sprintf(alert, rs_frstr(HOP_RESULT), count, hop_a, hop_b, hop_c, hop_d);
 			do_alert(alert);
 			break;

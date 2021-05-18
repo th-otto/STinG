@@ -730,7 +730,7 @@ static int16 cdecl UDP_handler(IP_DGRAM *dgram)
 		memcpy(work, dgram->options, dgram->opt_length);
 		work += dgram->opt_length;
 		memcpy(work, dgram->pkt_data, 8);
-		ICMP_send(dgram->hdr.ip_src, 3, 3, icmp, size);
+		ICMP_send(dgram->hdr.ip_src, ICMP_DEST_UNREACH, 3, icmp, size);
 		KRfree(icmp);
 		return TRUE;
 	}
@@ -766,7 +766,7 @@ static int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	type = *(uint8 *) dgram->pkt_data;
 	code = *((uint8 *) dgram->pkt_data + 1);
 
-	if (type != ICMP_DEST_UNREACH && type != ICMP_SRC_QUENCH && type != ICMP_TIME_EXCEED)
+	if (type != ICMP_DEST_UNREACH && type != ICMP_SOURCE_QUENCH && type != ICMP_TIME_EXCEEDED)
 		return FALSE;
 
 	ip = (IP_HDR *) ((uint8 *) dgram->pkt_data + 8);
@@ -799,10 +799,10 @@ static int16 cdecl do_ICMP(IP_DGRAM *dgram)
 		case ICMP_DEST_UNREACH:
 			connect->net_error = E_UNREACHABLE;
 			break;
-		case ICMP_SRC_QUENCH:
+		case ICMP_SOURCE_QUENCH:
 			connect->net_error = E_CNTIMEOUT;
 			break;
-		case ICMP_TIME_EXCEED:
+		case ICMP_TIME_EXCEEDED:
 			connect->net_error = E_TTLEXCEED;
 			break;
 		}
