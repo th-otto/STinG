@@ -17,6 +17,7 @@ c:\sting\nfeth.stx
 cstart0.o
 nfeth.c
 tools.c
+arp.c
 nf_ops.c
 nfethasm.s
 

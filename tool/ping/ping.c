@@ -376,10 +376,10 @@ static void run_ping(OBJECT *tree)
 	set_str(tree, INFOLINE1, alert);
 
 	if (received)
-	{
 		sprintf(alert, rs_frstr(SECOND), min * 5L, ave * 5L / received, max * 5L);
-		set_str(tree, INFOLINE2, alert);
-	}
+	else
+		alert[0] = '\0';
+	set_str(tree, INFOLINE2, alert);
 }
 
 

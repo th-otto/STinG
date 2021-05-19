@@ -37,41 +37,12 @@ typedef  struct eth_hdr {
 
 /*--------------------------------------------------------------------------*/
 
+/* ARP cache */
 
-/*
- *   ARP packet structure.
- */
-
-typedef  struct arp_pkt {
-     uint16  hardware_space;    /* Hardware address space identifier        */
-     uint16  protocol_space;    /* Protocol address space identifier        */
-     uint8   hardware_len;      /* Length of hardware address               */
-     uint8   protocol_len;      /* Length of protocol address               */
-     uint16  op_code;           /* Operation Code                           */
-     uint8   src_ether[ETH_ALEN];      /* Sender's hardware address                */
-     uint32  src_ip;            /* Sender's protocol address                */
-     uint8   dest_ether[ETH_ALEN];     /* Target's hardware address                */
-     uint32  dest_ip;           /* Target's protocol address                */
- } ARP;
-
-#define  ARP_HARD_ETHER    1
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   ARP cache entry.
- */
-
-typedef  struct arp_entry {
-     int16   valid;             /* Validity flag                            */
-     uint32  ip_addr;           /* IP address                               */
-     uint8   ether[ETH_ALEN];          /* EtherNet station address                 */
-     struct arp_entry  *next;   /* Address of next ARP in chain             */
- } ARP_ENTRY;
-
+int16 arp_cache(uint32 ip_addr, uint8 ether[ETH_ALEN], int update);
+int16 launch_arp(uint32 ip_address, uint32 src_ip, uint8 address[ETH_ALEN], ETH_HDR *ethptr);
+int16 process_arp(uint32 ip_addr, uint8 address[ETH_ALEN], uint8 *buffer, ETH_HDR *ethptr);
+void arp_init(void);
 
 
 /*--------------------------------------------------------------------------*/
@@ -255,12 +226,10 @@ extern uint8 address[ETH_ALEN];
 
 int16 xmit_dgram(IP_DGRAM *dgram, BAB *txbab);
 int16 send_dgram(IP_DGRAM *dgram, uint8 ether[ETH_ALEN], BAB *txbab);
-int16 launch_arp(uint32 ip_address, BAB *txbab);
 int16 fetch_dgram(IP_DGRAM ** dgram);
 void recve_dgram(BAB *rxbab);
 void retrieve_dgram(uint8 *buffer, int16 length);
 void deplete_queue(IP_DGRAM **queue);
-void arp_init(void);
 
 
 #endif /* ETHER_H */

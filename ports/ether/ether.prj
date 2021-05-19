@@ -18,6 +18,7 @@ cstart0.o
 
 ether.c
 tools.c
+arp.c
 hard.s [-S]
 
 pctoslib.lib

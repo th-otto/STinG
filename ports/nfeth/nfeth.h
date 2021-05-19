@@ -9,13 +9,22 @@
 #define ETHER_H
 
 
-
-/*--------------------------------------------------------------------------*/
-
 /*
  * Hardware address length, 6 bytes for Ethernet
  */
 #define ETH_ALEN 6
+
+typedef struct  {
+	PORT generic;
+	int ethX;
+	uint8 address[ETH_ALEN];
+	uint32 ip_host;
+} MYPORT;
+
+#define MAX_ETH		4
+
+
+/*--------------------------------------------------------------------------*/
 
 /*
  *   Ethernet packet header.
@@ -33,90 +42,17 @@ typedef  struct eth_hdr {
 #define  TYPE_RARP    0x8035
 
 
-
 /*--------------------------------------------------------------------------*/
 
+/* ARP cache */
 
-/*
- *   ARP packet structure.
- */
-
-typedef  struct arp_pkt {
-     uint16  hardware_space;    /* Hardware address space identifier        */
-     uint16  protocol_space;    /* Protocol address space identifier        */
-     uint8   hardware_len;      /* Length of hardware address               */
-     uint8   protocol_len;      /* Length of protocol address               */
-     uint16  op_code;           /* Operation Code                           */
-     uint8   src_ether[ETH_ALEN];      /* Sender's hardware address                */
-     uint32  src_ip;            /* Sender's protocol address                */
-     uint8   dest_ether[ETH_ALEN];     /* Target's hardware address                */
-     uint32  dest_ip;           /* Target's protocol address                */
- } ARP;
-
-#define  ARP_HARD_ETHER    1
-
+int16 arp_cache(uint32 ip_addr, uint8 ether[ETH_ALEN], int update);
+int16 launch_arp(uint32 ip_address, uint32 src_ip, uint8 address[ETH_ALEN], ETH_HDR *ethhdr);
+int16 process_arp(uint32 ip_addr, uint8 address[ETH_ALEN], uint8 *buffer, ETH_HDR *ethptr);
+void arp_init(void);
 
 
 /*--------------------------------------------------------------------------*/
-
-
-/*
- *   ARP cache entry.
- */
-
-typedef  struct arp_entry {
-     int16   valid;             /* Validity flag                            */
-     uint32  ip_addr;           /* IP address                               */
-     uint8   ether[ETH_ALEN];   /* EtherNet station address                 */
-     struct arp_entry  *next;   /* Address of next ARP in chain             */
- } ARP_ENTRY;
-
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/*
- *   Hardware addresses.
- */
-
-#define  PAM_RDP              (uint16 *) 0xFECFFFF0L
-#define  PAM_RAP              (uint16 *) 0xFECFFFF2L
-#define  PAM_MEMBOT             (void *) 0xFECF0000L
-#define  PAM_IRQ
-
-#define  RIEBL_MEGA_RDP       (uint16 *) 0x00FF7000L
-#define  RIEBL_MEGA_RAP       (uint16 *) 0x00FF7002L
-#define  RIEBL_MEGA_MEMBOT      (void *) 0x00E00000L
-#define  RIEBL_MEGA_IRQ                  0x1d
-
-#define  RIEBL_HACK_RDP       (uint16 *) 0x00FF7000L
-#define  RIEBL_HACK_RAP       (uint16 *) 0x00FF7002L
-#define  RIEBL_HACK_MEMBOT      (void *) 0x00D00000L
-#define  RIEBL_HACK_IRQ                  0x1d
-
-#define  RIEBL_MSTE_RDP       (uint16 *) 0x00C0FFF0L
-#define  RIEBL_MSTE_RAP       (uint16 *) 0x00C0FFF2L
-#define  RIEBL_MSTE_MEMBOT      (void *) 0x00C10000L
-#define  RIEBL_MSTE_IRQ                  0x50
-
-#define  RIEBL_TT_RDP         (uint16 *) 0xFE00FFF0L
-#define  RIEBL_TT_RAP         (uint16 *) 0xFE00FFF2L
-#define  RIEBL_TT_MEMBOT        (void *) 0xFE010000L
-#define  RIEBL_TT_IRQ                    0x50
-
-
-
-/*--------------------------------------------------------------------------*/
-
-typedef struct  {
-	PORT generic;
-	int ethX;
-	uint8 address[ETH_ALEN];
-	uint32 ip_host;
-} MYPORT;
-
-#define MAX_ETH		4
 
 int16 xmit_dgram(MYPORT *port, IP_DGRAM *dgram, uint8 *data);
 int16 fetch_dgram(MYPORT *port, IP_DGRAM ** dgram);
