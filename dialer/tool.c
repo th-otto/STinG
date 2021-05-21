@@ -891,7 +891,7 @@ static int16 cdecl trace_echo(IP_DGRAM *datagram)
 
 	icmp = datagram->pkt_data;
 
-	if (*icmp != ICMP_TIME_EXCEEDED && *icmp != ICMP_DEST_UNREACH)
+	if (*icmp != ICMP_TIMXCEED && *icmp != ICMP_UNREACH)
 		return FALSE;
 
 	if (((IP_HDR *) & icmp[8])->protocol != P_UDP)
@@ -914,7 +914,7 @@ static int16 cdecl trace_echo(IP_DGRAM *datagram)
 	for (walk = *(previous = &router); walk; walk = *(previous = &walk->next)) ;
 	*previous = entry;
 
-	if (++act_ttl == 99 || icmp[0] == ICMP_DEST_UNREACH)
+	if (++act_ttl == 99 || icmp[0] == ICMP_UNREACH)
 		trace_timer = trace_proceed;
 
 	ICMP_discard(datagram);

@@ -84,11 +84,11 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 	case ICMP_ECHOREPLY:
 		code = 0;
 		break;
-	case ICMP_DEST_UNREACH:
-	case ICMP_SOURCE_QUENCH:
+	case ICMP_UNREACH:
+	case ICMP_SOURCEQUENCH:
 	case ICMP_REDIRECT:
-	case ICMP_TIME_EXCEEDED:
-	case ICMP_PARAMETERPROB:
+	case ICMP_TIMXCEED:
+	case ICMP_PARAMPROB:
 		length = 8 + dgram->hdr.hd_len * 4 + 8;
 		if ((packet = KRmalloc(length)) == NULL)
 		{
@@ -116,7 +116,7 @@ int16 ICMP_reply(uint8 type, uint8 code, IP_DGRAM *dgram, uint32 supple)
 		*((uint32 *) dgram->pkt_data + 4) = time_stamp;
 		dgram->pkt_length = 20;
 		break;
-	case ICMP_ADDRESSREPLY:
+	case ICMP_MASKREPLY:
 		code = 0;
 		*((uint32 *) dgram->pkt_data + 2) = ((PORT *)dgram->recvd)->sub_mask;
 		dgram->pkt_length = 12;
@@ -193,9 +193,9 @@ int16 cdecl ICMP_process(IP_DGRAM *dgram)
 	case ICMP_TIMESTAMP:
 		ICMP_reply(ICMP_TIMESTAMPREPLY, 0, dgram, 0);
 		break;
-	case ICMP_ADDRESS:
+	case ICMP_MASKREQ:
 		if ((icmp_desc.flags & 1) != 0)
-			ICMP_reply(ICMP_ADDRESSREPLY, 0, dgram, 0);
+			ICMP_reply(ICMP_MASKREPLY, 0, dgram, 0);
 		break;
 	default:
 		for (walk = conf.icmp; walk; walk = walk->next)

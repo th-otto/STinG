@@ -29,7 +29,7 @@ static int16 receive_dgram(IP_DGRAM *dgram, int16 re_process)
 	if (!ip[protocol].active)
 	{
 		conf.stat_unreach++;
-		ICMP_reply(ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, dgram, 0);
+		ICMP_reply(ICMP_UNREACH, ICMP_UNREACH_PROTOCOL, dgram, 0);
 		return E_UNREACHABLE;
 	}
 
@@ -39,7 +39,7 @@ static int16 receive_dgram(IP_DGRAM *dgram, int16 re_process)
 		{
 			conf.stat_lo_mem++;
 			if (dgram->hdr.protocol != P_ICMP)
-				ICMP_reply(ICMP_SOURCE_QUENCH, 0, dgram, 0);
+				ICMP_reply(ICMP_SOURCEQUENCH, 0, dgram, 0);
 			else
 				IP_discard(dgram, TRUE);
 			return E_NOMEM;
@@ -145,7 +145,7 @@ static int16 process_dgram(IP_DGRAM *dgram)
 	{
 		conf.stat_unreach++;
 		if (dgram->hdr.protocol != P_ICMP)
-			ICMP_reply(ICMP_DEST_UNREACH, -(long) port, dgram, 0);
+			ICMP_reply(ICMP_UNREACH, -(long) port, dgram, 0);
 		else
 			IP_discard(dgram, TRUE);
 		return E_UNREACHABLE;
@@ -157,7 +157,7 @@ static int16 process_dgram(IP_DGRAM *dgram)
 		{
 			conf.stat_unreach++;
 			if (dgram->hdr.protocol != P_ICMP)
-				ICMP_reply(ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, dgram, 0);
+				ICMP_reply(ICMP_UNREACH, ICMP_UNREACH_NEEDFRAG, dgram, 0);
 			else
 				IP_discard(dgram, TRUE);
 			return E_FRAGMENT;
@@ -166,7 +166,7 @@ static int16 process_dgram(IP_DGRAM *dgram)
 		{
 			conf.stat_lo_mem++;
 			if (dgram->hdr.protocol != P_ICMP)
-				ICMP_reply(ICMP_SOURCE_QUENCH, 0, dgram, 0);
+				ICMP_reply(ICMP_SOURCEQUENCH, 0, dgram, 0);
 			else
 				IP_discard(dgram, TRUE);
 			return E_NOMEM;
@@ -234,7 +234,7 @@ void clean_up(void)
 					conf.stat_ttl_excd++;
 					*ip_previous = ip_walk->next;
 					if (ip_walk->hdr.protocol != P_ICMP)
-						ICMP_reply(ICMP_TIME_EXCEEDED, ICMP_EXC_TTL, ip_walk, 0);
+						ICMP_reply(ICMP_TIMXCEED, ICMP_TIMXCEED_INTRANS, ip_walk, 0);
 					else
 						IP_discard(ip_walk, TRUE);
 					ip_walk = *ip_previous;
@@ -296,7 +296,7 @@ int16 cdecl check_dgram_ttl(IP_DGRAM *dgram)
 	{
 		conf.stat_ttl_excd++;
 		if (dgram->hdr.protocol != P_ICMP)
-			ICMP_reply(ICMP_TIME_EXCEEDED, ICMP_EXC_TTL, dgram, 0);
+			ICMP_reply(ICMP_TIMXCEED, ICMP_TIMXCEED_INTRANS, dgram, 0);
 		else
 			IP_discard(dgram, TRUE);
 		return E_TTLEXCEED;

@@ -39,7 +39,7 @@ static uint32 host;
 static char alert[200];
 static int show_ping_echo;
 static _WORD next_info;
-static OBJECT *ping_tree;
+static OBJECT *main_dialog;
 #define NUM_INFOS (INFO_4 - INFO_1 + 1)
 static char info_buf[NUM_INFOS][200];
 static volatile int info_dirty;
@@ -348,7 +348,6 @@ static void run_ping(OBJECT *tree)
 	ave = max = 0;
 
 	show_ping_echo = TRUE;
-	ping_tree = tree;
 	
 	done = FALSE;
 	graf_mouse(BUSY_BEE, NULL);
@@ -390,6 +389,7 @@ static void do_ping_dialog(void)
 	int i;
 	
 	tree = rs_tree(PING);
+	main_dialog = tree;
 
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
 	{

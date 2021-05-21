@@ -264,7 +264,7 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	type = *(uint8 *) dgram->pkt_data;
 	code = *((uint8 *) dgram->pkt_data + 1);
 
-	if (type != ICMP_DEST_UNREACH && type != ICMP_SOURCE_QUENCH && type != ICMP_TIME_EXCEEDED)
+	if (type != ICMP_UNREACH && type != ICMP_SOURCEQUENCH && type != ICMP_TIMXCEED)
 		return FALSE;
 
 	ip = (IP_HDR *) ((uint8 *) dgram->pkt_data + 8);
@@ -310,13 +310,13 @@ int16 cdecl do_ICMP(IP_DGRAM *dgram)
 	{
 		switch (type)
 		{
-		case ICMP_DEST_UNREACH:
+		case ICMP_UNREACH:
 			connect->net_error = E_UNREACHABLE;
 			break;
-		case ICMP_SOURCE_QUENCH:
+		case ICMP_SOURCEQUENCH:
 			connect->net_error = E_CNTIMEOUT;
 			break;
-		case ICMP_TIME_EXCEEDED:
+		case ICMP_TIMXCEED:
 			connect->net_error = E_TTLEXCEED;
 			break;
 		}
