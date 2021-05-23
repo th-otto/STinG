@@ -340,7 +340,11 @@ typedef struct pnta
 #define CTL_ETHER_SET_TYPE	(('E' << 8) | 'T')   /* EtherNet          */
 #define CTL_ETHER_GET_TYPE	(('E' << 8) | 'U')   /* EtherNet          */
 #define CTL_ETHER_GET_STAT	(('E' << 8) | 'S')   /* Ethernet, statistics */
+#define CTL_ETHER_CLR_STAT  (('E' << 8) | 'C')   /* sets all entries in struct driver_statistics to 0 */
 #define CTL_ETHER_GET_ARP	(('E' << 8) | 'A')   /* Ethernet, ARP */
+#define CTL_ETHER_CLR_ARP   (('E' << 8) | 'B')   /* clears ARP table */
+#define CTL_ETHER_GET_TRACE (('E' << 8) | 'X')   /* gets trace table */
+#define CTL_ETHER_CLR_TRACE (('E' << 8) | 'Y')   /* clears trace table */
 
 #define CTL_MASQUE_SET_PORT	(('M' << 8) | 'P')   /* Masquerade        */
 #define CTL_MASQUE_GET_PORT	(('M' << 8) | 'Q')   /* Masquerade        */

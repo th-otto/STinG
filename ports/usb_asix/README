@@ -1,0 +1,6 @@
+This is just a port of the STinG driver for Asix USB-to-Ethernet
+adapters, adapted for Pure-C, and completely untested.
+
+Please refer to the upstream directory at
+https://github.com/czietz/usbsting/
+in case of any problems.
