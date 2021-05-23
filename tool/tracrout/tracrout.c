@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <mint/arch/nf_ops.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -42,7 +43,6 @@ typedef struct udp_pckt
 	uint16 dest_port;
 	uint16 length;
 	uint16 chk_sum;
-	uint16 ident;
 } UDP_PCKT;
 
 typedef struct pudp_hdr
@@ -60,15 +60,25 @@ STX *stx;
 static DRV_LIST *sting_drivers;
 PUDP packet;
 static uint16 max_ttl;
+static uint16 waittime;
 static uint16 count;
-static uint16 response;
+static int16 response;
 static uint16 code;
 static uint16 hop_a;
 static uint16 hop_b;
 static uint16 hop_c;
 static uint16 hop_d;
+static uint16 ttl;
 static uint32 host;
 static char alert[200];
+static GRECT gr;
+static OBJECT *main_dialog;
+#define NUM_INFOS (INFO_4 - INFO_1 + 1)
+static char info_buf[NUM_INFOS][200];
+static _WORD next_info;
+static volatile int info_dirty;
+static int32 now;
+static int32 elapsed;
 
 
 static char *rs_frstr(_WORD num)
@@ -93,31 +103,48 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 {
 	UDP_PCKT *packet;
 	uint8 *icmp;
+	IP_HDR *ip;
+	int16 pkt_length;
+	int16 hlen;
 
 	icmp = datagram->pkt_data;
-
-	if (*icmp != ICMP_TIME_EXCEEDED && *icmp != ICMP_DEST_UNREACH)
+	pkt_length = datagram->pkt_length;
+	
+	nf_debugprintf("resp %u: %u %u\n", pkt_length, icmp[0], icmp[1]);
+	if (pkt_length < ICMP_MINLEN)
 		return FALSE;
+	
+	if ((icmp[0] == ICMP_TIMXCEED /* && icmp[1] == ICMP_TIMXCEED_INTRANS */) ||
+		icmp[0] == ICMP_UNREACH ||
+		icmp[0] == ICMP_ECHOREPLY)
+	{
+		ip = (IP_HDR *) &icmp[ICMP_MINLEN];
+		pkt_length -= ICMP_MINLEN;
+		if (pkt_length < 20 || ip->protocol != P_UDP)
+			return FALSE;
+	
+		hlen = ip->hd_len * 4;
+		packet = (UDP_PCKT *) ((char *)ip + hlen);
+		if (pkt_length < hlen + (int)sizeof(*packet))
+			return FALSE;
+		if (packet->src_port != 0 || packet->dest_port != UDP_PORT)
+			return FALSE;
+	
+		response = icmp[0];
+		code = icmp[1];
+	
+		hop_a = (uint16) ((datagram->hdr.ip_src >> 24) & 0xff);
+		hop_b = (uint16) ((datagram->hdr.ip_src >> 16) & 0xff);
+		hop_c = (uint16) ((datagram->hdr.ip_src >> 8) & 0xff);
+		hop_d = (uint16) (datagram->hdr.ip_src & 0xff);
+		ttl = datagram->hdr.ttl;
+		elapsed = TIMER_elapsed(now);
 
-	if (((IP_HDR *) & icmp[8])->protocol != P_UDP)
-		return FALSE;
-
-	packet = (UDP_PCKT *) (&icmp[8] + ((IP_HDR *) & icmp[8])->hd_len * 4);
-
-	if (packet->src_port != 0 || packet->dest_port != UDP_PORT)
-		return FALSE;
-
-	response = icmp[0];
-	code = icmp[1];
-
-	hop_a = (uint16) ((datagram->hdr.ip_src >> 24) & 0xff);
-	hop_b = (uint16) ((datagram->hdr.ip_src >> 16) & 0xff);
-	hop_c = (uint16) ((datagram->hdr.ip_src >> 8) & 0xff);
-	hop_d = (uint16) (datagram->hdr.ip_src & 0xff);
-
-	ICMP_discard(datagram);
-
-	return TRUE;
+		ICMP_discard(datagram);
+	
+		return TRUE;
+	}
+	return FALSE;
 }
 
 
@@ -236,40 +263,39 @@ static int inet_aton(const char *cp, uint32 *addr)
 }
 
 
-static int fetch_parameters(void)
+/*
+ * Checksum routine for Internet Protocol family headers (C Version)
+ */
+static uint16 in_cksum(uint16 *addr, long len)
 {
-	OBJECT *tree;
-	GRECT gr;
-	_WORD button;
+	long nleft = len;
+	const uint16 *w = addr;
+	uint16 answer;
+	uint32 sum = 0;
 
-	graf_mouse(ARROW, NULL);
+	/*
+	 *  Our algorithm is simple, using a 32 bit accumulator (sum),
+	 *  we add sequential 16 bit words to it, and at the end, fold
+	 *  back all the carry bits from the top 16 bits into the lower
+	 *  16 bits.
+	 */
+	while (nleft > 1)
+	{
+		sum += *w++;
+		nleft -= 2;
+	}
 
-	rsrc_gaddr(R_TREE, TRACROUT, &tree);
+	/* mop up an odd byte, if necessary */
+	if (nleft == 1)
+		sum += htons(*(const uint8 *) w << 8);
 
-	wind_update(BEG_UPDATE);
-
-	form_center_grect(tree, &gr);
-	form_dial_grect(FMD_START, &gr, &gr);
-
-	set_str(tree, MODULE, tpl->module);
-	set_str(tree, AUTHOR, tpl->author);
-	set_str(tree, VERSION, tpl->version);
-	set_str(tree, HOST, "");
-	set_str(tree, MAX_TTL, "30");
-
-	objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
-	button = form_do(tree, HOST);
-
-	form_dial_grect(FMD_FINISH, &gr, &gr);
-
-	wind_update(END_UPDATE);
-
-	if (button != OK)
-		return 0;
-	max_ttl = atoi(tree[MAX_TTL].ob_spec.tedinfo->te_ptext);
-	if (inet_aton(tree[HOST].ob_spec.tedinfo->te_ptext, &host) == 0)
-		return 0;
-	return 1;
+	/*
+	 * add back carry outs from top 16 bits to low 16 bits
+	 */
+	sum = (sum >> 16) + (sum & 0xffff);	/* add hi 16 to low 16 */
+	sum += (sum >> 16);					/* add carry */
+	answer = sum;						/* truncate to 16 bits */
+	return ~answer;
 }
 
 
@@ -296,37 +322,89 @@ static _WORD do_alert(const char *str)
 }
 
 
-static void do_some_work(void)
+static char *next_info_buf(void)
 {
-	uint16 *walk;
+	int i;
+	
+	if (next_info == (NUM_INFOS - 1))
+	{
+		for (i = 1; i < NUM_INFOS; i++)
+			strcpy(info_buf[i - 1], info_buf[i]);
+	} else
+	{
+		next_info++;
+	}
+	info_dirty++;
+	return info_buf[next_info];
+}
+
+
+static int dialog_aborted(void)
+{
+	_WORD events;
+	_WORD mox, moy, key, dummy;
+	_WORD msg[8];
+	
+	events = evnt_multi(MU_TIMER | MU_BUTTON | MU_KEYBD,
+		1, 1, 1,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		msg,
+		100,
+		&mox, &moy, &dummy, &dummy, &key, &dummy);
+	if (events & MU_BUTTON)
+	{
+		if (objc_find(main_dialog, ROOT, MAX_DEPTH, mox, moy) == CANCEL)
+		{
+			main_dialog[CANCEL].ob_state |= OS_SELECTED;
+			objc_draw_grect(main_dialog, CANCEL, MAX_DEPTH, &gr);
+			evnt_button(1, 1, 0, &mox, &moy, &dummy, &dummy);
+			main_dialog[CANCEL].ob_state &= ~OS_SELECTED;
+			objc_draw_grect(main_dialog, CANCEL, MAX_DEPTH, &gr);
+			return TRUE;
+		}
+	}
+	if (events & MU_KEYBD)
+	{
+		if ((key & 0xff) == 0x1b) /* Esc */
+		{
+			/*
+			 * at least XaAES has problems to react to the key,
+			 * so you typically have to keep it pressed, until it is
+			 * recognized. Swallow any keys that may been generated
+			 * by key-repeat in the meantime.
+			 */
+			do
+			{
+				events = evnt_multi(MU_TIMER | MU_KEYBD,
+					1, 1, 1,
+					0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0,
+					msg,
+					0,
+					&mox, &moy, &dummy, &dummy, &key, &dummy);
+			} while (events & MU_KEYBD);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+static void do_traceroute_dialog(void)
+{
+	OBJECT *tree;
+	_WORD button;
 	uint16 *dgram;
 	uint16 wait;
 	int16 what;
-	uint32 chksum = 0;
-
-	if (fetch_parameters() == 0)
-		return;
-
-	if (PRTCL_get_parameters(host, &packet.ps_hdr.src_ip, NULL, NULL) != E_NORMAL)
-	{
-		do_alert(rs_frstr(NO_ROUTE));
-		return;
-	}
-
-	packet.ps_hdr.dest_ip = host;
-	packet.ps_hdr.zero = 0;
-	packet.ps_hdr.protocol = P_UDP;
-	packet.ps_hdr.udp_len = (int16) sizeof(UDP_PCKT);
-	packet.udp_packet.src_port = 0;
-	packet.udp_packet.dest_port = UDP_PORT;
-	packet.udp_packet.length = (int16) sizeof(UDP_PCKT);
-	packet.udp_packet.chk_sum = 0;
-	packet.udp_packet.ident = 0xaffaU;
-
-	for (walk = (uint16 *) & packet, count = 0; count < sizeof(PUDP) / 2; walk++, count++)
-		chksum += *walk;
-
-	packet.udp_packet.chk_sum = ~(uint16) ((chksum & 0xffffL) + ((chksum >> 16) & 0xffffL));
+	int i;
+	int got_there;
+	int unreachable;
+	int dots, maxdots;
+	
+	tree = rs_tree(TRACROUT);
+	main_dialog = tree;
 
 	if (!ICMP_handler(receive_echo, HNDLR_SET))
 	{
@@ -334,59 +412,160 @@ static void do_some_work(void)
 		return;
 	}
 
-	for (count = 1; count <= max_ttl; count++)
+	set_str(tree, MODULE, tpl->module);
+	set_str(tree, AUTHOR, tpl->author);
+	set_str(tree, VERSION, tpl->version);
+	set_str(tree, HOST, "");
+	set_str(tree, MAX_TTL, "30");
+	set_str(tree, WAITTIME, "5");
+
+	wind_update(BEG_UPDATE);
+
+	form_center_grect(tree, &gr);
+	form_dial_grect(FMD_START, &gr, &gr);
+
+	for (i = 0; i < NUM_INFOS; i++)
+		tree[INFO_1 + i].ob_spec.free_string = info_buf[i];
+	next_info = -1;
+	maxdots = (int)strlen(tree[DOTS].ob_spec.free_string);
+	*tree[DOTS].ob_spec.free_string = '\0';
+	
+	for (;;)
 	{
-		graf_mouse(BUSY_BEE, NULL);
-		if ((dgram = KRmalloc(sizeof(UDP_PCKT))) == NULL)
-		{
-			do_alert(rs_frstr(NO_MEMORY));
+		*tree[DOTS].ob_spec.free_string = '\0';
+		objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
+		graf_mouse(ARROW, NULL);
+		button = form_do(tree, HOST);
+		tree[button].ob_state &= ~OS_SELECTED;
+		if (button == CANCEL)
 			break;
-		}
-		memcpy(dgram, &packet.udp_packet, sizeof(UDP_PCKT));
+		if (button != START)
+			continue;
 
-		response = 0;
-
-		what = IP_send(packet.ps_hdr.src_ip, packet.ps_hdr.dest_ip, 0, TRUE, count, P_UDP,
-					   32768u + count, dgram, (int16) sizeof(UDP_PCKT), NULL, 0);
-
-		if (what == E_NOMEM || what == E_UNREACHABLE)
+		if (inet_aton(tree[HOST].ob_spec.tedinfo->te_ptext, &host) == 0)
 		{
-			do_alert(rs_frstr(PROB_SEND_PACKET));
-			KRfree(dgram);
-			break;
-		}
-
-		for (wait = 0; wait < 200; wait++)
-		{
-			evnt_timer(100);
-			if (response)
-				break;
-		}
-
-		switch (response)
-		{
-		case 0:
-			if (do_alert(rs_frstr(TIMEOUT)) == 1)
+			graf_mouse(BUSY_BEE, NULL);
+			if (resolve(tree[HOST].ob_spec.tedinfo->te_ptext, NULL, &host, 1) <= 0)
 			{
-				count--;
+				do_alert(rs_frstr(UNKNOWN_HOST));
+				continue;
+			}
+		}
+		max_ttl = atoi(tree[MAX_TTL].ob_spec.tedinfo->te_ptext);
+		waittime = atoi(tree[WAITTIME].ob_spec.tedinfo->te_ptext);
+		/* * 10 because we wait for 100 ms in the event loop below */
+		waittime *= 10;
+
+		if (PRTCL_get_parameters(host, &packet.ps_hdr.src_ip, NULL, NULL) != E_NORMAL)
+		{
+			do_alert(rs_frstr(NO_ROUTE));
+			continue;
+		}
+
+		dots = 0;
+		
+		packet.ps_hdr.dest_ip = host;
+		packet.ps_hdr.zero = 0;
+		packet.ps_hdr.protocol = P_UDP;
+		packet.ps_hdr.udp_len = (int16) sizeof(UDP_PCKT);
+		packet.udp_packet.src_port = 0;
+		packet.udp_packet.dest_port = UDP_PORT;
+		packet.udp_packet.length = (int16) sizeof(UDP_PCKT);
+		packet.udp_packet.chk_sum = 0;
+	
+#if 0
+		{
+			uint32 chksum = 0;
+			uint16 *walk;
+
+			for (walk = (uint16 *) &packet, count = 0; count < sizeof(packet) / 2; walk++, count++)
+				chksum += *walk;
+			packet.udp_packet.chk_sum = ~(uint16) ((chksum & 0xffffL) + ((chksum >> 16) & 0xffffL));
+		}
+#else
+		packet.udp_packet.chk_sum = in_cksum((uint16 *) &packet, sizeof(packet));
+#endif
+	
+		for (count = 1; count <= max_ttl; count++)
+		{
+			got_there = 0;
+			unreachable = 0;
+			
+			graf_mouse(BUSY_BEE, NULL);
+			if ((dgram = KRmalloc(sizeof(UDP_PCKT))) == NULL)
+			{
+				do_alert(rs_frstr(NO_MEMORY));
 				break;
 			}
-			count = max_ttl;
-			break;
-		case ICMP_TIME_EXCEEDED:
-			sprintf(alert, rs_frstr(HOP_RESULT), count, hop_a, hop_b, hop_c, hop_d);
-			do_alert(alert);
-			break;
-		case ICMP_DEST_UNREACH:
-			do_alert(rs_frstr(code == ICMP_DU_PRTCL || code == ICMP_DU_PORT ? DEST_REACHED : NO_DEST));
-			count = max_ttl;
-			break;
+			memcpy(dgram, &packet.udp_packet, sizeof(UDP_PCKT));
+	
+			response = -1;
+			now = TIMER_now();
+			elapsed = -1;
+			what = IP_send(packet.ps_hdr.src_ip, packet.ps_hdr.dest_ip, 0, TRUE, count, P_UDP,
+						   32768u + count, dgram, (int16) sizeof(UDP_PCKT), NULL, 0);
+	
+			if (what == E_NOMEM || what == E_UNREACHABLE)
+			{
+				do_alert(rs_frstr(PROB_SEND_PACKET));
+				KRfree(dgram);
+				break;
+			}
+	
+			for (wait = 0; wait < waittime; wait++)
+			{
+				if (dialog_aborted())
+				{
+					count = max_ttl;
+					break;
+				}
+				if (response >= 0)
+					break;
+			}
+
+			if (response >= 0)
+			{
+				sprintf(alert, "%u.%u.%u.%u", hop_a, hop_b, hop_c, hop_d);
+				sprintf(next_info_buf(), "%5u %-21s %3u %5lu", count, alert, ttl, elapsed);
+				objc_draw_grect(tree, INFO_BOX, MAX_DEPTH, &gr);
+			}			
+			switch (response)
+			{
+			case -1:
+				if (dots < maxdots)
+				{
+					tree[DOTS].ob_spec.free_string[dots++] = '*';
+					tree[DOTS].ob_spec.free_string[dots] = '\0';
+					objc_draw_grect(tree, DOTS, MAX_DEPTH, &gr);
+				}
+				break;
+			case ICMP_ECHOREPLY:
+				++got_there;
+				break;
+			case ICMP_TIME_EXCEEDED:
+				break;
+			case ICMP_UNREACH:
+				switch (code)
+				{
+				case ICMP_UNREACH_PORT:
+				case ICMP_UNREACH_PROTOCOL:
+					got_there++;
+					break;
+				default:
+					unreachable++;
+					break;
+				}
+				count = max_ttl;
+				break;
+			}
 		}
 	}
 
-	ICMP_handler(receive_echo, HNDLR_REMOVE);
+	form_dial_grect(FMD_FINISH, &gr, &gr);
 
-	graf_mouse(ARROW, NULL);
+	wind_update(END_UPDATE);
+
+	ICMP_handler(receive_echo, HNDLR_REMOVE);
 }
 
 
@@ -423,19 +602,17 @@ static void gem_program(void)
 	tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
 	stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
 
-	if (tpl != NULL)
-	{
-		if (stx == NULL)
-		{
-			do_alert(rs_frstr(NO_STIK));
-		} else
-		{
-			do_some_work();
-		}
-	} else
+	if (tpl == NULL)
 	{
 		do_alert(rs_frstr(NO_MODULE));
+		return;
 	}
+	if (stx == NULL)
+	{
+		do_alert(rs_frstr(NO_STIK));
+		return;
+	}
+	do_traceroute_dialog();
 }
 
 

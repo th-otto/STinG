@@ -310,29 +310,40 @@ static int show_echos(OBJECT *tree, long delay)
 	_WORD events;
 	_WORD mox, moy, key, dummy;
 	_WORD msg[8];
+	long timeout;
 	
-	events = evnt_multi(MU_TIMER | MU_BUTTON | MU_KEYBD,
-		1, 1, 1,
-		0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0,
-		msg,
-		delay,
-		&mox, &moy, &dummy, &dummy, &key, &dummy);
-	if (info_dirty)
+	for (;;)
 	{
-		info_dirty = 0;
-		objc_draw_grect(tree, INFO_BOX, MAX_DEPTH, &gr);
-	}
-	if (events & MU_BUTTON)
-	{
-		evnt_button(1, 1, 0, &mox, &moy, &dummy, &dummy);
-		if (objc_find(tree, ROOT, MAX_DEPTH, mox, moy) == CANCEL)
-			return TRUE;
-	}
-	if (events & MU_KEYBD)
-	{
-		if ((key & 0xff) == 0x1b) /* Esc */
-			return TRUE;
+		if (delay > 100)
+			timeout = 100;
+		else
+			timeout = delay;
+		events = evnt_multi(MU_TIMER | MU_BUTTON | MU_KEYBD,
+			1, 1, 1,
+			0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0,
+			msg,
+			timeout,
+			&mox, &moy, &dummy, &dummy, &key, &dummy);
+		if (info_dirty)
+		{
+			info_dirty = 0;
+			objc_draw_grect(tree, INFO_BOX, MAX_DEPTH, &gr);
+		}
+		if (events & MU_BUTTON)
+		{
+			evnt_button(1, 1, 0, &mox, &moy, &dummy, &dummy);
+			if (objc_find(tree, ROOT, MAX_DEPTH, mox, moy) == CANCEL)
+				return TRUE;
+		}
+		if (events & MU_KEYBD)
+		{
+			if ((key & 0xff) == 0x1b) /* Esc */
+				return TRUE;
+		}
+		delay -= timeout;
+		if (delay <= 0)
+			break;
 	}
 	return FALSE;
 }
@@ -418,31 +429,32 @@ static void do_ping_dialog(void)
 		objc_draw_grect(tree, ROOT, MAX_DEPTH, &gr);
 		graf_mouse(ARROW, NULL);
 		button = form_do(tree, HOST);
+		tree[button].ob_state &= ~OS_SELECTED;
 		if (button == CANCEL)
 			break;
-		if (button == START)
+		if (button != START)
+			continue;
+		num_packets = atoi(tree[NUM].ob_spec.tedinfo->te_ptext);
+		interval = atoi(tree[INTERVAL].ob_spec.tedinfo->te_ptext);
+		if (inet_aton(tree[HOST].ob_spec.tedinfo->te_ptext, &host) == 0)
 		{
-			num_packets = atoi(tree[NUM].ob_spec.tedinfo->te_ptext);
-			interval = atoi(tree[INTERVAL].ob_spec.tedinfo->te_ptext);
-			if (inet_aton(tree[HOST].ob_spec.tedinfo->te_ptext, &host))
-			{
-				if (IN_MULTICAST(host))
-				{
-					do_alert(rs_frstr(NO_MULTICAST));
-				} else
-				{
-					set_str(tree, INFOLINE1, "");
-					set_str(tree, INFOLINE2, "");
-					objc_draw_grect(tree, INFOLINE1, MAX_DEPTH, &gr);
-					objc_draw_grect(tree, INFOLINE2, MAX_DEPTH, &gr);
-					run_ping(tree);
-				}
-			} else
+			graf_mouse(BUSY_BEE, NULL);
+			if (resolve(tree[HOST].ob_spec.tedinfo->te_ptext, NULL, &host, 1) <= 0)
 			{
 				do_alert(rs_frstr(INVALID_ADDR));
+				continue;
 			}
-			tree[button].ob_state &= ~OS_SELECTED;
 		}
+		if (IN_MULTICAST(host))
+		{
+			do_alert(rs_frstr(NO_MULTICAST));
+			continue;
+		}
+		set_str(tree, INFOLINE1, "");
+		set_str(tree, INFOLINE2, "");
+		objc_draw_grect(tree, INFOLINE1, MAX_DEPTH, &gr);
+		objc_draw_grect(tree, INFOLINE2, MAX_DEPTH, &gr);
+		run_ping(tree);
 	}
 	
 	form_dial_grect(FMD_FINISH, &gr, &gr);

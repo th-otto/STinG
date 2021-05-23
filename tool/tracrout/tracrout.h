@@ -5,19 +5,19 @@
  */
 
 /*
- * Number of Strings:        33
+ * Number of Strings:        39
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 0
  * Number of Color Icons:    0
- * Number of Tedinfos:       5
- * Number of Free Strings:   12
+ * Number of Tedinfos:       6
+ * Number of Free Strings:   9
  * Number of Free Images:    0
- * Number of Objects:        12
+ * Number of Objects:        20
  * Number of Trees:          1
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          1368
+ * Total file size:          1636
  */
 
 #undef RSC_NAME
@@ -35,29 +35,36 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 33
-#define NUM_FRSTR 12
+#define NUM_STRINGS 39
+#define NUM_FRSTR 9
 #define NUM_UD 0
 #define NUM_IMAGES 0
 #define NUM_BB 0
 #define NUM_FRIMG 0
 #define NUM_IB 0
 #define NUM_CIB 0
-#define NUM_TI 5
-#define NUM_OBS 12
+#define NUM_TI 6
+#define NUM_OBS 20
 #define NUM_TREE 1
 #endif
 
 
 
 #define TRACROUT                           0 /* form/dialog */
-#define MODULE                             2 /* TEXT in tree TRACROUT */
-#define AUTHOR                             4 /* TEXT in tree TRACROUT */
-#define VERSION                            6 /* TEXT in tree TRACROUT */
+#define MODULE                             3 /* TEXT in tree TRACROUT */
+#define AUTHOR                             5 /* TEXT in tree TRACROUT */
+#define VERSION                            7 /* TEXT in tree TRACROUT */
 #define HOST                               8 /* FTEXT in tree TRACROUT */
 #define MAX_TTL                            9 /* FTEXT in tree TRACROUT */
-#define OK                                10 /* BUTTON in tree TRACROUT */
-#define CANCEL                            11 /* BUTTON in tree TRACROUT */
+#define WAITTIME                          10 /* FTEXT in tree TRACROUT */
+#define INFO_BOX                          12 /* BOX in tree TRACROUT */
+#define INFO_1                            13 /* STRING in tree TRACROUT */
+#define INFO_2                            14 /* STRING in tree TRACROUT */
+#define INFO_3                            15 /* STRING in tree TRACROUT */
+#define INFO_4                            16 /* STRING in tree TRACROUT */
+#define CANCEL                            17 /* BUTTON in tree TRACROUT */
+#define START                             18 /* BUTTON in tree TRACROUT */
+#define DOTS                              19 /* STRING in tree TRACROUT */
 
 #define NOT_THERE                          0 /* Alert string */
 
@@ -65,23 +72,17 @@
 
 #define NO_MODULE                          2 /* Alert string */
 
-#define TIMEOUT                            3 /* Free string */
+#define NO_ROUTE                           3 /* Alert string */
 
-#define NO_ROUTE                           4 /* Alert string */
+#define NO_MEMORY                          4 /* Alert string */
 
-#define NO_MEMORY                          5 /* Alert string */
+#define NO_HANDLER                         5 /* Alert string */
 
-#define NO_HANDLER                         6 /* Alert string */
+#define NO_STIK                            6 /* Alert string */
 
-#define NO_STIK                            7 /* Alert string */
+#define PROB_SEND_PACKET                   7 /* Alert string */
 
-#define PROB_SEND_PACKET                   8 /* Alert string */
-
-#define HOP_RESULT                         9 /* Alert string */
-
-#define DEST_REACHED                      10 /* Alert string */
-
-#define NO_DEST                           11 /* Alert string */
+#define UNKNOWN_HOST                       8 /* Alert string */
 
 
 

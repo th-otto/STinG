@@ -5,7 +5,7 @@
  */
 
 /*
- * Number of Strings:        43
+ * Number of Strings:        44
  * Number of Bitblks:        0
  * Number of Iconblks:       0
  * Number of Color Iconblks: 0
@@ -13,11 +13,11 @@
  * Number of Tedinfos:       8
  * Number of Free Strings:   9
  * Number of Free Images:    0
- * Number of Objects:        20
+ * Number of Objects:        21
  * Number of Trees:          1
  * Number of Userblks:       0
  * Number of Images:         0
- * Total file size:          1658
+ * Total file size:          1722
  */
 
 #undef RSC_NAME
@@ -35,7 +35,7 @@
 # define RSC_STATIC_FILE 0
 #endif
 #if !RSC_STATIC_FILE
-#define NUM_STRINGS 43
+#define NUM_STRINGS 44
 #define NUM_FRSTR 9
 #define NUM_UD 0
 #define NUM_IMAGES 0
@@ -44,28 +44,28 @@
 #define NUM_IB 0
 #define NUM_CIB 0
 #define NUM_TI 8
-#define NUM_OBS 20
+#define NUM_OBS 21
 #define NUM_TREE 1
 #endif
 
 
 
 #define PING                               0 /* form/dialog */
-#define MODULE                             2 /* TEXT in tree PING */
-#define AUTHOR                             4 /* TEXT in tree PING */
-#define VERSION                            6 /* TEXT in tree PING */
-#define HOST                               7 /* FTEXT in tree PING */
-#define NUM                                8 /* FTEXT in tree PING */
-#define INTERVAL                           9 /* FTEXT in tree PING */
-#define INFO_BOX                          11 /* BOX in tree PING */
-#define INFO_1                            12 /* STRING in tree PING */
-#define INFO_2                            13 /* STRING in tree PING */
-#define INFO_3                            14 /* STRING in tree PING */
-#define INFO_4                            15 /* STRING in tree PING */
-#define INFOLINE1                         16 /* TEXT in tree PING */
-#define INFOLINE2                         17 /* TEXT in tree PING */
-#define CANCEL                            18 /* BUTTON in tree PING */
-#define START                             19 /* BUTTON in tree PING */
+#define MODULE                             3 /* TEXT in tree PING */
+#define AUTHOR                             5 /* TEXT in tree PING */
+#define VERSION                            7 /* TEXT in tree PING */
+#define HOST                               8 /* FTEXT in tree PING */
+#define NUM                                9 /* FTEXT in tree PING */
+#define INTERVAL                          10 /* FTEXT in tree PING */
+#define INFO_BOX                          12 /* BOX in tree PING */
+#define INFO_1                            13 /* STRING in tree PING */
+#define INFO_2                            14 /* STRING in tree PING */
+#define INFO_3                            15 /* STRING in tree PING */
+#define INFO_4                            16 /* STRING in tree PING */
+#define INFOLINE1                         17 /* TEXT in tree PING */
+#define INFOLINE2                         18 /* TEXT in tree PING */
+#define CANCEL                            19 /* BUTTON in tree PING */
+#define START                             20 /* BUTTON in tree PING */
 
 #define NOT_THERE                          0 /* Alert string */
 
