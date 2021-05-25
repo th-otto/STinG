@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <mint/arch/nf_ops.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -110,7 +109,6 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 	icmp = datagram->pkt_data;
 	pkt_length = datagram->pkt_length;
 	
-	nf_debugprintf("resp %u: %u %u\n", pkt_length, icmp[0], icmp[1]);
 	if (pkt_length < ICMP_MINLEN)
 		return FALSE;
 	
