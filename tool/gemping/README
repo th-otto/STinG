@@ -1,0 +1,22 @@
+SNTP.PRG
+========
+
+SNTP is a simple NTP client for Atari-TOS. It currently
+supports MiNTNet and STinG TCP/IP stacks.
+
+When running it, make sure that the correct timezone offset is used.
+For STinG, this setting is taken from DEFAULT.CFG (entries TIME_ZONE &
+TIME_SUMMER). When running under MiNT, this should normally be
+auto-detected, provided that you installed the correct timezone file as
+/etc/localtime, and tzinit has been run to initialize the kernels idea
+of a local time.
+
+Should that not be the case, you can change the entry manually.
+Note that this is rather important to get a correct system time,
+since servers only provide GMT times.
+
+You can test your settings by deselecting the Update-System-time
+button, and then start a query. In the box below it, you will see both
+the GMT time as send by the server, as well as the local time which
+would be set.
+

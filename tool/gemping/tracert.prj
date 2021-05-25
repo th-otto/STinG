@@ -1,0 +1,27 @@
+tracert.ttp
+
+.C[-A-]
+.C[-P]
+.C[-M]
+.C[-K-]
+.C[-G-]
+.C[-2-]
+.C[-8-]
+.C[-C-]		; no nested comments please
+
+.L[-S=16000]
+
+=
+cstartv.o
+
+tracert.c
+ifaddrl.c
+as.c
+inet.c
+gethost.c
+hostname.c
+getopt.c
+strerror.c
+
+pctoslib.lib
+pcstdlib.lib
