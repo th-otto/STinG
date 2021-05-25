@@ -26,6 +26,9 @@
 
 #ifdef __GNUC__
 #include <gem.h>
+#ifndef _WORD
+#define _WORD short
+#endif
 #else
 #include <aes.h>
 #include <vdi.h>

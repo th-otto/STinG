@@ -16,6 +16,7 @@
 #include <time.h>
 #include "icmp.h"
 #include <mint/mintbind.h>
+#include "mintsock.h"
 #undef ENOSYS
 #define ENOSYS 32
 
@@ -26,6 +27,7 @@
 # define howmany(x, y)	(((x)+((y)-1))/(y))
 #endif
 
+short __libc_newsockets = 1;
 
 static const char *h_errlist[] =
 {
@@ -233,11 +235,35 @@ int socket(int domain, int type, int proto)
 
 int shutdown(int fd, int how)
 {
-	int r = (int)Fshutdown (fd, how);
-	if (r < 0)
+	if (__libc_newsockets)
 	{
-		__set_errno(-r);
-		return -1;
+		int r = (int)Fshutdown(fd, how);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-r);
+				return -1;
+			}
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+
+	
+	{
+		struct shutdown_cmd cmd;
+		int r;
+
+		cmd.cmd = SHUTDOWN_CMD;
+		cmd.how = how;
+
+		r = (int)Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-r);
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -248,32 +274,93 @@ int recvfrom(int fd, void *buf, size_t buflen, int flags, struct sockaddr *addr,
 	long r;
 	unsigned long addrlen32;
 	
-	if (addrlen)
+	if (__libc_newsockets)
 	{
-		addrlen32 = *addrlen;
-		r = Frecvfrom(fd, buf, buflen, flags, addr, &addrlen32);
-	} else
-	{
-		r = Frecvfrom(fd, buf, buflen, flags, addr, addrlen);
+		if (addrlen)
+		{
+			addrlen32 = *addrlen;
+			r = Frecvfrom(fd, buf, buflen, flags, addr, &addrlen32);
+		} else
+		{
+			r = Frecvfrom(fd, buf, buflen, flags, addr, addrlen);
+		}
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			if (addrlen)
+				*addrlen = addrlen32;
+			return (int)r;
+		}
+		__libc_newsockets = 0;
 	}
-	if (r < 0)
+
 	{
-		__set_errno(-(int)r);
-		return -1;
+		struct recvfrom_cmd cmd;
+		short addrlen16;
+		
+		if (addrlen)
+			addrlen16 = (short) *addrlen;
+		
+		cmd.cmd = addr ? RECVFROM_CMD : RECV_CMD;
+		cmd.buf = buf;
+		cmd.buflen = buflen;
+		cmd.flags = flags;
+		cmd.addr = addr;
+		cmd.addrlen = &addrlen16;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		
+		if (addrlen)
+			*addrlen = addrlen16;
+		
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
 	}
-	if (addrlen)
-		*addrlen = addrlen32;
 	return (int)r;
 }
 
 
 int sendto(int fd, const void *buf, size_t buflen, int flags, const struct sockaddr *addr, socklen_t addrlen)
 {
-	long r = Fsendto(fd, buf, buflen, flags, addr, addrlen);
-	if (r < 0)
+	long r;
+
+	if (__libc_newsockets)
 	{
-		__set_errno(-(int)r);
-		return -1;
+		r = Fsendto(fd, buf, buflen, flags, addr, addrlen);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			return (int)r;
+		}
+		__libc_newsockets = 0;
+	}
+	{
+		struct sendto_cmd cmd;
+		
+		cmd.cmd = addr ? SENDTO_CMD : SEND_CMD;
+		cmd.buf = buf;
+		cmd.buflen = buflen;
+		cmd.flags = flags;
+		cmd.addr = addr;
+		cmd.addrlen = (short) addrlen;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
 	}
 	return (int)r;
 }
@@ -281,24 +368,508 @@ int sendto(int fd, const void *buf, size_t buflen, int flags, const struct socka
 
 int setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen)
 {
-	long r = Fsetsockopt(fd, level, optname, optval, optlen);
-	if (r < 0)
+	long r;
+
+	if (__libc_newsockets)
 	{
-		__set_errno(-(int)r);
-		return -1;
+		r = Fsetsockopt(fd, level, optname, optval, optlen);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+
+	{
+		struct setsockopt_cmd cmd;
+		
+		cmd.cmd = SETSOCKOPT_CMD;
+		cmd.level = level;
+		cmd.optname = optname;
+		cmd.optval = (void *)optval;
+		cmd.optlen = optlen;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
 	}
 	return 0;
 }
 
 
+int getsockopt(int fd, int level, int optname, void *optval, socklen_t *optlen)
+{
+	long r;
+	unsigned long optlen32;
+
+	if (__libc_newsockets)
+	{
+		if (optlen)
+		{
+			optlen32 = *optlen;
+			r = Fgetsockopt(fd, level, optname, optval, &optlen32);
+		} else
+		{
+			r = Fgetsockopt(fd, level, optname, optval, optlen);
+		}
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			if (optlen)
+				*optlen = optlen32;
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct getsockopt_cmd cmd;
+		
+		if (optlen)
+			optlen32 = *optlen;
+		
+		cmd.cmd = GETSOCKOPT_CMD;
+		cmd.level = level;
+		cmd.optname = optname;
+		cmd.optval = optval;
+		cmd.optlen = (void *) &optlen32;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		
+		if (optlen)
+			*optlen = optlen32;
+		
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
+		return 0;
+	}
+}
+
+
 int connect(int fd, const struct sockaddr *addr, socklen_t addrlen)
 {
-	long r = Fconnect(fd, addr, addrlen);
-	if (r < 0)
+	long r;
+
+	if (__libc_newsockets)
 	{
-		__set_errno(-(int)r);
-		return -1;
+		r = Fconnect(fd, addr, addrlen);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			return 0;
+		}
+		__libc_newsockets = 0;
 	}
+
+	{
+		struct connect_cmd cmd;
+		
+		cmd.addr = (struct sockaddr *)addr;
+		cmd.addrlen = (short) addrlen;
+		cmd.cmd = CONNECT_CMD;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+int send(int fd, const void *buf, size_t buflen, int flags)
+{
+	return sendto(fd, buf, buflen, flags, NULL, 0);
+}
+
+
+int recv(int fd, void *buf, size_t buflen, int flags)
+{
+	return recvfrom(fd, buf, buflen, flags, NULL, 0);
+}
+
+
+int sendmsg (int fd, const struct msghdr *msg, int flags)
+{
+	long r;
+
+	if (__libc_newsockets)
+	{
+		r = Fsendmsg(fd, msg, flags);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			return (int)r;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct sendmsg_cmd cmd;
+		
+		cmd.msg = msg;
+		cmd.cmd = SENDMSG_CMD;
+		cmd.flags = flags;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-(int) r);
+			return -1;
+		}
+	}
+	return (int)r;
+}
+
+
+int recvmsg(int fd, struct msghdr *msg, int flags)
+{
+	long r;
+
+	if (__libc_newsockets)
+	{
+		r = Frecvmsg(fd, msg, flags);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			return (int)r;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct recvmsg_cmd cmd;
+		
+		cmd.cmd = RECVMSG_CMD;
+		cmd.msg = msg;
+		cmd.flags = flags;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
+	}
+	return (int)r;
+}
+
+
+int accept(int fd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	long r;
+	unsigned long addrlen32;
+
+	if (__libc_newsockets)
+	{
+		if (addrlen)
+		{
+			addrlen32 = *addrlen;
+			r = Faccept(fd, addr, &addrlen32);
+		} else
+		{
+			r = Faccept(fd, addr, addrlen);
+		}
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			if (addrlen)
+				*addrlen = addrlen32;
+			return (int)r;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct accept_cmd cmd;
+		short addrlen16;
+		
+		if (addrlen)
+			addrlen16 = (short) *addrlen;
+		
+		cmd.cmd = ACCEPT_CMD;
+		cmd.addr = addr;
+		cmd.addrlen = &addrlen16;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		
+		if (addrlen)
+			*addrlen = addrlen16;
+		
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
+	}
+	return (int)r;
+}
+
+
+int getpeername(int fd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	long r;
+	unsigned long addrlen32;
+
+	if (__libc_newsockets)
+	{
+		if (addrlen)
+		{
+			addrlen32 = *addrlen;
+			r = Fgetpeername(fd, addr, &addrlen32);
+		} else
+		{
+			r = Fgetpeername(fd, addr, addrlen);
+		}
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			if (addrlen)
+				*addrlen = addrlen32;
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct getpeername_cmd cmd;
+		short addrlen16;
+		
+		if (addrlen)
+			addrlen16 = (short) *addrlen;
+		
+		cmd.cmd = GETPEERNAME_CMD;
+		cmd.addr = addr;
+		cmd.addrlen = &addrlen16;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		
+		if (addrlen)
+			*addrlen = addrlen16;
+		if (r < 0)
+		{
+			__set_errno(-(int) r);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+int getsockname(int fd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	long r;
+	unsigned long addrlen32;
+
+	if (__libc_newsockets)
+	{
+		addrlen32 = *addrlen;
+		r = Fgetsockname(fd, addr, &addrlen32);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			*addrlen = addrlen32;
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct getsockname_cmd cmd;
+		short addrlen16;
+		
+		if (addrlen)
+			addrlen16 = (short) *addrlen;
+		
+		cmd.cmd = GETSOCKNAME_CMD;
+		cmd.addr = addr;
+		cmd.addrlen = &addrlen16;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		
+		if (addrlen)
+			*addrlen = addrlen16;
+
+		if (r < 0)
+		{
+			__set_errno(-(int) r);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+int bind(int fd, const struct sockaddr *addr, socklen_t addrlen)
+{
+	long r;
+
+	if (__libc_newsockets)
+	{
+		r = Fbind(fd, addr, addrlen);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int) r);
+				return -1;
+			}
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct bind_cmd cmd;
+		
+		cmd.addr = (struct sockaddr *)addr;
+		cmd.addrlen = (short) addrlen;
+		cmd.cmd = BIND_CMD;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-(int) r);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+#ifdef __MINT__
+int listen(int fd, unsigned int backlog)
+#else
+int listen(int fd, int backlog)
+#endif
+{
+	long r;
+
+	if (__libc_newsockets)
+	{
+		r = Flisten(fd, backlog);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int) r);
+				return -1;
+			}
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct listen_cmd cmd;
+		
+		cmd.cmd = LISTEN_CMD;
+		cmd.backlog = backlog;
+		
+		r = Fcntl(fd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-(int)r);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+int socketpair(int domain, int type, int proto, int fds[2])
+{
+	long r;
+
+	if (__libc_newsockets)
+	{
+		short _fds[2];
+
+		r = Fsocketpair(domain, type, proto, _fds);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-(int)r);
+				return -1;
+			}
+			fds[0] = _fds[0];
+			fds[1] = _fds[1];
+			return 0;
+		}
+		__libc_newsockets = 0;
+	}
+	
+	{
+		struct socketpair_cmd cmd;
+		int sockfd1, sockfd2;
+		
+		sockfd1 = (int) Fopen(SOCKDEV, 2);
+		if (sockfd1 < 0)
+		{
+			__set_errno(-sockfd1);
+			return -1;
+		}
+		
+		cmd.cmd = SOCKETPAIR_CMD;
+		cmd.domain = domain;
+		cmd.type = type;
+		cmd.protocol = proto;
+		
+		sockfd2 = (int) Fcntl(sockfd1, (long) &cmd, SOCKETCALL);
+		if (sockfd2 < 0)
+		{
+			__set_errno(-sockfd2);
+			Fclose(sockfd1);
+			return -1;
+		}
+		
+		fds[0] = sockfd1;
+		fds[1] = sockfd2;
+	}
+
 	return 0;
 }
 
@@ -554,32 +1125,6 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
 
 	__set_errno(saved_errno);
 	return (int)retval;
-}
-
-
-int send(int fd, const void *buf, size_t buflen, int flags)
-{
-	long r = Fsendto(fd, buf, buflen, flags, NULL, 0);
-
-	if (r < 0)
-	{
-		__set_errno(-(int)r);
-		return -1;
-	}
-	return (int)r;
-}
-
-
-int recv(int fd, void *buf, size_t buflen, int flags)
-{
-	long r = Frecvfrom(fd, buf, buflen, flags, NULL, NULL);
-
-	if (r < 0)
-	{
-		__set_errno(-(int)r);
-		return -1;
-	}
-	return (int)r;
 }
 
 
@@ -842,23 +1387,6 @@ int usleep(__useconds_t dt)
 	t = clock();
 	while ((clock() - t) < tt)
 		;
-	return 0;
-}
-
-
-int getsockname(int fd, struct sockaddr *addr, socklen_t *addrlen)
-{
-	long r;
-	uint32_t addrlen32;
-	
-	addrlen32 = *addrlen;
-	r = Fgetsockname(fd, addr, &addrlen32);
-	if (r < 0)
-	{
-		__set_errno(-(int)r);
-		return -1;
-	}
-	*addrlen = addrlen32;
 	return 0;
 }
 

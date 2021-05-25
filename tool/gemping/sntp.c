@@ -559,7 +559,7 @@ static int ntp_sting(void)
 			return FALSE;
 		}
 		
-		if (cc < sizeof(packet))
+		if (cc < (int)sizeof(packet))
 			continue;
 		
 		if (packet.stratum == 0)

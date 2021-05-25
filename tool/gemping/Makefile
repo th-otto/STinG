@@ -1,6 +1,6 @@
 CROSS = m68k-atari-mint-
 CC = $(CROSS)gcc
-CFLAGS = -O2 -fomit-frame-pointer -Wall -W -Werror
+CFLAGS = -O2 -fomit-frame-pointer -Wall -W -Wshadow -Werror -I../../include
 
 PROGRAMS = ping
 
@@ -18,7 +18,7 @@ ping: ping.o $(NET_OBJS)
 gemping.prg: gemping.o $(NET_OBJS)
 	$(CC) $(CFLAGS) -s -o $@ $^ -lm -lgem
 
-sntp.prg: sntp.o $(NET_OBJS)
+sntp.prg: sntp.o adaptrsc.o $(NET_OBJS)
 	$(CC) $(CFLAGS) -s -o $@ $^ -lm -lgem
 
 ping.o gemping.o: icmp.h
