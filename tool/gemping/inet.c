@@ -222,14 +222,49 @@ int setgid(gid_t id)
 
 int socket(int domain, int type, int proto)
 {
-	int r = (int)Fsocket(domain, type, proto);
+	int r;
 
-	if (r < 0)
+	if (__libc_newsockets)
 	{
-		__set_errno(-r);
-		return -1;
+		r = (int)Fsocket(domain, type, proto);
+		if (r != -ENOSYS)
+		{
+			if (r < 0)
+			{
+				__set_errno(-r);
+				return -1;
+			}
+			return r;
+		}
+		__libc_newsockets = 0;
 	}
-	return r;
+
+	{
+		struct socket_cmd cmd;
+		int sockfd;
+		
+		sockfd = (int)Fopen(SOCKDEV, O_RDWR);
+		if (sockfd < 0)
+		{
+			__set_errno (-sockfd);
+			return -1;
+		}
+		
+		cmd.cmd = SOCKET_CMD;
+		cmd.domain = domain;
+		cmd.type = type;
+		cmd.protocol = proto;
+		
+		r = (int)Fcntl(sockfd, (long) &cmd, SOCKETCALL);
+		if (r < 0)
+		{
+			__set_errno(-r);
+			Fclose(sockfd);
+			return -1;
+		}
+		
+		return sockfd;
+	}
 }
 
 
