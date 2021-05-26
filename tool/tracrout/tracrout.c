@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "transprt.h"
 #include "layer.h"
@@ -53,8 +54,8 @@ typedef struct pudp_hdr
 
 
 
-TPL *tpl;
 STX *stx;
+TPL *tpl;
 
 static DRV_LIST *sting_drivers;
 PUDP packet;
@@ -98,6 +99,26 @@ static OBJECT *rs_tree(_WORD num)
 
 
 
+/*
+ * next 2 functions are from StinG only,
+ * and are not supported by STiK/Gluestik
+ */
+static int32 safe_TIMER_now(void)
+{
+	if (stx)
+		return TIMER_now();
+	return clock() * 5;
+}
+
+
+static int32 safe_TIMER_elapsed(int32 then)
+{
+	if (stx)
+		return TIMER_elapsed(then);
+	return (clock() * 5) - then;
+}
+
+
 static int16 cdecl receive_echo(IP_DGRAM *datagram)
 {
 	UDP_PCKT *packet;
@@ -136,7 +157,7 @@ static int16 cdecl receive_echo(IP_DGRAM *datagram)
 		hop_c = (uint16) ((datagram->hdr.ip_src >> 8) & 0xff);
 		hop_d = (uint16) (datagram->hdr.ip_src & 0xff);
 		ttl = datagram->hdr.ttl;
-		elapsed = TIMER_elapsed(now);
+		elapsed = safe_TIMER_elapsed(now);
 
 		ICMP_discard(datagram);
 	
@@ -454,7 +475,7 @@ static void do_traceroute_dialog(void)
 		/* * 10 because we wait for 100 ms in the event loop below */
 		waittime *= 10;
 
-		if (PRTCL_get_parameters(host, &packet.ps_hdr.src_ip, NULL, NULL) != E_NORMAL)
+		if (stx && PRTCL_get_parameters(host, &packet.ps_hdr.src_ip, NULL, NULL) != E_NORMAL)
 		{
 			do_alert(rs_frstr(NO_ROUTE));
 			continue;
@@ -498,7 +519,7 @@ static void do_traceroute_dialog(void)
 			memcpy(dgram, &packet.udp_packet, sizeof(UDP_PCKT));
 	
 			response = -1;
-			now = TIMER_now();
+			now = safe_TIMER_now();
 			elapsed = -1;
 			what = IP_send(packet.ps_hdr.src_ip, packet.ps_hdr.dest_ip, 0, TRUE, count, P_UDP,
 						   32768u + count, dgram, (int16) sizeof(UDP_PCKT), NULL, 0);
@@ -605,6 +626,9 @@ static void gem_program(void)
 		do_alert(rs_frstr(NO_MODULE));
 		return;
 	}
+	/*
+	 * still needed for IP_send :(
+	 */
 	if (stx == NULL)
 	{
 		do_alert(rs_frstr(NO_STIK));

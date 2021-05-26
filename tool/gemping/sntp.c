@@ -52,6 +52,8 @@
 #include "transprt.h"
 #include "layer.h"
 #include "adaptrsc.h"
+STX *stx;
+TPL *tpl;
 
 #ifdef __PUREC__
 char *mint_strerror(int errnum);
@@ -76,8 +78,6 @@ static enum {
 	MODE_MINTNET,
 	MODE_STING,
 } mode;
-TPL *tpl;
-STX *stx;
 static DRV_LIST *sting_drivers;
 
 /* seconds between 1.1.1900 (NTP epoch) and 1.1.1970 (unix epoch *) */
@@ -468,6 +468,26 @@ static int ntp_mintnet(void)
 }
 
 
+/*
+ * next 2 functions are from StinG only,
+ * and are not supported by STiK/Gluestik
+ */
+static int32 safe_TIMER_now(void)
+{
+	if (stx)
+		return TIMER_now();
+	return clock() * 5;
+}
+
+
+static int32 safe_TIMER_elapsed(int32 then)
+{
+	if (stx)
+		return TIMER_elapsed(then);
+	return (clock() * 5) - then;
+}
+
+
 static int ntp_sting(void)
 {
 	struct sockaddr_in *sin;
@@ -518,7 +538,7 @@ static int ntp_sting(void)
 			return FALSE;
 		}
 	
-		starttime = TIMER_now();
+		starttime = safe_TIMER_now();
 		dottime = starttime;
 		while (CNbyte_count(handle) < (int)sizeof(packet))
 		{
@@ -538,15 +558,15 @@ static int ntp_sting(void)
 				UDP_close(handle);
 				return FALSE;
 			}
-			if (TIMER_elapsed(starttime) >= timeout)
+			if (safe_TIMER_elapsed(starttime) >= timeout)
 			{
 				UDP_close(handle);
 				return FALSE;
 			}
-			if (TIMER_elapsed(dottime) >= 1000)
+			if (safe_TIMER_elapsed(dottime) >= 1000)
 			{
 				print_dots();
-				dottime = TIMER_now();
+				dottime = safe_TIMER_now();
 			}
 		}
 	
@@ -835,11 +855,18 @@ static int gem_program(void)
 		}
 		tpl = (TPL *) (*sting_drivers->get_dftab) (TRANSPORT_DRIVER);
 		stx = (STX *) (*sting_drivers->get_dftab) (MODULE_DRIVER);
-		if (tpl == NULL || stx == NULL)
+		if (tpl == NULL)
 		{
 			do_alert(rs_frstr(NO_MODULE), FALSE);
 			return FALSE;
 		}
+#if 0
+		if (stx == NULL)
+		{
+			do_alert(rs_frstr(NO_STIK), FALSE);
+			return FALSE;
+		}
+#endif
 		mode = MODE_STING;
 	} else
 	{
