@@ -626,6 +626,11 @@ static void gem_program(void)
 		do_alert(rs_frstr(NO_MODULE));
 		return;
 	}
+	if (tpl->ICMP_send == 0)
+	{
+		do_alert(rs_frstr(STIK_TOO_OLD));
+		return;
+	}
 	/*
 	 * still needed for IP_send :(
 	 */
