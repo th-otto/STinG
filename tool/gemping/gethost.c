@@ -80,11 +80,13 @@
 #define NS_PACKETSZ    512     /* maximum packet size */
 
 #undef _PATH_HOSTS
-#define _PATH_HOSTS     "U:/etc/hosts"
+#define _PATH_HOSTS     "U:\\etc\\hosts"
 #undef _PATH_HOSTCONF
-#define _PATH_HOSTCONF  "U:/etc/host.conf"
+#define _PATH_HOSTCONF  "U:\\etc\\host.conf"
+#define _PATH_HOSTCONF2  "U:\\etc\\host.con"
 #undef _PATH_RESCONF
-#define _PATH_RESCONF   "U:/etc/resolv.conf"
+#define _PATH_RESCONF   "U:\\etc\\resolv.conf"
+#define _PATH_RESCONF2   "U:\\etc\\resolv.con"
 
 
 #define	MAXALIASES	35
@@ -529,7 +531,8 @@ static void init_services(void)
 	{
 		hostconf = _PATH_HOSTCONF;
 	}
-	if ((fd = fopen(hostconf, "r")) == NULL)
+	if ((fd = fopen(hostconf, "r")) == NULL &&
+		(fd = fopen(_PATH_HOSTCONF2, "r")) == NULL)
 	{
 		/* make some assumptions */
 		service_order[0] = SERVICE_HOSTS;
@@ -1470,7 +1473,8 @@ int res_init(void)
 		haveenv++;
 	}
 
-	if ((fp = fopen(_PATH_RESCONF, "r")) != NULL)
+	if ((fp = fopen(_PATH_RESCONF, "r")) != NULL ||
+		(fp = fopen(_PATH_RESCONF2, "r")) != NULL)
 	{
 		/* read the config file */
 		while (fgets(buf, (int)sizeof(buf), fp) != NULL)
