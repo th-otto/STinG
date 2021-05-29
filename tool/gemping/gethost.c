@@ -1664,7 +1664,7 @@ int res_send(const uint8_t *buf, int buflen, uint8_t *answer, int anslen)
 					msg.msg_control = 0;
 					msg.msg_controllen = 0;
 
-					if ((n = (int)Fsendmsg(s, &msg, 0)) != (int)sizeof(len) + buflen)
+					if ((n = (int)Fsendmsg(s, &msg, 0)) != sizeof(len) + buflen)
 					{
 						terrno = -n;
 						Fclose(s);
@@ -1905,7 +1905,7 @@ int res_send(const uint8_t *buf, int buflen, uint8_t *answer, int anslen)
  */
 int res_query(const char *name,			/* domain name */
 			  int class, int type,		/* class and type of query */
-			  uint8_t * answer,			/* buffer to put answer */
+			  uint8_t *answer,			/* buffer to put answer */
 			  int anslen)				/* size of answer buffer */
 {
 	uint8_t buf[MAXPACKET];
@@ -2162,8 +2162,8 @@ int res_querydomain(
 
 char *__hostalias(const char *name)
 {
-	char *C1,
-	*C2;
+	char *C1;
+	char *C2;
 	FILE *fp;
 	char *file;
 	char buf[BUFSIZ];
@@ -2208,7 +2208,7 @@ char *__hostalias(const char *name)
  */
 int res_search(const char *name,				/* domain name */
 			   int class, int type,		/* class and type of query */
-			   uint8_t * answer,		/* buffer to put answer */
+			   uint8_t *answer,		/* buffer to put answer */
 			   int anslen)				/* size of answer */
 {
 	const char *cp;

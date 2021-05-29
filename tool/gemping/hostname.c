@@ -55,10 +55,10 @@ int gethostname(char *buf, size_t len)
 		/* try looking for the file /etc/hostname; if it's present,
 		 * it contains the name, otherwise we try the environment
 		 */
-		fd = open("U:/etc/hostname", O_RDONLY);
+		fd = (int)Fopen("U:\\etc\\hostname", O_RDONLY);
 		if (fd >= 0)
 		{
-			r = (int)read(fd, xbuf, MAXHOSTNAMELEN);
+			r = (int)Fread(fd, MAXHOSTNAMELEN, xbuf);
 			if (r > 0)
 			{
 				char *p;
@@ -76,7 +76,7 @@ int gethostname(char *buf, size_t len)
 				}
 				foo = xbuf;
 			}
-			close(fd);
+			Fclose(fd);
 		}
 
 		if (foo == NULL)

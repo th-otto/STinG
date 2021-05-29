@@ -371,7 +371,7 @@ struct hostent *gethostent(void);
 #define RES_NOTLDQUERY	0x01000000UL	/* Do not look up unqualified name
 					   as a TLD.  */
 
-#define RES_DEFAULT	(RES_RECURSE|RES_DEFNAMES|RES_DNSRCH|RES_NOIP6DOTINT)
+#define RES_DEFAULT	(RES_RECURSE | RES_DEFNAMES | RES_DNSRCH)
 
 #ifdef __PUREC__
 #define strcasecmp(a,b)		stricmp(a,b)
