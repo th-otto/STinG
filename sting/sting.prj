@@ -14,7 +14,7 @@ sting.prg
 .L[-S=4096]
 
 =
-cauto.o
+..\lib\cauto.s
 
 api.c
 fragm.c

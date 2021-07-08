@@ -14,7 +14,7 @@ tracrout.prg
 .L[-S=4096]
 
 =
-cauto.o
+..\..\lib\cauto.s
 
 tracrout.c
 

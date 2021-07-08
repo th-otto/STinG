@@ -344,7 +344,7 @@ int dn_comp(const char *exp_dn, uint8_t *comp_dn, int length, uint8_t **dnptrs, 
 int res_search(const char *name, int class, int type, uint8_t *answer, int anslen);
 int res_query(const char *name, int class, int type, uint8_t *answer, int anslen);
 int res_mkquery(int op, const char *dname, int class, int type, char *data, int datalen, struct rrec *newrr, uint8_t *buf, int buflen);
-char *__hostalias(const char *name);
+const char *__hostalias(const char *name);
 int res_init(void);
 int res_send(const uint8_t *buf, int buflen, uint8_t *answer, int anslen);
 int res_querydomain(const char *name, const char *domain, int class, int type, uint8_t *answer, int anslen);
@@ -857,7 +857,7 @@ int dn_expand(const uint8_t *msg, const uint8_t *eomorig, const uint8_t *comp_dn
 		case INDIR_MASK:
 			if (len < 0)
 				len = (int)(cp - comp_dn + 1);
-			cp = (u_char *) msg + (((n & 0x3f) << 8) | (*cp & 0xff));
+			cp = msg + (((n & 0x3f) << 8) | (*cp & 0xff));
 			if (cp < msg || cp >= eomorig)	/* out of range */
 				return -1;
 			checked += 2;
@@ -1042,9 +1042,9 @@ int dn_comp(const char *exp_dn, uint8_t *comp_dn, int length, uint8_t **dnptrs, 
 }
 
 
-static uint16_t _getshort(uint8_t *msgp)
+static uint16_t _getshort(const uint8_t *msgp)
 {
-	uint8_t *p = msgp;
+	const uint8_t *p = msgp;
 	uint16_t u;
 
 	u = *p++ << 8;
@@ -1053,9 +1053,9 @@ static uint16_t _getshort(uint8_t *msgp)
 
 
 #if 0 /* unused */
-static uint32_t _getlong(uint8_t *msgp)
+static uint32_t _getlong(const uint8_t *msgp)
 {
-	uint8_t *p = msgp;
+	const uint8_t *p = msgp;
 	uint32_t u;
 
 	u = *p++; u <<= 8;
@@ -1385,15 +1385,14 @@ static struct hostent *_gethtbyname(const char *name)
 		{
 			for (j = 0; ht_addr_ptrs[j]; j++)
 			{
-				/* FIXME: What is h good for?  */
 				in_addr_t t;
 				in_addr_t l;
-				in_addr_t h = 0;
+				in_addr_t h;
 
 				memcpy(&t, loc_addr_ptrs[i], ht.h_length);
 				l = ntohl(t);
-				memcpy(&t, ht_addr_ptrs[j], ht.h_length);
-				t = l ^ h;
+				memcpy(&h, ht_addr_ptrs[j], ht.h_length);
+				t = l ^ ntohl(h);
 
 				if (t < bestval)
 				{
@@ -2160,7 +2159,7 @@ int res_querydomain(
 }
 
 
-char *__hostalias(const char *name)
+const char *__hostalias(const char *name)
 {
 	char *C1;
 	char *C2;
@@ -2455,7 +2454,7 @@ struct hostent *gethostbyaddr(const void *__addr, __socklen_t len, int type)
 				hp->h_addrtype = type;
 				hp->h_length = len;
 				h_addr_ptrs[0] = (char *) &host_addr;
-				h_addr_ptrs[1] = (char *) 0;
+				h_addr_ptrs[1] = NULL;
 				host_addr = *(struct in_addr *) addr;
 				return trim_domains(hp);
 			}

@@ -14,7 +14,7 @@ shutdown.prg
 .L[-S=4096]
 
 =
-cauto.o
+..\..\lib\cauto.s
 
 shutdown.c
 shut.s [-S]
